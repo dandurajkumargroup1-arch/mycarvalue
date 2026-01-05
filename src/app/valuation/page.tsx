@@ -1,15 +1,13 @@
-
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { ValuationForm } from './valuation-form';
-import { Sparkles, LogIn, Eye, Lock } from 'lucide-react';
+import { Sparkles, LogIn } from 'lucide-react';
 import { useUser, useAuth } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Suspense } from 'react';
 
 // This increases the serverless function timeout for this page to 120 seconds.
 // It's necessary for the AI valuation to complete without timing out on Vercel.
