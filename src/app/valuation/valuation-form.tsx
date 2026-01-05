@@ -50,53 +50,30 @@ import { useRouter } from "next/navigation";
 
 const RazorpayScriptLoader = ({ onScriptLoad }: { onScriptLoad: () => void }) => {
   useEffect(() => {
-    const rzpButtonContainer = document.getElementById("rzp-button-container");
-    if (rzpButtonContainer && rzpButtonContainer.children.length === 0) {
-      const script = document.createElement("script");
-      script.id = "razorpay-script";
-      script.src = "https://checkout.razorpay.com/v1/payment-button.js";
-      script.async = true;
-      script.dataset.payment_button_id = "pl_N4yqN9zE2a4a9N"; 
-
-      script.onload = () => {
-        setTimeout(onScriptLoad, 500); 
-      };
-
-      const form = document.createElement("form");
-      form.id = "razorpay-form";
-      
-      const redirectUrl = `${window.location.origin}/payment-success`;
-      const hiddenInput = document.createElement("input");
-      hiddenInput.type = "hidden";
-      hiddenInput.name = "callback_url";
-      hiddenInput.value = redirectUrl;
-      form.appendChild(hiddenInput);
-      
-      rzpButtonContainer.appendChild(form).appendChild(script);
-    } else if (rzpButtonContainer && rzpButtonContainer.children.length > 0) {
-      // If script is already there, just signal ready
+    const scriptId = "razorpay-checkout-js";
+    if (document.getElementById(scriptId)) {
       onScriptLoad();
+      return;
     }
+    const script = document.createElement("script");
+    script.id = scriptId;
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.async = true;
+    script.onload = onScriptLoad;
+    document.body.appendChild(script);
   }, [onScriptLoad]);
 
-  return <div id="rzp-button-container" style={{ display: 'none' }}></div>;
+  return null;
 };
 
-const PaymentDisplay = ({ onNewValuation }: { onNewValuation: () => void }) => {
-  const [isPaymentReady, setIsPaymentReady] = useState(false);
 
-  const handlePayment = () => {
-    const razorpayForm = document.getElementById('razorpay-form') as HTMLFormElement;
-    if (razorpayForm) {
-      razorpayForm.submit();
-    } else {
-      alert("Payment gateway is not ready. Please wait a moment and try again.");
-    }
-  };
-  
+const PaymentDisplay = ({ onNewValuation }: { onNewValuation: () => void }) => {
+  const [isScriptLoaded, setIsScriptLoaded] = useState(false);
+  const redirectUrl = typeof window !== 'undefined' ? `${window.location.origin}/payment-success` : '';
+
   return (
     <Card className="shadow-lg text-center">
-        <RazorpayScriptLoader onScriptLoad={() => setIsPaymentReady(true)} />
+        <RazorpayScriptLoader onScriptLoad={() => setIsScriptLoaded(true)} />
         <CardHeader>
             <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
                 <Lock className="h-6 w-6 text-primary" />
@@ -110,12 +87,16 @@ const PaymentDisplay = ({ onNewValuation }: { onNewValuation: () => void }) => {
                 <p className="text-4xl font-bold">₹149</p>
             </div>
             
-            <Button onClick={handlePayment} size="lg" disabled={!isPaymentReady}>
-              <CreditCard className="mr-2 h-5 w-5" />
-              {isPaymentReady ? 'Pay Now & View Report' : 'Initializing Payment...'}
-            </Button>
+            <form action={redirectUrl} method="GET">
+                <script
+                    src="https://checkout.razorpay.com/v1/payment-button.js"
+                    data-payment_button_id="pl_N4yqN9zE2a4a9N"
+                    async
+                >
+                </script>
+            </form>
             
-            <div className="text-xs text-muted-foreground">Secured by Razorpay</div>
+            <div className="text-xs text-muted-foreground mt-2">Secured by Razorpay</div>
 
             <Button variant="link" onClick={onNewValuation}>Start New Valuation</Button>
         </CardContent>
