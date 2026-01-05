@@ -48,58 +48,35 @@ import { saveValuation } from "@/lib/firebase/valuation-service";
 import { useRouter } from "next/navigation";
 
 
-const RazorpayScriptLoader = ({ onScriptLoad }: { onScriptLoad: () => void }) => {
-  useEffect(() => {
-    const scriptId = "razorpay-checkout-js";
-    if (document.getElementById(scriptId)) {
-      onScriptLoad();
-      return;
-    }
-    const script = document.createElement("script");
-    script.id = scriptId;
-    script.src = "https://checkout.razorpay.com/v1/checkout.js";
-    script.async = true;
-    script.onload = onScriptLoad;
-    document.body.appendChild(script);
-  }, [onScriptLoad]);
-
-  return null;
-};
-
-
 const PaymentDisplay = ({ onNewValuation }: { onNewValuation: () => void }) => {
-  const [isScriptLoaded, setIsScriptLoaded] = useState(false);
-  const redirectUrl = typeof window !== 'undefined' ? `${window.location.origin}/payment-success` : '';
-
   return (
     <Card className="shadow-lg text-center">
-        <RazorpayScriptLoader onScriptLoad={() => setIsScriptLoaded(true)} />
-        <CardHeader>
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-                <Lock className="h-6 w-6 text-primary" />
-            </div>
-            <CardTitle className="mt-4">Unlock Your Valuation Report</CardTitle>
-            <CardDescription>Your detailed valuation is ready. Complete the payment to view and download your full report.</CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col items-center gap-6">
-            <div className="text-center">
-                <p className="text-sm text-muted-foreground">Payable Amount</p>
-                <p className="text-4xl font-bold">₹149</p>
-            </div>
-            
-            <form action={redirectUrl} method="GET">
-                <script
-                    src="https://checkout.razorpay.com/v1/payment-button.js"
-                    data-payment_button_id="pl_N4yqN9zE2a4a9N"
-                    async
-                >
-                </script>
-            </form>
-            
-            <div className="text-xs text-muted-foreground mt-2">Secured by Razorpay</div>
+      <CardHeader>
+        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+          <Lock className="h-6 w-6 text-primary" />
+        </div>
+        <CardTitle className="mt-4">Unlock Your Valuation Report</CardTitle>
+        <CardDescription>Your detailed valuation is ready. Complete the payment to view and download your full report.</CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-col items-center gap-6">
+        <div className="text-center">
+          <p className="text-sm text-muted-foreground">Payable Amount</p>
+          <p className="text-4xl font-bold">₹149</p>
+        </div>
 
-            <Button variant="link" onClick={onNewValuation}>Start New Valuation</Button>
-        </CardContent>
+        <form>
+            <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+            <script
+                src="https://checkout.razorpay.com/v1/payment-button.js"
+                data-payment_button_id="pl_N4yqN9zE2a4a9N"
+                async
+            >
+            </script>
+        </form>
+
+        <div className="text-xs text-muted-foreground mt-2">Secured by Razorpay</div>
+        <Button variant="link" onClick={onNewValuation}>Start New Valuation</Button>
+      </CardContent>
     </Card>
   );
 };
@@ -549,5 +526,3 @@ const ValuationLoadingScreen = () => (
         </CardContent>
     </Card>
 );
-
-    
