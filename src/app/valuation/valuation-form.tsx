@@ -102,7 +102,7 @@ const PaymentDisplay = ({ onNewValuation }: { onNewValuation: () => void }) => {
                 <p className="text-4xl font-bold">₹149</p>
             </div>
             
-            <Button onClick={handlePayment} size="lg" className="w-full">
+            <Button onClick={handlePayment} size="lg">
               <CreditCard className="mr-2 h-5 w-5" />
               Pay Now & View Report
             </Button>
