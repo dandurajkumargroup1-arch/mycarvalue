@@ -56,14 +56,14 @@ const RazorpayScriptLoader = ({ onScriptLoad }: { onScriptLoad: () => void }) =>
       script.id = "razorpay-script";
       script.src = "https://checkout.razorpay.com/v1/payment-button.js";
       script.async = true;
-      script.dataset.payment_button_id = "pl_N4yqN9zE2a4a9N"; // Test button ID for ₹1
+      script.dataset.payment_button_id = "pl_N4yqN9zE2a4a9N"; 
 
       script.onload = () => {
-        // Wait a bit for Razorpay to initialize its own button inside the form
         setTimeout(onScriptLoad, 500); 
       };
 
       const form = document.createElement("form");
+      form.id = "razorpay-form";
       
       const redirectUrl = `${window.location.origin}/payment-success`;
       const hiddenInput = document.createElement("input");
@@ -73,10 +73,12 @@ const RazorpayScriptLoader = ({ onScriptLoad }: { onScriptLoad: () => void }) =>
       form.appendChild(hiddenInput);
       
       rzpButtonContainer.appendChild(form).appendChild(script);
+    } else if (rzpButtonContainer && rzpButtonContainer.children.length > 0) {
+      // If script is already there, just signal ready
+      onScriptLoad();
     }
   }, [onScriptLoad]);
 
-  // This component is now invisible, it only loads the script and form.
   return <div id="rzp-button-container" style={{ display: 'none' }}></div>;
 };
 
@@ -84,10 +86,9 @@ const PaymentDisplay = ({ onNewValuation }: { onNewValuation: () => void }) => {
   const [isPaymentReady, setIsPaymentReady] = useState(false);
 
   const handlePayment = () => {
-    // Find the payment link created by the Razorpay script and click it programmatically
-    const paymentLink = document.querySelector('.razorpay-payment-button') as HTMLElement;
-    if (paymentLink) {
-      paymentLink.click();
+    const razorpayForm = document.getElementById('razorpay-form') as HTMLFormElement;
+    if (razorpayForm) {
+      razorpayForm.submit();
     } else {
       alert("Payment gateway is not ready. Please wait a moment and try again.");
     }
@@ -109,7 +110,7 @@ const PaymentDisplay = ({ onNewValuation }: { onNewValuation: () => void }) => {
                 <p className="text-4xl font-bold">₹149</p>
             </div>
             
-            <Button onClick={handlePayment} size="default" disabled={!isPaymentReady}>
+            <Button onClick={handlePayment} size="lg" disabled={!isPaymentReady}>
               <CreditCard className="mr-2 h-5 w-5" />
               {isPaymentReady ? 'Pay Now & View Report' : 'Initializing Payment...'}
             </Button>
@@ -568,3 +569,4 @@ const ValuationLoadingScreen = () => (
     </Card>
 );
 
+    
