@@ -55,7 +55,10 @@ const RazorpayButton = () => {
       const script = document.createElement("script");
       script.src = "https://checkout.razorpay.com/v1/payment-button.js";
       script.async = true;
-      script.dataset.payment_button_id = "pl_S03ZqfrOnbBTyK"; // Use your actual button ID
+      // NOTE: This is a TEST payment button ID for a ₹1 transaction.
+      // The user's provided keys (rzp_test_S0JUFiKZts9bRa and secret) would be used in a
+      // server-side integration to create orders, not directly here.
+      script.dataset.payment_button_id = "pl_N4yqN9zE2a4a9N";
 
       const form = document.createElement("form");
       
