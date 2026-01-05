@@ -1,7 +1,1 @@
-{
-  "functions": {
-    "app/**/*.ts": {
-      "maxDuration": 120
-    }
-  }
-}
+{"functions":{"src/ai/flows/**/*.ts":{"maxDuration":120}},"rewrites":[{"source":"/genkit-api/:path*","destination":"https://127.0.0.1:3400/genkit-api/:path*"}]}
