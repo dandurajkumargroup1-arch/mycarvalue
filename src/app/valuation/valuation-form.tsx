@@ -53,14 +53,20 @@ const RazorpayButton = () => {
     const rzpButtonContainer = document.getElementById("rzp-button");
     if (rzpButtonContainer && rzpButtonContainer.children.length === 0) {
       const script = document.createElement("script");
+      script.id = "razorpay-script";
       script.src = "https://checkout.razorpay.com/v1/payment-button.js";
       script.async = true;
-      // NOTE: This is a TEST payment button ID for a ₹1 transaction.
-      // The user's provided keys (rzp_test_S0JUFiKZts9bRa and secret) would be used in a
-      // server-side integration to create orders, not directly here.
-      script.dataset.payment_button_id = "pl_N4yqN9zE2a4a9N";
+      script.dataset.payment_button_id = "pl_N4yqN9zE2a4a9N"; // Test button ID for ₹1
 
       const form = document.createElement("form");
+      
+      // Dynamically create the redirect URL
+      const redirectUrl = `${window.location.origin}/payment-success`;
+      const hiddenInput = document.createElement("input");
+      hiddenInput.type = "hidden";
+      hiddenInput.name = "callback_url";
+      hiddenInput.value = redirectUrl;
+      form.appendChild(hiddenInput);
       
       rzpButtonContainer.appendChild(form).appendChild(script);
     }
