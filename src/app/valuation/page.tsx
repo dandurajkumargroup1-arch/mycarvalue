@@ -11,6 +11,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Skeleton } from '@/components/ui/skeleton';
 import { Suspense } from 'react';
 
+// This increases the serverless function timeout for this page to 120 seconds.
+// It's necessary for the AI valuation to complete without timing out on Vercel.
+export const maxDuration = 120;
+
 function ValuationPageComponent() {
   const { user, isUserLoading } = useUser();
   const auth = useAuth();
