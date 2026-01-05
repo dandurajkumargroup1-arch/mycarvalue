@@ -45,12 +45,12 @@ const DetailSection = ({ title, data }: { title: string, data: Record<string, an
     );
 };
 
-const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuation: any; formData: any; }, onNewValuation: () => void }) => {
+const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuation: any; formData: any; } | null, onNewValuation: () => void }) => {
   const { valuation, formData } = result || {};
   const reportRef = useRef<HTMLDivElement>(null);
   const [isDownloading, setIsDownloading] = useState(false);
 
-  if (!valuation || !formData) {
+  if (!result || !valuation || !formData) {
     return (
       <Card className="shadow-lg text-center">
         <CardHeader>
@@ -203,7 +203,12 @@ export default function ResultPage() {
         }
 
         if (storedResult) {
-            setResult(JSON.parse(storedResult));
+            try {
+                setResult(JSON.parse(storedResult));
+            } catch (error) {
+                console.error("Failed to parse valuation result from localStorage", error);
+                router.push('/'); // Redirect if data is corrupted
+            }
         }
         setLoading(false);
     }, [router]);
@@ -222,27 +227,9 @@ export default function ResultPage() {
         )
     }
 
-    if (!result) {
-        return (
-            <div className="container mx-auto max-w-3xl py-12">
-                <Card className="text-center">
-                    <CardHeader>
-                        <CardTitle>No Report Found</CardTitle>
-                        <CardDescription>We couldn't find a valuation report. Please start a new one.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <Button onClick={handleNewValuation}>Start New Valuation</Button>
-                    </CardContent>
-                </Card>
-            </div>
-        )
-    }
-
     return (
         <div className="container mx-auto max-w-3xl py-12">
             <ValuationResultDisplay result={result} onNewValuation={handleNewValuation} />
         </div>
     );
 }
-
-    
