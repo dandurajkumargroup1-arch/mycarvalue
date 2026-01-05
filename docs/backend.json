@@ -1,0 +1,232 @@
+
+{
+  "entities": {
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user of the AutoValue application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the user."
+        },
+        "displayName": {
+          "type": "string",
+          "description": "The display name of the user."
+        },
+        "email": {
+          "type": "string",
+          "description": "The email address of the user.",
+          "format": "email"
+        },
+        "photoURL": {
+          "type": "string",
+          "description": "The URL of the user's profile photo."
+        },
+        "whatsappNumber": {
+          "type": "string",
+          "description": "The user's WhatsApp mobile number."
+        },
+        "vehicleNumber": {
+            "type": "string",
+            "description": "The user's vehicle registration number."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The timestamp when the user profile was created."
+        },
+        "lastUpdatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The timestamp when the user profile was last updated."
+        }
+      },
+      "required": ["id", "email"]
+    },
+    "CarValuation": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Car Valuation",
+      "type": "object",
+      "description": "Represents a single car valuation performed by a user, with detailed sections.",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "paymentId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "make": { "type": "string" },
+        "model": { "type": "string" },
+        "variant": { "type": "string" },
+        "fuelType": { "type": "string" },
+        "transmission": { "type": "string" },
+        "manufactureYear": { "type": "number" },
+        "registrationYear": { "type": "number" },
+        "registrationState": { "type": "string" },
+        "ownership": { "type": "string" },
+        "rcStatus": { "type": "string" },
+        "insurance": { "type": "string" },
+        "hypothecation": { "type": "string" },
+        "engineMechanical": {
+          "type": "object",
+          "properties": {
+            "engine": { "type": "string" },
+            "gearbox": { "type": "string" },
+            "clutch": { "type": "string" },
+            "battery": { "type": "string" },
+            "radiator": { "type": "string" },
+            "exhaust": { "type": "string" },
+            "suspension": { "type": "string" },
+            "steering": { "type": "string" },
+            "brakes": { "type": "string" }
+          }
+        },
+        "exterior": {
+          "type": "object",
+          "properties": {
+            "frontBumper": { "type": "string" },
+            "rearBumper": { "type": "string" },
+            "bonnet": { "type": "string" },
+            "roof": { "type": "string" },
+            "doors": { "type": "string" },
+            "fenders": { "type": "string" },
+            "paintQuality": { "type": "string" },
+            "rust": { "type": "string" },
+            "accidentHistory": { "type": "string" }
+          }
+        },
+        "interior": {
+          "type": "object",
+          "properties": {
+            "seats": { "type": "string" },
+            "seatCovers": { "type": "string" },
+            "dashboard": { "type": "string" },
+            "steeringWheel": { "type": "string" },
+            "roofLining": { "type": "string" },
+            "floorMats": { "type": "string" },
+            "ac": { "type": "string" },
+            "infotainment": { "type": "string" }
+          }
+        },
+        "electrical": {
+          "type": "object",
+          "properties": {
+            "powerWindows": { "type": "string" },
+            "centralLocking": { "type": "string" },
+            "headlights": { "type": "string" },
+            "indicators": { "type": "string" },
+            "horn": { "type": "string" },
+            "reverseCamera": { "type": "string" },
+            "sensors": { "type": "string" },
+            "wipers": { "type": "string" }
+          }
+        },
+        "tyres": {
+          "type": "object",
+          "properties": {
+            "frontTyres": { "type": "string" },
+            "rearTyres": { "type": "string" },
+            "spareTyre": { "type": "string" },
+            "alloyWheels": { "type": "string" },
+            "wheelAlignment": { "type": "string" }
+          }
+        },
+        "safety": {
+          "type": "object",
+          "properties": {
+            "airbags": { "type": "string" },
+            "abs": { "type": "string" },
+            "seatBelts": { "type": "string" },
+            "childLock": { "type": "string" },
+            "immobilizer": { "type": "string" }
+          }
+        },
+        "documents": {
+          "type": "object",
+          "properties": {
+            "rcBook": { "type": "string" },
+            "insuranceDoc": { "type": "string" },
+            "puc": { "type": "string" },
+            "serviceRecords": { "type": "string" },
+            "duplicateKey": { "type": "string" },
+            "noc": { "type": "string" }
+          }
+        },
+        "usage": {
+          "type": "object",
+          "properties": {
+            "odometer": { "type": "string" },
+            "usageType": { "type": "string" },
+            "cityDriven": { "type": "string" },
+            "floodDamage": { "type": "string" },
+            "accident": { "type": "string" },
+            "serviceCenter": { "type": "string" }
+          }
+        },
+        "additional": {
+          "type": "object",
+          "properties": {
+            "musicSystem": { "type": "string" },
+            "reverseParkingSensor": { "type": "string" },
+            "dashcam": { "type": "string" },
+            "fogLamps": { "type": "string" },
+            "gpsTracker": { "type": "string" }
+          }
+        },
+        "valuationResult": { "type": "object" },
+        "comparableListingsResult": { "type": "object" },
+        "imageQualityResult": { "type": "object" }
+      },
+      "required": ["id", "userId", "paymentId", "make", "model", "manufactureYear", "createdAt"]
+    },
+    "Feedback": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Feedback",
+      "type": "object",
+      "description": "Represents user feedback on a car valuation.",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "userPhotoURL": { "type": "string" },
+        "feedback": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "userName", "feedback", "createdAt"]
+    }
+  },
+  "auth": {
+    "providers": ["password", "anonymous", "google.com"]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": { "$ref": "#/backend/entities/User" },
+          "description": "Stores user profiles. Only the authenticated user can read/write their own document."
+        }
+      },
+      {
+        "path": "/users/{userId}/carValuations/{carValuationId}",
+        "definition": {
+          "entityName": "CarValuation",
+          "schema": { "$ref": "#/backend/entities/CarValuation" },
+          "description": "Stores individual car valuations for a user. A user can only access their own valuations."
+        }
+      },
+      {
+        "path": "/feedback/{feedbackId}",
+        "definition": {
+          "entityName": "Feedback",
+          "schema": { "$ref": "#/backend/entities/Feedback" },
+          "description": "Stores public user feedback on valuations. Anyone can read, but only authenticated users can create."
+        }
+      }
+    ],
+    "reasoning": "The Firestore data structure is designed around user-centric data ownership. Each user has a document in the top-level `users` collection. All data specific to that user, such as their car valuations, is stored in subcollections within their user document. This allows for simple and secure access control rules. Publicly accessible data, like feedback, is stored in a separate top-level collection."
+  }
+}
+
+    

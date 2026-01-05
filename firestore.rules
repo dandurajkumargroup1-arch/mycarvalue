@@ -1,0 +1,161 @@
+
+/**
+ * @fileoverview Firestore Security Rules for the AutoValue Application
+ * @author Firebase Creator
+ *
+ * @description
+ * This ruleset enforces a strict user-ownership security model. All application
+ * data, such as car listings and valuations, is nested within the user's own
+ * document tree. This design ensures that users can only access and manage their
+ * own information, providing strong data privacy and isolation by default.
+ *
+ * @philosophy
+ * Core Philosophy: A user-centric, path-based ownership model. The authenticated
+ * user's UID is the primary key for all authorization checks. If a user's UID
+ * matches the `{userId}` parameter in the document path, they are granted access;
+ * otherwise, access is denied.
+ *
+ * Data Structure: The data is organized hierarchically under a top-level `/users`
+ * collection. Each user has a document at `/users/{userId}`, which acts as a
+ * root for their private subcollections like `carListings` and `carValuations`.
+ *
+ * Key Security Decisions:
+ * - User Isolation: Users are strictly prohibited from viewing or listing other
+ *   users' profiles or data. The `list` operation on the top-level `/users`
+ *   collection is explicitly disabled.
+ * - Path-Based Security: Authorization is determined primarily by the document
+ *   path, which is fast, scalable, and easy to reason about.
+ * - Authorization Denormalization: To maintain relational integrity and enable
+ *   simple rules, documents within user subcollections (e.g., CarListing) must
+ *   contain a `userId` field that matches the parent user's ID. This is enforced
+ *   on creation and made immutable on update.
+ *
+ * Prototyping Mode: These rules are designed for rapid development. They strictly
+ * enforce *who* can access data but do not validate the specific shape or type
+ * of most data fields, allowing the application schema to evolve without
+ * requiring constant rule updates. Only fields critical for authorization
+ * (like `userId`) are validated.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ------------------------------------------------------------------------
+    // Helper Functions
+    // ------------------------------------------------------------------------
+
+    /**
+     * Checks if the user is authenticated.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * Checks if the currently authenticated user's UID matches the given userId.
+     * This is the foundation of the ownership model.
+     * @param userId The UID to check against the authenticated user.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * Checks if a document exists and if the requester is the owner.
+     * CRITICAL: Used for all update and delete operations to prevent modifying
+     * or deleting non-existent data and to ensure ownership.
+     * @param userId The UID of the document owner.
+     */
+    function isExistingOwner(userId) {
+      return isOwner(userId) && resource != null;
+    }
+    
+    function isNewOwner(userId) {
+      return isOwner(userId) && !exists(/databases/$(database)/documents/users/$(userId));
+    }
+
+    /**
+     * On user profile creation, validates that the document's internal `id`
+     * field matches the document ID (`userId`), ensuring relational integrity.
+     * @param userId The UID from the document path.
+     */
+    function userProfileHasCorrectIdOnCreate(userId) {
+      return request.resource.data.id == userId;
+    }
+
+    /**
+     * On user profile update, ensures the internal `id` field is immutable.
+     * This prevents re-assigning a user profile to a different user.
+     */
+    function userIdIsImmutableOnUpdate() {
+      return request.resource.data.id == resource.data.id;
+    }
+
+    /**
+     * On subcollection document creation, validates that the internal `userId`
+     * field matches the parent document's ID, ensuring relational integrity.
+     * @param userId The UID from the document path.
+     */
+    function hasCorrectOwnerDataOnCreate(userId) {
+      return request.resource.data.userId == userId;
+    }
+
+    /**
+     * On subcollection document update, ensures the internal `userId` field
+     * is immutable. This prevents re-assigning ownership of the document.
+     */
+    function ownerFieldIsImmutable() {
+      return request.resource.data.userId == resource.data.userId;
+    }
+
+
+    // ------------------------------------------------------------------------
+    // Collection Rules
+    // ------------------------------------------------------------------------
+
+    /**
+     * @description Manages user profile documents.
+     * @path /users/{userId}
+     * @allow (get) An authenticated user can read their own profile.
+     * @allow (create) An authenticated user can create their own profile document.
+     * @deny (list) No user can list all other users in the system.
+     * @deny (update) A user cannot update another user's profile.
+     * @principle Restricts access to a user's own data tree and allows self-creation of a profile.
+     */
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow list: if false;
+      allow create: if isOwner(userId) && userProfileHasCorrectIdOnCreate(userId);
+      allow update: if isExistingOwner(userId) && userIdIsImmutableOnUpdate();
+      allow delete: if isExistingOwner(userId);
+
+        /**
+         * @description Manages individual car valuations for a user.
+         * @path /users/{userId}/carValuations/{carValuationId}
+         * @allow (read, list) A user can read their own car valuations.
+         * @allow (create) A user can create a car valuation within their own document.
+         * @deny (update, delete) Nobody can modify or delete existing valuations.
+         * @principle Enforces that users can only manage their own valuation history.
+         */
+        match /carValuations/{carValuationId} {
+            allow read, list: if isOwner(userId);
+            allow create: if isOwner(userId) && hasCorrectOwnerDataOnCreate(userId);
+            allow update, delete: if false;
+        }
+    }
+    
+    /**
+     * @description Manages public user feedback.
+     * @path /feedback/{feedbackId}
+     * @allow (read) Anyone can read feedback.
+     * @allow (create) Any authenticated user can create feedback.
+     * @deny (update, delete) Nobody can modify or delete existing feedback.
+     * @principle Allows public consumption of feedback while ensuring only authenticated users can contribute.
+     */
+    match /feedback/{feedbackId} {
+        allow read: if true;
+        allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+        allow update, delete: if false;
+    }
+  }
+}
