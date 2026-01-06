@@ -69,10 +69,9 @@ const PaymentDisplay = ({ onNewValuation }: { onNewValuation: () => void }) => {
 
         {isScriptLoaded ? (
             <form>
-                {/* This script tag is now added by the useRazorpay hook */}
                 <script 
                     src="https://checkout.razorpay.com/v1/payment-button.js"
-                    data-payment_button_id="pl_N4yqN9zE2a4a9N"
+                    data-payment_button_id="pl_S0ewGKy3UeipuP"
                     async
                 >
                 </script>
