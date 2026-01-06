@@ -5,6 +5,7 @@ import { useState, useMemo, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { motion } from "framer-motion";
+import Script from "next/script";
 import { CarValuationSchema, type CarValuationFormInput } from '@/lib/schemas';
 import { getValuationAction } from '@/lib/actions';
 import { carMakesAndModelsAndVariants } from "@/lib/variants";
@@ -46,11 +47,9 @@ import { Sparkles, User as UserIcon, Lock, CreditCard } from "lucide-react";
 import { useUser, useFirestore } from "@/firebase";
 import { saveValuation } from "@/lib/firebase/valuation-service";
 import { useRouter } from "next/navigation";
-import { useRazorpay } from "@/hooks/use-razorpay";
 
 
 const PaymentDisplay = ({ onNewValuation }: { onNewValuation: () => void }) => {
-  const [isScriptLoaded] = useRazorpay();
 
   return (
     <Card className="shadow-lg text-center">
@@ -67,18 +66,13 @@ const PaymentDisplay = ({ onNewValuation }: { onNewValuation: () => void }) => {
           <p className="text-4xl font-bold">₹149</p>
         </div>
 
-        {isScriptLoaded ? (
-            <form>
-                <script 
-                    src="https://checkout.razorpay.com/v1/payment-button.js"
-                    data-payment_button_id="pl_S0ewGKy3UeipuP"
-                    async
-                >
-                </script>
-            </form>
-        ) : (
-            <div className="h-10 w-48 animate-pulse rounded-md bg-muted" />
-        )}
+        <form>
+            <Script
+                src="https://checkout.razorpay.com/v1/payment-button.js"
+                data-payment_button_id="pl_S0ewGKy3UeipuP"
+                strategy="afterInteractive"
+            />
+        </form>
         
         <div className="text-xs text-muted-foreground mt-2">Secured by Razorpay</div>
         <Button variant="link" onClick={onNewValuation}>Start New Valuation</Button>

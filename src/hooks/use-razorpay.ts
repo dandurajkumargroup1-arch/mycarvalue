@@ -25,8 +25,8 @@ export const useRazorpay = () => {
     useEffect(() => {
         let isMounted = true;
         
-        // Only load script if it's not already loaded
-        if (window.Razorpay) {
+        // This checks if the Razorpay object is already available on the window
+        if ((window as any).Razorpay) {
             if (isMounted) setIsScriptLoaded(true);
             return;
         }
