@@ -66,7 +66,7 @@ const PaymentDisplay = ({ onNewValuation }: { onNewValuation: () => void }) => {
 
     const options = {
       key: "rzp_live_S0f5x1oJgHZEfG", // Your live Razorpay key
-      amount: 149 * 100, // amount in the smallest currency unit (149 INR)
+      amount: 1 * 100, // amount in the smallest currency unit (1 INR)
       currency: "INR",
       name: "mycarvalue.in",
       description: "Car Valuation Report",
@@ -108,7 +108,7 @@ const PaymentDisplay = ({ onNewValuation }: { onNewValuation: () => void }) => {
         <CardContent className="flex flex-col items-center gap-6">
           <div className="text-center">
             <p className="text-sm text-muted-foreground">Payable Amount</p>
-            <p className="text-4xl font-bold">₹149</p>
+            <p className="text-4xl font-bold">₹1</p>
           </div>
 
           <Button onClick={startPayment} size="lg" disabled={!isScriptLoaded}>
