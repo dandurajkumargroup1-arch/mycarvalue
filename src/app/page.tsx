@@ -11,7 +11,7 @@ export default function Home() {
   const title = "Don’t Sell Your Car Blindly. Know Its Real Value First.";
   const description = "Get an instant, independent car price estimate based on current Indian market demand — before you talk to dealers or buyers.";
   
-  const buttonText = 'Get Your Car Valuation Report';
+  const buttonText = 'Get Your Car’s True Value Now';
   const buttonLink = '/valuation';
   const trustLine = "Just ₹149 for a detailed, AI-powered report.";
 
