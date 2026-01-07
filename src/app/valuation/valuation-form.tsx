@@ -570,4 +570,3 @@ const ValuationLoadingScreen = () => (
     </Card>
 );
 
-    
