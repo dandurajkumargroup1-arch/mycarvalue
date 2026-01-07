@@ -51,22 +51,22 @@ import { useRouter } from "next/navigation";
 
 const PaymentDisplay = ({ onNewValuation }: { onNewValuation: () => void }) => {
   const router = useRouter();
-  const { toast } = useToast();
   const [isScriptLoaded, setIsScriptLoaded] = useState(false);
+  const { toast } = useToast();
 
   const startPayment = () => {
-    if (!isScriptLoaded) {
+    if (!(window as any).Razorpay) {
       toast({
         variant: "destructive",
-        title: "Payment Gateway Not Ready",
-        description: "Please wait a moment for the payment gateway to load.",
+        title: "Payment Error",
+        description: "Could not connect to payment gateway. Please refresh and try again.",
       });
       return;
     }
 
     const options = {
-      key: "rzp_live_S0f5x1oJgHZEfG",
-      amount: 149 * 100, // amount in the smallest currency unit
+      key: "rzp_live_S0f5x1oJgHZEfG", // Your live Razorpay key
+      amount: 149 * 100, // amount in the smallest currency unit (149 INR)
       currency: "INR",
       name: "mycarvalue.in",
       description: "Car Valuation Report",
@@ -79,25 +79,16 @@ const PaymentDisplay = ({ onNewValuation }: { onNewValuation: () => void }) => {
         email: "customer@example.com",
       },
       theme: {
-        color: "#16a34a",
+        color: "#2A9D8F", // Corresponds to your primary color
       },
     };
-
-    if ((window as any).Razorpay) {
-      const rzp1 = new (window as any).Razorpay(options);
-      rzp1.open();
-    } else {
-      console.error("Razorpay script not loaded despite state indicating it should be.");
-      toast({
-        variant: "destructive",
-        title: "Payment Error",
-        description: "Could not connect to payment gateway. Please refresh and try again.",
-      });
-    }
+    
+    const rzp1 = new (window as any).Razorpay(options);
+    rzp1.open();
   };
 
   return (
-    <Card className="shadow-lg text-center">
+    <>
       <Script
         id="razorpay-checkout-js"
         src="https://checkout.razorpay.com/v1/checkout.js"
@@ -106,28 +97,30 @@ const PaymentDisplay = ({ onNewValuation }: { onNewValuation: () => void }) => {
           setIsScriptLoaded(true);
         }}
       />
-      <CardHeader>
-        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-          <Lock className="h-6 w-6 text-primary" />
-        </div>
-        <CardTitle className="mt-4">Unlock Your Valuation Report</CardTitle>
-        <CardDescription>Your detailed valuation is ready. Complete the payment to view and download your full report.</CardDescription>
-      </CardHeader>
-      <CardContent className="flex flex-col items-center gap-6">
-        <div className="text-center">
-          <p className="text-sm text-muted-foreground">Payable Amount</p>
-          <p className="text-4xl font-bold">₹149</p>
-        </div>
+      <Card className="shadow-lg text-center">
+        <CardHeader>
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+            <Lock className="h-6 w-6 text-primary" />
+          </div>
+          <CardTitle className="mt-4">Unlock Your Valuation Report</CardTitle>
+          <CardDescription>Your detailed valuation is ready. Complete the payment to view and download your full report.</CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col items-center gap-6">
+          <div className="text-center">
+            <p className="text-sm text-muted-foreground">Payable Amount</p>
+            <p className="text-4xl font-bold">₹149</p>
+          </div>
 
-        <Button onClick={startPayment} size="lg" disabled={!isScriptLoaded}>
-            <CreditCard className="mr-2" />
-            {isScriptLoaded ? 'Pay Now & View Report' : 'Loading Payment...'}
-        </Button>
-        
-        <div className="text-xs text-muted-foreground mt-2">Secured by Razorpay</div>
-        <Button variant="link" onClick={onNewValuation}>Start New Valuation</Button>
-      </CardContent>
-    </Card>
+          <Button onClick={startPayment} size="lg" disabled={!isScriptLoaded}>
+              <CreditCard className="mr-2" />
+              {isScriptLoaded ? 'Pay Now & View Report' : 'Loading Payment...'}
+          </Button>
+          
+          <div className="text-xs text-muted-foreground mt-2">Secured by Razorpay</div>
+          <Button variant="link" onClick={onNewValuation}>Start New Valuation</Button>
+        </CardContent>
+      </Card>
+    </>
   );
 };
 
@@ -576,3 +569,5 @@ const ValuationLoadingScreen = () => (
         </CardContent>
     </Card>
 );
+
+    
