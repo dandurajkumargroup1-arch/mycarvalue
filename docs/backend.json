@@ -55,6 +55,7 @@
         "userId": { "type": "string" },
         "paymentId": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" },
+        "priceCheckReason": { "type": "string" },
         "make": { "type": "string" },
         "model": { "type": "string" },
         "variant": { "type": "string" },
@@ -228,5 +229,3 @@
     "reasoning": "The Firestore data structure is designed around user-centric data ownership. Each user has a document in the top-level `users` collection. All data specific to that user, such as their car valuations, is stored in subcollections within their user document. This allows for simple and secure access control rules. Publicly accessible data, like feedback, is stored in a separate top-level collection."
   }
 }
-
-    

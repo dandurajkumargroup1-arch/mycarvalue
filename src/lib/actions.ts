@@ -14,6 +14,7 @@ import { calculateValuation } from './calculate-valuation';
 export async function getValuationAction(data: CarValuationFormInput) {
     const aiData: CarValuationDataForAI = {
         // Basic Info
+        priceCheckReason: data.priceCheckReason,
         make: data.make,
         model: data.model,
         variant: data.variant,

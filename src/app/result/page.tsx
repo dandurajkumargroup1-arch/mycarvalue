@@ -23,6 +23,9 @@ const DetailSection = ({ title, data }: { title: string, data: Record<string, an
     const formatValue = (value: any) => {
         if (typeof value === 'boolean') return value ? 'Yes' : 'No';
         if (value === undefined || value === null || value === '') return 'N/A';
+        if (value === 'immediate_sale') return 'Immediate Sale';
+        if (value === 'price_check') return 'Just Price Check';
+        if (value === 'market_value') return 'Knowing Market Value';
         return String(value);
     };
 
@@ -66,7 +69,7 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
   
   const {
       displayName, whatsappNumber, vehicleNumber,
-      make, model, variant, fuelType, transmission, manufactureYear, registrationYear, registrationState, ownership,
+      priceCheckReason, make, model, variant, fuelType, transmission, manufactureYear, registrationYear, registrationState, ownership,
       odometer, usageType, cityDriven, floodDamage, accident, serviceCenter,
       engine, gearbox, clutch, battery, radiator, exhaust, suspension, steering, brakes,
       frontBumper, rearBumper, bonnet, roof, doors, fenders, paintQuality, accidentHistory, scratches, dents, rust_areas,
@@ -157,7 +160,7 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
             </section>
             
             <DetailSection title="Contact Details" data={{ name: displayName, whatsappNumber: maskWhatsAppNumber(whatsappNumber), vehicleNumber }} />
-            <DetailSection title="Vehicle Details" data={{ make, model, variant, fuelType, transmission, manufactureYear, registrationYear, registrationState, ownership, odometer: `${odometer} km` }} />
+            <DetailSection title="Vehicle Details" data={{ priceCheckReason, make, model, variant, fuelType, transmission, manufactureYear, registrationYear, registrationState, ownership, odometer: `${odometer} km` }} />
             <DetailSection title="Condition: Engine &amp; Mechanical" data={{ engine, gearbox, clutch, battery, radiator, exhaust, suspension, steering, brakes }} />
             <DetailSection title="Condition: Exterior" data={{ frontBumper, rearBumper, bonnet, roof, doors, fenders, paintQuality, scratches: `${scratches}`, dents: `${dents}`, rust_areas: rust_areas, accidentHistory }} />
             <DetailSection title="Condition: Interior" data={{ seats, seatCovers, dashboard, steeringWheel, roofLining, floorMats, ac, infotainment }} />

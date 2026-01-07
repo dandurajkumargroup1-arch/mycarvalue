@@ -13,6 +13,7 @@ const ContactDetailsSchema = z.object({
 
 // Section 1: Basic Vehicle Information
 const BasicInfoSchema = z.object({
+  priceCheckReason: z.enum(["immediate_sale", "price_check", "market_value"]),
   make: requiredString,
   model: requiredString,
   variant: requiredString,

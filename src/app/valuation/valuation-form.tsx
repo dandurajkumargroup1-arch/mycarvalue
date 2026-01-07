@@ -139,6 +139,7 @@ export function ValuationForm() {
         displayName: "",
         whatsappNumber: "",
         vehicleNumber: "",
+        priceCheckReason: "" as any,
         make: "",
         model: "",
         variant: "",
@@ -370,6 +371,7 @@ ac: "" as any,
                 <AccordionTrigger className="text-lg font-semibold">1. Basic Vehicle Information</AccordionTrigger>
                 <AccordionContent className="space-y-4 pt-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {renderSelect("priceCheckReason", "Check price for", [{value: "immediate_sale", label: "Immediate sale"}, {value: "price_check", label: "Just price check"}, {value: "market_value", label: "Knowing the market value"}], "Select a reason")}
                     <FormField control={form.control} name="make" render={({ field }) => (
                       <FormItem>
                         <FormLabel>Make</FormLabel>
@@ -569,4 +571,3 @@ const ValuationLoadingScreen = () => (
         </CardContent>
     </Card>
 );
-
