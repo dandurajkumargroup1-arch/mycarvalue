@@ -1,5 +1,5 @@
 
-import { Mail, Phone, MapPin } from 'lucide-react';
+import { Mail, Phone, MapPin, MessageSquare } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 
@@ -37,6 +37,21 @@ export default function ContactPage() {
                   </div>
                 </div>
                 
+                <Separator />
+
+                <div className="flex items-start gap-4">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+                        <MessageSquare className="h-6 w-6 text-primary" />
+                    </div>
+                    <div>
+                        <p className="font-semibold text-lg">Chat with us</p>
+                        <p className="text-muted-foreground">Get quick support on WhatsApp.</p>
+                        <a href="https://wa.me/919492060040" target="_blank" rel="noopener noreferrer" className="font-medium text-primary hover:underline">
+                            +91 9492060040
+                        </a>
+                    </div>
+                </div>
+
                 <Separator />
 
                 <div className="flex items-start gap-4">
