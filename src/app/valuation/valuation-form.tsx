@@ -50,9 +50,46 @@ import { useRouter } from "next/navigation";
 
 
 const PaymentDisplay = ({ onNewValuation }: { onNewValuation: () => void }) => {
+  const router = useRouter();
+
+  const startPayment = () => {
+    const options = {
+      key: "rzp_test_YourKeyHere", // This will be replaced by Razorpay with your live key
+      amount: 149 * 100, // amount in the smallest currency unit
+      currency: "INR",
+      name: "mycarvalue.in",
+      description: "Car Valuation Report",
+      payment_button_id: "pl_S0ewGKy3UeipuP", // IMPORTANT: Keep this
+      handler: function (response: any) {
+        // This function is called after a successful payment
+        router.push('/payment-success');
+      },
+      prefill: {
+        name: "Valued Customer",
+        email: "customer@example.com",
+      },
+      theme: {
+        color: "#16a34a", // Your primary color
+      },
+    };
+
+    // The 'Razorpay' object is attached to the window object by the script
+    if ((window as any).Razorpay) {
+      const rzp1 = new (window as any).Razorpay(options);
+      rzp1.open();
+    } else {
+      console.error("Razorpay script not loaded");
+      // Optionally, show a toast or error message to the user
+    }
+  };
 
   return (
     <Card className="shadow-lg text-center">
+      <Script
+        id="razorpay-checkout-js"
+        src="https://checkout.razorpay.com/v1/checkout.js"
+        strategy="afterInteractive"
+      />
       <CardHeader>
         <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
           <Lock className="h-6 w-6 text-primary" />
@@ -66,13 +103,9 @@ const PaymentDisplay = ({ onNewValuation }: { onNewValuation: () => void }) => {
           <p className="text-4xl font-bold">₹149</p>
         </div>
 
-        <form>
-            <Script
-                src="https://checkout.razorpay.com/v1/payment-button.js"
-                data-payment_button_id="pl_S0ewGKy3UeipuP"
-                strategy="afterInteractive"
-            />
-        </form>
+        <Button onClick={startPayment} size="lg">
+          <CreditCard className="mr-2" /> Pay Now &amp; View Report
+        </Button>
         
         <div className="text-xs text-muted-foreground mt-2">Secured by Razorpay</div>
         <Button variant="link" onClick={onNewValuation}>Start New Valuation</Button>
@@ -526,5 +559,3 @@ const ValuationLoadingScreen = () => (
         </CardContent>
     </Card>
 );
-
-    
