@@ -44,7 +44,7 @@ export default function Home() {
             transition={{ duration: 0.8 }}
           >
             <p className="font-semibold text-primary">{brandName}</p>
-            <h1 className="text-4xl md:text-6xl font-bold tracking-tighter text-foreground mt-2">
+            <h1 className="text-3xl md:text-5xl font-bold tracking-tighter text-foreground mt-2">
               {title}
             </h1>
             <p className="mt-4 text-lg text-muted-foreground">{description}</p>
