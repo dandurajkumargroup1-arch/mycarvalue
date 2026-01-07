@@ -18,6 +18,14 @@ const openSans = Open_Sans({
 export const metadata: Metadata = {
   title: "mycarvalue.in - AI-Powered Car Valuation",
   description: "The smart way to value your car in India.",
+  icons: {
+    icon: [
+      { url: '/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
+      { url: '/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
+    ],
+    apple: '/apple-touch-icon.png',
+  },
+  manifest: '/site.webmanifest',
 };
 
 export default function RootLayout({
