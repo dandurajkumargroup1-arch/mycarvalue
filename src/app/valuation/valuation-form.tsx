@@ -55,6 +55,9 @@ const PaymentDisplay = ({ onNewValuation }: { onNewValuation: () => void }) => {
   const { toast } = useToast();
 
   const startPayment = () => {
+    const valuationResult = localStorage.getItem('valuationResult');
+    const { user, firestore } = useUser.getState(); // Assuming a simple state getter for sync access
+
     if (!(window as any).Razorpay) {
       toast({
         variant: "destructive",
@@ -71,7 +74,7 @@ const PaymentDisplay = ({ onNewValuation }: { onNewValuation: () => void }) => {
       name: "mycarvalue.in",
       description: "Car Valuation Report",
       handler: function (response: any) {
-        // This function is called after a successful payment
+        localStorage.setItem("razorpay_payment_id", response.razorpay_payment_id);
         router.push('/payment-success');
       },
       prefill: {
@@ -258,16 +261,6 @@ ac: "" as any,
       // Save to localStorage before showing payment button
       localStorage.setItem('valuationResult', JSON.stringify(fullResult));
       
-      const paymentId = 'N/A_pre-payment';
-
-      await saveValuation(firestore, user, {
-        paymentId: paymentId,
-        ...data,
-        valuationResult: result.valuation,
-        comparableListingsResult: null, 
-        imageQualityResult: null,
-      });
-
       setShowPayment(true);
 
     } catch (error: any) {
@@ -294,6 +287,7 @@ ac: "" as any,
         setShowPayment(false);
         localStorage.removeItem('valuationResult');
         localStorage.removeItem('paymentSuccess');
+        localStorage.removeItem('razorpay_payment_id');
     }} />;
   }
 
