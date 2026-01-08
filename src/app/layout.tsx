@@ -8,7 +8,7 @@ import Footer from "@/components/layout/footer";
 import { Toaster } from "@/components/ui/toaster";
 import { FirebaseClientProvider } from "@/firebase";
 import { ThemeProvider } from "@/components/theme-provider";
-import { GoogleAnalytics } from '@next/third-party/google'
+import { GoogleAnalytics } from "next/third-party/google";
 
 const openSans = Open_Sans({
   subsets: ['latin'],
