@@ -47,16 +47,26 @@ import { Sparkles, User as UserIcon, Lock, CreditCard } from "lucide-react";
 import { useUser, useFirestore } from "@/firebase";
 import { saveValuation } from "@/lib/firebase/valuation-service";
 import { useRouter } from "next/navigation";
+import type { User } from 'firebase/auth';
+import type { Firestore } from 'firebase/firestore';
 
 
-const PaymentDisplay = ({ onNewValuation }: { onNewValuation: () => void }) => {
+const PaymentDisplay = ({ onNewValuation, user, firestore }: { onNewValuation: () => void; user: User | null; firestore: Firestore | null; }) => {
   const router = useRouter();
   const [isScriptLoaded, setIsScriptLoaded] = useState(false);
   const { toast } = useToast();
 
   const startPayment = () => {
+    if (!user || !firestore) {
+      toast({
+        variant: "destructive",
+        title: "Authentication Error",
+        description: "User not signed in. Cannot proceed with payment.",
+      });
+      return;
+    }
+    
     const valuationResult = localStorage.getItem('valuationResult');
-    const { user, firestore } = useUser.getState(); // Assuming a simple state getter for sync access
 
     if (!(window as any).Razorpay) {
       toast({
@@ -78,8 +88,8 @@ const PaymentDisplay = ({ onNewValuation }: { onNewValuation: () => void }) => {
         router.push('/payment-success');
       },
       prefill: {
-        name: "Valued Customer",
-        email: "customer@example.com",
+        name: user.displayName || "Valued Customer",
+        email: user.email || "customer@example.com",
       },
       theme: {
         color: "#2A9D8F", // Corresponds to your primary color
@@ -283,7 +293,7 @@ ac: "" as any,
   }
 
   if (showPayment) {
-    return <PaymentDisplay onNewValuation={() => {
+    return <PaymentDisplay user={user} firestore={firestore} onNewValuation={() => {
         setShowPayment(false);
         localStorage.removeItem('valuationResult');
         localStorage.removeItem('paymentSuccess');
@@ -566,4 +576,3 @@ const ValuationLoadingScreen = () => (
     </Card>
 );
 
-    
