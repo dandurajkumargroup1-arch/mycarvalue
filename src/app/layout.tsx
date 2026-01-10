@@ -38,8 +38,7 @@ export default function RootLayout({
 
   return (
     <html lang="en" suppressHydrationWarning>
-      <head>
-        {gaId && (
+      <head>{gaId && (
           <>
             <Script
               strategy="afterInteractive"
@@ -58,8 +57,7 @@ export default function RootLayout({
               }}
             />
           </>
-        )}
-      </head>
+        )}</head>
       <body
         className={cn(
           "min-h-screen bg-background font-sans antialiased",
