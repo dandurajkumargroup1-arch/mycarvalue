@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { zodResolver } from "@radix-ui/react-hook-form";
 import { motion } from "framer-motion";
 import Script from "next/script";
 import { CarValuationSchema, type CarValuationFormInput } from '@/lib/schemas';
@@ -291,15 +291,16 @@ ac: "" as any,
     }
 
     const exemptedUser = 'dandurajkumargroup1@gmail.com';
+    const isExemptedUser = user.email === exemptedUser;
 
     try {
       const result = await getValuationAction(data);
       const fullResult = { valuation: result.valuation, formData: data };
 
       localStorage.setItem('valuationResult', JSON.stringify(fullResult));
-      
-      // Check if the user is the exempted user
-      if (user.email === exemptedUser) {
+
+      if (isExemptedUser) {
+        // Admin flow: skip payment and save directly
         toast({ title: "Admin Access", description: "Payment step skipped." });
         
         await saveValuation(firestore, user, {
@@ -312,12 +313,12 @@ ac: "" as any,
 
         localStorage.setItem("paymentSuccess", "true");
         router.push('/result');
-        // No setLoading(false) here because we are navigating away
+        // No setLoading(false) needed here as we are navigating away.
 
       } else {
-        // For all other users, show the payment screen
+        // Regular user flow: show payment screen
         setShowPayment(true);
-        setLoading(false);
+        setLoading(false); // Stop loading to show the payment component
       }
 
     } catch (error: any) {
@@ -330,9 +331,10 @@ ac: "" as any,
           ? "Our AI is currently busy. Please try again in 30 seconds."
           : "An unexpected error occurred during valuation.",
       });
-      setLoading(false);
+      setLoading(false); // Ensure loading is stopped on error
     }
   };
+
 
   if (loading) {
     return <ValuationLoadingScreen />;
@@ -621,5 +623,3 @@ const ValuationLoadingScreen = () => (
         </CardContent>
     </Card>
 );
-
-    
