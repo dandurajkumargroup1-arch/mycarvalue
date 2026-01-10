@@ -9,6 +9,7 @@ import {
   signInWithPopup,
   signOut as firebaseSignOut,
 } from "firebase/auth";
+import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -39,6 +40,7 @@ export default function Header() {
   const firestore = useFirestore();
   const { user, isUserLoading } = useUser();
   const { toast } = useToast();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const handleGoogleSignIn = async () => {
     if (!auth || !firestore) {
@@ -89,6 +91,7 @@ export default function Header() {
         key={link.href}
         asChild
         variant="ghost"
+        onClick={() => isMobile && setIsMobileMenuOpen(false)}
         className={cn(
           "justify-start gap-2",
           pathname.startsWith(link.href)
@@ -109,7 +112,7 @@ export default function Header() {
       <div className="container flex h-16 items-center">
         <Link href="/" className="mr-2 flex items-center space-x-2 md:mr-6">
           <Car className="h-6 w-6 text-primary" />
-          <span className="font-bold text-base sm:text-lg">mycarvalue<span className="text-primary">.in</span></span>
+          <span className="font-bold sm:text-lg">mycarvalue<span className="text-primary">.in</span></span>
         </Link>
         <nav className="hidden items-center space-x-1 md:flex">
           {renderNavLinks()}
@@ -144,7 +147,7 @@ export default function Header() {
           )}
           <ThemeToggle />
           <div className="flex items-center justify-end md:hidden">
-            <Sheet>
+            <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
               <SheetTrigger asChild>
                 <Button variant="ghost" size="icon">
                   <Menu className="h-6 w-6" />
@@ -156,7 +159,7 @@ export default function Header() {
                   <SheetTitle className="sr-only">Mobile Menu</SheetTitle>
                 </SheetHeader>
                 <div className="p-4">
-                  <Link href="/" className="mb-8 flex items-center space-x-2">
+                  <Link href="/" onClick={() => setIsMobileMenuOpen(false)} className="mb-8 flex items-center space-x-2">
                     <Car className="h-6 w-6 text-primary" />
                     <span className="font-bold">mycarvalue<span className="text-primary">.in</span></span>
                   </Link>
