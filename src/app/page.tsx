@@ -1,10 +1,8 @@
 
-"use client";
-
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Sparkles, ShieldOff, Target, Lock, CheckCircle, Users } from "lucide-react";
-import { motion } from "framer-motion";
+import { MotionDiv } from "@/components/motion-div";
 
 export default function Home() {
   const brandName = "mycarvalue.in";
@@ -37,7 +35,7 @@ export default function Home() {
     <>
       <section className="w-full py-20 md:py-28 lg:py-32 flex items-center justify-center text-center bg-gradient-to-b from-secondary/50 to-background">
         <div className="container z-20 flex flex-col items-center p-4">
-          <motion.div 
+          <MotionDiv 
             className="max-w-3xl"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -48,7 +46,7 @@ export default function Home() {
               {title}
             </h1>
             <p className="mt-4 text-lg text-muted-foreground">{description}</p>
-            <motion.div
+            <MotionDiv
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.2 }}
@@ -59,8 +57,8 @@ export default function Home() {
                 </Link>
               </Button>
               <p className="mt-3 text-sm text-muted-foreground">{trustLine}</p>
-            </motion.div>
-          </motion.div>
+            </MotionDiv>
+          </MotionDiv>
         </div>
       </section>
       
