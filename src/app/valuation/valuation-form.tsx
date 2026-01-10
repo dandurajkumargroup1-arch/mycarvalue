@@ -66,6 +66,15 @@ const PaymentDisplay = ({ onNewValuation, user, firestore }: { onNewValuation: (
       return;
     }
     
+    if (!process.env.NEXT_PUBLIC_RAZORPAY_KEY) {
+      toast({
+        variant: "destructive",
+        title: "Configuration Error",
+        description: "Razorpay API key is not configured. Payment cannot proceed.",
+      });
+      return;
+    }
+    
     const valuationResult = localStorage.getItem('valuationResult');
 
     if (!(window as any).Razorpay) {
@@ -78,7 +87,7 @@ const PaymentDisplay = ({ onNewValuation, user, firestore }: { onNewValuation: (
     }
 
     const options = {
-      key: "rzp_live_S0f5x1oJgHZEfG", // Your live Razorpay key
+      key: process.env.NEXT_PUBLIC_RAZORPAY_KEY,
       amount: 149 * 100, // amount in the smallest currency unit (149 INR)
       currency: "INR",
       name: "mycarvalue.in",
@@ -609,4 +618,5 @@ const ValuationLoadingScreen = () => (
 );
 
 
+    
     
