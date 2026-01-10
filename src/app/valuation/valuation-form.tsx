@@ -302,31 +302,22 @@ ac: "" as any,
       if (user.email === exemptedUser) {
         toast({ title: "Admin Access", description: "Payment step skipped." });
         
-        // Simulate payment success flow without actual payment
-        try {
-            await saveValuation(firestore, user, {
-              paymentId: `exempt-${new Date().getTime()}`,
-              ...fullResult.formData,
-              valuationResult: fullResult.valuation,
-              comparableListingsResult: null,
-              imageQualityResult: null,
-            });
+        await saveValuation(firestore, user, {
+          paymentId: `exempt-${new Date().getTime()}`,
+          ...fullResult.formData,
+          valuationResult: fullResult.valuation,
+          comparableListingsResult: null,
+          imageQualityResult: null,
+        });
 
-            localStorage.setItem("paymentSuccess", "true");
-            router.push('/result');
-        } catch (saveError) {
-             console.error("Failed to save valuation for exempted user:", saveError);
-             toast({
-                variant: "destructive",
-                title: "Save Failed",
-                description: "Could not save your report. Please try again.",
-            });
-            setLoading(false);
-        }
+        localStorage.setItem("paymentSuccess", "true");
+        router.push('/result');
+        // No setLoading(false) here because we are navigating away
 
       } else {
         // For all other users, show the payment screen
         setShowPayment(true);
+        setLoading(false);
       }
 
     } catch (error: any) {
@@ -339,10 +330,7 @@ ac: "" as any,
           ? "Our AI is currently busy. Please try again in 30 seconds."
           : "An unexpected error occurred during valuation.",
       });
-    } finally {
-      if (user.email !== exemptedUser) {
-        setLoading(false);
-      }
+      setLoading(false);
     }
   };
 
@@ -633,3 +621,5 @@ const ValuationLoadingScreen = () => (
         </CardContent>
     </Card>
 );
+
+    
