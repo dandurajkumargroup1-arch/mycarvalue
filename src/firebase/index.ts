@@ -1,44 +1,28 @@
 'use client';
 
-import { firebaseConfig } from '@/firebase/config';
+import { getFirebaseConfig } from '@/firebase/config';
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
 import { getAuth, Auth } from 'firebase/auth';
 import { getFirestore, Firestore } from 'firebase/firestore';
 
 // This function should only be called on the client side.
-export function initializeFirebase(): { firebaseApp: FirebaseApp, firestore: Firestore } {
+export function initializeFirebase(): { firebaseApp: FirebaseApp, firestore: Firestore, auth: Auth } {
   if (typeof window === 'undefined') {
-    // This is a server-side environment, return a dummy object or throw.
-    // For this case, we'll throw to make it clear it's a client-only function.
+    // This is a server-side environment, throw to make it clear it's a client-only function.
     throw new Error("Firebase should only be initialized on the client.");
   }
   
-  const effectiveConfig = {
-    ...firebaseConfig,
-    apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  };
+  const firebaseConfig = getFirebaseConfig();
 
-  if (!getApps().length) {
-    const firebaseApp = initializeApp(effectiveConfig);
-    return {
-      firebaseApp,
-      firestore: getFirestore(firebaseApp)
-    };
-  }
-
-  const app = getApp();
+  const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+  
   return {
     firebaseApp: app,
-    firestore: getFirestore(app)
+    firestore: getFirestore(app),
+    auth: getAuth(app)
   };
 }
 
-export function getSdks(firebaseApp: FirebaseApp): { auth: Auth, firestore: Firestore } {
-  return {
-    auth: getAuth(firebaseApp),
-    firestore: getFirestore(firebaseApp)
-  };
-}
 
 export * from './provider';
 export * from './client-provider';
