@@ -12,18 +12,12 @@ export const getFirebaseConfig = (): FirebaseOptions => {
     measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
   };
 
-  // Check for missing environment variables
   const requiredKeys: (keyof FirebaseOptions)[] = ['apiKey', 'authDomain', 'projectId', 'appId'];
   const missingKeys = requiredKeys.filter(key => !firebaseConfig[key]);
 
   if (missingKeys.length > 0) {
     const message = `Missing Firebase config variables: ${missingKeys.join(', ')}. Please check your .env file and Vercel environment variables.`;
-    console.error(message);
-    // This error will be thrown to make sure the app doesn't run with incomplete configuration.
-    if (typeof window !== 'undefined') {
-      alert(message); // Alert on client-side
-    }
-    throw new Error(message);
+    console.warn(message); // Changed from console.error and removed throw
   }
   
   return firebaseConfig;
