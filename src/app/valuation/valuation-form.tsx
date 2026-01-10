@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
@@ -56,7 +55,7 @@ const PaymentDisplay = ({ onNewValuation, user, firestore }: { onNewValuation: (
   const [isScriptLoaded, setIsScriptLoaded] = useState(false);
   const { toast } = useToast();
 
-  const startPayment = () => {
+  const startPayment = async () => {
     if (!user || !firestore) {
       toast({
         variant: "destructive",
@@ -66,7 +65,7 @@ const PaymentDisplay = ({ onNewValuation, user, firestore }: { onNewValuation: (
       return;
     }
     
-    if (!process.env.NEXT_PUBLIC_RAZORPAY_KEY) {
+    if (!process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID) {
       toast({
         variant: "destructive",
         title: "Configuration Error",
@@ -75,8 +74,6 @@ const PaymentDisplay = ({ onNewValuation, user, firestore }: { onNewValuation: (
       return;
     }
     
-    const valuationResult = localStorage.getItem('valuationResult');
-
     if (!(window as any).Razorpay) {
       toast({
         variant: "destructive",
@@ -86,27 +83,47 @@ const PaymentDisplay = ({ onNewValuation, user, firestore }: { onNewValuation: (
       return;
     }
 
-    const options = {
-      key: process.env.NEXT_PUBLIC_RAZORPAY_KEY,
-      amount: 149 * 100, // amount in the smallest currency unit (149 INR)
-      currency: "INR",
-      name: "mycarvalue.in",
-      description: "Car Valuation Report",
-      handler: function (response: any) {
-        localStorage.setItem("razorpay_payment_id", response.razorpay_payment_id);
-        router.push('/payment-success');
-      },
-      prefill: {
-        name: user.displayName || "Valued Customer",
-        email: user.email || "customer@example.com",
-      },
-      theme: {
-        color: "#2A9D8F", // Corresponds to your primary color
-      },
-    };
-    
-    const rzp1 = new (window as any).Razorpay(options);
-    rzp1.open();
+    try {
+      // 1. Create Order on the server
+      const orderResponse = await fetch('/api/razorpay', { method: 'POST' });
+      const order = await orderResponse.json();
+
+      if (order.error) {
+        throw new Error(order.error);
+      }
+
+      // 2. Open Razorpay Checkout
+      const options = {
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+        amount: order.amount,
+        currency: order.currency,
+        name: "mycarvalue.in",
+        description: "Car Valuation Report",
+        order_id: order.id,
+        handler: function (response: any) {
+          localStorage.setItem("razorpay_payment_id", response.razorpay_payment_id);
+          router.push('/payment-success');
+        },
+        prefill: {
+          name: user.displayName || "Valued Customer",
+          email: user.email || "customer@example.com",
+        },
+        theme: {
+          color: "#2A9D8F",
+        },
+      };
+      
+      const rzp1 = new (window as any).Razorpay(options);
+      rzp1.open();
+
+    } catch (error: any) {
+      console.error("Payment failed:", error);
+      toast({
+        variant: "destructive",
+        title: "Payment Failed",
+        description: error.message || "Could not create a payment order. Please try again.",
+      });
+    }
   };
 
   return (
@@ -616,7 +633,3 @@ const ValuationLoadingScreen = () => (
         </CardContent>
     </Card>
 );
-
-
-    
-    
