@@ -1,68 +1,94 @@
+"use client";
 
-'use client';
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Sparkles, ShieldOff, Target, Lock, HelpCircle, CheckCircle } from "lucide-react";
+import { motion } from "framer-motion";
 
-import { useMemoFirebase } from '@/firebase/provider';
-import { useFirestore } from '@/firebase/provider';
-import { useCollection } from '@/firebase/firestore/use-collection';
-import { collection, query, orderBy, limit, Timestamp } from 'firebase/firestore';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
-import { formatDistanceToNow } from 'date-fns';
-import type { Feedback } from '@/lib/firebase/feedback-service';
+export default function Home() {
+  const brandName = "mycarvalue.in";
+  const title = "Don’t Sell Your Car Blindly. Know Its Real Value First.";
+  const description = "Get an instant, independent car price estimate based on current Indian market demand — before you talk to dealers or buyers.";
+  
+  const buttonText = 'Get Your Car’s True Value Now';
+  const buttonLink = '/valuation';
+  const trustLine = "Just ₹149 for a detailed, AI-powered report.";
 
-export function FeedbackList() {
-  const firestore = useFirestore();
-
-  const feedbackQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
-    return query(collection(firestore, 'feedback'), orderBy('createdAt', 'desc'), limit(20));
-  }, [firestore]);
-
-  const { data: feedback, isLoading } = useCollection<Feedback>(feedbackQuery);
-
-  if (isLoading) {
-    return (
-        <div className="mt-8 space-y-4">
-            <Skeleton className="h-24 w-full" />
-            <Skeleton className="h-24 w-full" />
-            <Skeleton className="h-24 w-full" />
-        </div>
-    );
-  }
+  const features = [
+    {
+      icon: <Lock className="h-8 w-8 text-primary" />,
+      title: "100% Private",
+      text: "Your data is never stored or shared. Valuations are completely anonymous, giving you peace of mind.",
+    },
+    {
+      icon: <ShieldOff className="h-8 w-8 text-primary" />,
+      title: "Truly Unbiased",
+      text: "We don't buy or sell cars. Our only goal is to give you an accurate, fair-market price, free from any hidden agenda.",
+    },
+    {
+      icon: <Target className="h-8 w-8 text-primary" />,
+      title: "Pinpoint Accurate",
+      text: "Our advanced AI model analyzes millions of real-time data points from the Indian market for ultimate precision.",
+    },
+  ];
 
   return (
-    <div className="mt-12 space-y-6">
-        <CardTitle className='text-2xl'>What Others Are Saying</CardTitle>
-        {feedback && feedback.length > 0 ? (
-            feedback.map((item) => (
-            <Card key={item.id} className="bg-secondary/50">
-                <CardContent className="p-4">
-                    <div className="flex items-start gap-4">
-                        <Avatar>
-                            <AvatarImage src={item.userPhotoURL ?? undefined} alt={item.userName} />
-                            <AvatarFallback>
-                                {item.userName?.charAt(0).toUpperCase()}
-                            </AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1">
-                            <div className="flex items-center justify-between">
-                                <p className="font-semibold">{item.userName}</p>
-                                {item.createdAt && (item.createdAt instanceof Timestamp) && (
-                                    <p className="text-xs text-muted-foreground">
-                                        {formatDistanceToNow(item.createdAt.toDate(), { addSuffix: true })}
-                                    </p>
-                                )}
-                            </div>
-                            <p className="mt-1 text-sm text-foreground/80">{item.feedback}</p>
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
-            ))
-        ) : (
-            <p className="text-center text-muted-foreground">No feedback yet. Be the first to share your thoughts!</p>
-        )}
-    </div>
+    <>
+      <section className="w-full py-20 md:py-28 lg:py-32 flex items-center justify-center text-center bg-gradient-to-b from-secondary/50 to-background">
+        <div className="container z-20 flex flex-col items-center p-4">
+          <motion.div 
+            className="max-w-3xl"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+          >
+            <p className="font-semibold text-primary">{brandName}</p>
+            <h1 className="text-3xl md:text-5xl font-bold tracking-tighter text-foreground mt-2">
+              {title}
+            </h1>
+            <p className="mt-4 text-lg text-muted-foreground">{description}</p>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.2 }}
+            >
+              <Button asChild size="lg" className="mt-8">
+                <Link href={buttonLink}>
+                  {buttonText} <Sparkles className="ml-2 h-5 w-5" />
+                </Link>
+              </Button>
+              <p className="mt-3 text-sm text-muted-foreground">{trustLine}</p>
+            </motion.div>
+          </motion.div>
+        </div>
+      </section>
+      
+      <section className="py-16 lg:py-24 bg-background">
+        <div className="container">
+            <div className="grid md:grid-cols-3 gap-8 md:gap-12">
+              {features.map((feature) => (
+                <div key={feature.title} className="text-center p-6 bg-card border rounded-lg shadow-sm">
+                  <div className="flex justify-center mb-4">
+                    {feature.icon}
+                  </div>
+                  <h3 className="text-xl font-bold">{feature.title}</h3>
+                  <p className="mt-2 text-muted-foreground">{feature.text}</p>
+                </div>
+              ))}
+            </div>
+        </div>
+      </section>
+
+      <section className="py-16 lg:py-24 bg-secondary/50">
+        <div className="container max-w-3xl">
+          <div className="flex items-center justify-center gap-3 rounded-lg bg-primary/10 p-4 border border-primary/20">
+              <CheckCircle className="h-6 w-6 text-primary flex-shrink-0" />
+              <p className="font-semibold text-primary text-center">
+                  Tip: Always check your car’s value before talking to any dealer.
+              </p>
+          </div>
+        </div>
+      </section>
+    </>
   );
 }

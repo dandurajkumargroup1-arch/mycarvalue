@@ -81,10 +81,10 @@ export default function Home() {
       </section>
 
       <section className="py-16 lg:py-24 bg-secondary/50">
-        <div className="container max-w-3xl text-center">
-          <div className="flex items-center justify-center gap-3 rounded-lg bg-primary/10 p-4">
-              <CheckCircle className="h-6 w-6 text-primary" />
-              <p className="font-semibold text-primary">
+        <div className="container max-w-3xl">
+          <div className="flex items-center justify-center gap-3 rounded-lg bg-primary/10 p-4 border border-primary/20">
+              <CheckCircle className="h-6 w-6 text-primary flex-shrink-0" />
+              <p className="font-semibold text-primary text-center">
                   Tip: Always check your car’s value before talking to any dealer.
               </p>
           </div>
@@ -93,5 +93,3 @@ export default function Home() {
     </>
   );
 }
-
-    
