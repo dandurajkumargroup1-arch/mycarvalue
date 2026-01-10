@@ -264,14 +264,44 @@ ac: "" as any,
       return;
     }
 
+    const exemptedUser = 'dandurajkumargroup1@gmail.com';
+
     try {
       const result = await getValuationAction(data);
       const fullResult = { valuation: result.valuation, formData: data };
 
-      // Save to localStorage before showing payment button
       localStorage.setItem('valuationResult', JSON.stringify(fullResult));
       
-      setShowPayment(true);
+      // Check if the user is the exempted user
+      if (user.email === exemptedUser) {
+        toast({ title: "Admin Access", description: "Payment step skipped." });
+        
+        // Simulate payment success flow without actual payment
+        try {
+            await saveValuation(firestore, user, {
+              paymentId: `exempt-${new Date().getTime()}`,
+              ...fullResult.formData,
+              valuationResult: fullResult.valuation,
+              comparableListingsResult: null,
+              imageQualityResult: null,
+            });
+
+            localStorage.setItem("paymentSuccess", "true");
+            router.push('/result');
+        } catch (saveError) {
+             console.error("Failed to save valuation for exempted user:", saveError);
+             toast({
+                variant: "destructive",
+                title: "Save Failed",
+                description: "Could not save your report. Please try again.",
+            });
+            setLoading(false);
+        }
+
+      } else {
+        // For all other users, show the payment screen
+        setShowPayment(true);
+      }
 
     } catch (error: any) {
       console.error("Valuation Action Error:", error);
@@ -284,7 +314,9 @@ ac: "" as any,
           : "An unexpected error occurred during valuation.",
       });
     } finally {
-      setLoading(false);
+      if (user.email !== exemptedUser) {
+        setLoading(false);
+      }
     }
   };
 
@@ -576,3 +608,5 @@ const ValuationLoadingScreen = () => (
     </Card>
 );
 
+
+    
