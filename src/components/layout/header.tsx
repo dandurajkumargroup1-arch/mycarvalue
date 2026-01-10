@@ -24,6 +24,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { ThemeToggle } from "../theme-toggle";
 import { upsertUserProfile } from "@/lib/firebase/user-profile-service";
 import { useToast } from "@/hooks/use-toast";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const navLinks = [
   { href: "/emi-calculator", label: "EMI Calculator", icon: Calculator },
@@ -115,7 +116,7 @@ export default function Header() {
         </nav>
         <div className="flex flex-1 items-center justify-end gap-2">
           {isUserLoading ? (
-            <div className="h-8 w-20 animate-pulse rounded-md bg-muted" />
+            <Skeleton className="h-8 w-20 rounded-md" />
           ) : user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
