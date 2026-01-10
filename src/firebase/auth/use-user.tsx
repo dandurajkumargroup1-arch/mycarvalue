@@ -10,40 +10,45 @@ export interface UserAuthHookResult {
   userError: Error | null;
 }
 
-/**
- * Hook specifically for accessing the authenticated user's state.
- * This provides the User object, loading status, and any auth errors.
- * @returns {UserAuthHookResult} Object with user, isUserLoading, userError.
- */
-export const useUser = (): UserAuthHookResult => {
-  const auth = useAuth();
-  const [user, setUser] = useState<User | null>(null);
-  const [isUserLoading, setIsUserLoading] = useState(true);
-  const [userError, setUserError] = useState<Error | null>(null);
+// This file is being kept for potential future use but the primary useUser hook is now in provider.tsx
+// to avoid circular dependencies and export conflicts.
 
-  useEffect(() => {
-    if (!auth) {
-      setIsUserLoading(false);
-      setUserError(new Error("Auth service not available."));
-      return;
-    }
+// The original hook is commented out to prevent build warnings/errors.
+// /**
+//  * Hook specifically for accessing the authenticated user's state.
+//  * This provides the User object, loading status, and any auth errors.
+//  * @returns {UserAuthHookResult} Object with user, isUserLoading, userError.
+//  */
+// export const useUser = (): UserAuthHookResult => {
+//   const auth = useAuth();
+//   const [user, setUser] = useState<User | null>(null);
+//   const [isUserLoading, setIsUserLoading] = useState(true);
+//   const [userError, setUserError] = useState<Error | null>(null);
 
-    const unsubscribe = onAuthStateChanged(
-      auth,
-      (firebaseUser) => {
-        setUser(firebaseUser);
-        setIsUserLoading(false);
-      },
-      (error) => {
-        console.error("useUser: onAuthStateChanged error:", error);
-        setUserError(error);
-        setIsUserLoading(false);
-      }
-    );
+//   useEffect(() => {
+//     if (!auth) {
+//       setIsUserLoading(false);
+//       setUserError(new Error("Auth service not available."));
+//       return;
+//     }
 
-    // Cleanup subscription on unmount
-    return () => unsubscribe();
-  }, [auth]);
+//     const unsubscribe = onAuthStateChanged(
+//       auth,
+//       (firebaseUser) => {
+//         setUser(firebaseUser);
+        
+//         setIsUserLoading(false);
+//       },
+//       (error) => {
+//         console.error("useUser: onAuthStateChanged error:", error);
+//         setUserError(error);
+//         setIsUserLoading(false);
+//       }
+//     );
 
-  return { user, isUserLoading, userError };
-};
+//     // Cleanup subscription on unmount
+//     return () => unsubscribe();
+//   }, [auth]);
+
+//   return { user, isUserLoading, userError };
+// };

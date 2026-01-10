@@ -7,22 +7,23 @@ import { getFirestore, Firestore } from 'firebase/firestore';
 
 // IMPORTANT: DO NOT MODIFY THIS FUNCTION
 export function initializeFirebase(): { firebaseApp: FirebaseApp, firestore: Firestore } {
+  const effectiveConfig = {
+    ...firebaseConfig,
+    apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  };
+
   if (!getApps().length) {
-    // Important! initializeApp() is called without any arguments because Firebase App Hosting
-    // integrates with the initializeApp() function to provide the environment variables needed to
-    // populate the FirebaseOptions in production. It is critical that we attempt to call initializeApp()
-    // without arguments.
     let firebaseApp;
     try {
       // Attempt to initialize via Firebase App Hosting environment variables
+      // This will fail in local/Vercel build, which is expected.
       firebaseApp = initializeApp();
     } catch (e) {
-      // Only warn in production because it's normal to use the firebaseConfig to initialize
-      // during development
+      // Fallback to using the explicit config, which is necessary for Vercel/local dev.
       if (process.env.NODE_ENV === "production") {
         console.warn('Automatic initialization failed. Falling back to firebase config object.', e);
       }
-      firebaseApp = initializeApp(firebaseConfig);
+      firebaseApp = initializeApp(effectiveConfig);
     }
 
     return {
@@ -54,4 +55,4 @@ export * from './non-blocking-updates';
 export * from './non-blocking-login';
 export * from './errors';
 export * from './error-emitter';
-export * from './auth/use-user';
+// We no longer export from './auth/use-user' to avoid conflicts. The correct useUser is in provider.
