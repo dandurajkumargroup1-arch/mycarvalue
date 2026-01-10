@@ -1,20 +1,29 @@
+
 import { FirebaseOptions } from "firebase/app";
 
 export const getFirebaseConfig = (): FirebaseOptions => {
-  const firebaseConfig = {
-    projectId: "studio-675497400-6064f",
-    appId: "1:171392327548:web:81f992000b6f2632044ef9",
-    storageBucket: "studio-675497400-6064f.appspot.com",
-    authDomain: "studio-675497400-6064f.firebaseapp.com",
-    messagingSenderId: "171392327548",
-    measurementId: "G-VELXQSRWCW",
-    // The API key is injected directly from environment variables.
-    // This is crucial for security and build correctness.
+  const firebaseConfig: FirebaseOptions = {
     apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+    authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+    storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+    appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+    measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
   };
 
-  if (!firebaseConfig.apiKey) {
-    throw new Error("NEXT_PUBLIC_FIREBASE_API_KEY is not defined in your environment. Please check your .env file.");
+  // Check for missing environment variables
+  const requiredKeys: (keyof FirebaseOptions)[] = ['apiKey', 'authDomain', 'projectId', 'appId'];
+  const missingKeys = requiredKeys.filter(key => !firebaseConfig[key]);
+
+  if (missingKeys.length > 0) {
+    const message = `Missing Firebase config variables: ${missingKeys.join(', ')}. Please check your .env file and Vercel environment variables.`;
+    console.error(message);
+    // This error will be thrown to make sure the app doesn't run with incomplete configuration.
+    if (typeof window !== 'undefined') {
+      alert(message); // Alert on client-side
+    }
+    throw new Error(message);
   }
   
   return firebaseConfig;
