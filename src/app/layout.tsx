@@ -38,7 +38,14 @@ export default function RootLayout({
 
   return (
     <html lang="en" suppressHydrationWarning>
-      <head>{gaId && (
+      <head />
+      <body
+        className={cn(
+          "min-h-screen bg-background font-sans antialiased",
+          openSans.variable
+        )}
+      >
+        {gaId && (
           <>
             <Script
               strategy="afterInteractive"
@@ -57,13 +64,7 @@ export default function RootLayout({
               }}
             />
           </>
-        )}</head>
-      <body
-        className={cn(
-          "min-h-screen bg-background font-sans antialiased",
-          openSans.variable
         )}
-      >
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
