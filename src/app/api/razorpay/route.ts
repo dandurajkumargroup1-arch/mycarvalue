@@ -30,7 +30,8 @@ export async function POST() {
     if (!order) {
         return NextResponse.json({ error: 'Failed to create order' }, { status: 500 });
     }
-    return NextResponse.json(order);
+    // Return the keyId along with the order
+    return NextResponse.json({ ...order, key: keyId });
   } catch (error) {
     console.error('Error creating Razorpay order:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });

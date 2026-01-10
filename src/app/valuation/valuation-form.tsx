@@ -66,15 +66,6 @@ const PaymentDisplay = ({ onNewValuation, user, firestore }: { onNewValuation: (
       return;
     }
     
-    if (!process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID) {
-      toast({
-        variant: "destructive",
-        title: "Configuration Error",
-        description: "Razorpay API key is not configured. Payment cannot proceed.",
-      });
-      return;
-    }
-    
     if (!(window as any).Razorpay) {
       toast({
         variant: "destructive",
@@ -92,10 +83,14 @@ const PaymentDisplay = ({ onNewValuation, user, firestore }: { onNewValuation: (
       if (order.error) {
         throw new Error(order.error);
       }
+      
+      if (!order.key) {
+        throw new Error("Razorpay key was not returned from the server.");
+      }
 
       // 2. Open Razorpay Checkout
       const options = {
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+        key: order.key, // Use the key from the server response
         amount: order.amount,
         currency: order.currency,
         name: "mycarvalue.in",
