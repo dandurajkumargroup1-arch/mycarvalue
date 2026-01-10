@@ -3,7 +3,7 @@
 
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Sparkles, ShieldOff, Target, Lock, HelpCircle, CheckCircle } from "lucide-react";
+import { Sparkles, ShieldOff, Target, Lock, CheckCircle, Users } from "lucide-react";
 import { motion } from "framer-motion";
 
 export default function Home() {
@@ -79,8 +79,19 @@ export default function Home() {
             </div>
         </div>
       </section>
-
+      
       <section className="py-16 lg:py-24 bg-secondary/50">
+        <div className="container max-w-3xl">
+          <div className="flex items-center justify-center gap-3 rounded-lg bg-background p-6 border-t border-b">
+              <Users className="h-8 w-8 text-primary flex-shrink-0" />
+              <p className="text-lg font-semibold text-foreground">
+                  Trusted by <span className="text-primary">3000+</span> people for fair car valuations.
+              </p>
+          </div>
+        </div>
+      </section>
+
+      <section className="py-16 lg:py-24 bg-background">
         <div className="container max-w-3xl">
           <div className="flex items-center justify-center gap-3 rounded-lg bg-primary/10 p-4 border border-primary/20">
               <CheckCircle className="h-6 w-6 text-primary flex-shrink-0" />
