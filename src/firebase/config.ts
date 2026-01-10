@@ -17,7 +17,10 @@ export const getFirebaseConfig = (): FirebaseOptions => {
 
   if (missingKeys.length > 0) {
     const message = `Missing Firebase config variables: ${missingKeys.join(', ')}. Please check your .env file and Vercel environment variables.`;
-    console.warn(message); // Changed from console.error and removed throw
+    console.warn(message);
+    // This error is thrown to prevent the app from running with an incomplete config.
+    // The most common cause is needing to restart the Next.js development server after editing the .env file.
+    throw new Error(message);
   }
   
   return firebaseConfig;
