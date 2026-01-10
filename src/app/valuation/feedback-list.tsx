@@ -1,8 +1,7 @@
 
 'use client';
 
-import { useMemo } from 'react';
-import { useCollection, useFirestore } from '@/firebase';
+import { useMemoFirebase, useCollection, useFirestore } from '@/firebase';
 import { collection, query, orderBy, limit } from 'firebase/firestore';
 import type { Feedback } from '@/lib/firebase/feedback-service';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -52,7 +51,7 @@ function FeedbackSkeleton() {
 export function FeedbackList() {
   const firestore = useFirestore();
 
-  const feedbackQuery = useMemo(() => {
+  const feedbackQuery = useMemoFirebase(() => {
     if (!firestore) return null;
     return query(collection(firestore, 'feedback'), orderBy('createdAt', 'desc'), limit(10));
   }, [firestore]);
