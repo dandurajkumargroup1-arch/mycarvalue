@@ -133,10 +133,7 @@ const AdditionalSchema = z.object({
 export const CarValuationDataForAISchema = BasicInfoSchema.extend({
     currentYear: z.number(),
     engineMechanical: EngineMechanicalSchema,
-    exterior: ExteriorSchema.omit({ scratches: true, dents: true, rust_areas: true }),
-    scratches: ExteriorSchema.shape.scratches,
-    dents: ExteriorSchema.shape.dents,
-    rust_areas: ExteriorSchema.shape.rust_areas,
+    exterior: ExteriorSchema,
     interior: InteriorSchema,
     electrical: ElectricalSchema,
     tyres: TyresSchema,
@@ -144,6 +141,14 @@ export const CarValuationDataForAISchema = BasicInfoSchema.extend({
     documents: DocumentsSchema,
     usage: UsageSchema,
     additional: AdditionalSchema
+}).extend({
+  // The fields from ExteriorSchema are already present, so we just need to ensure
+  // they are part of the final object structure for the AI.
+  // The 'extend' here is effectively a no-op but it makes the intent clear
+  // that these are top-level properties expected by the AI alongside the nested objects.
+  scratches: ExteriorSchema.shape.scratches,
+  dents: ExteriorSchema.shape.dents,
+  rust_areas: ExteriorSchema.shape.rust_areas,
 });
 
 export type CarValuationDataForAI = z.infer<typeof CarValuationDataForAISchema>;
