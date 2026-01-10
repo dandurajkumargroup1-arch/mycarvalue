@@ -45,7 +45,6 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
 import { Sparkles, User as UserIcon, Lock, CreditCard } from "lucide-react";
 import { useUser, useFirestore } from "@/firebase";
-import { saveValuation } from "@/lib/firebase/valuation-service";
 import { useRouter } from "next/navigation";
 import type { User } from 'firebase/auth';
 import type { Firestore } from 'firebase/firestore';
@@ -291,7 +290,7 @@ ac: "" as any,
 
         localStorage.setItem('valuationResult', JSON.stringify(fullResult));
         
-        // Regular user flow: show payment screen
+        // Always show payment screen for all users.
         setShowPayment(true);
 
     } catch (error: any) {
@@ -597,5 +596,6 @@ const ValuationLoadingScreen = () => (
         </CardContent>
     </Card>
 );
+
 
     
