@@ -282,24 +282,23 @@ ac: "" as any,
   }, [user, setValue, form]);
 
   const onSubmit = async (data: CarValuationFormInput) => {
-    if (loading) return;
     setLoading(true);
-  
+
     if (!user || !firestore) {
       toast({ variant: "destructive", title: "Error", description: "User not authenticated. Cannot proceed." });
       setLoading(false);
       return;
     }
-  
+
     const exemptedUser = 'dandurajkumargroup1@gmail.com';
     const isExemptedUser = user.email === exemptedUser;
-  
+
     try {
       const result = await getValuationAction(data);
       const fullResult = { valuation: result.valuation, formData: data };
-  
+
       localStorage.setItem('valuationResult', JSON.stringify(fullResult));
-  
+
       if (isExemptedUser) {
         // Admin flow: skip payment and save directly
         toast({ title: "Admin Access", description: "Payment step skipped." });
@@ -311,17 +310,17 @@ ac: "" as any,
           comparableListingsResult: null,
           imageQualityResult: null,
         });
-  
+
         localStorage.setItem("paymentSuccess", "true");
         router.push('/result');
-        // No need to set loading to false here since we are navigating away.
-  
+        // No need to set loading to false here, as we are navigating away.
+        return; // Explicitly return to prevent further execution for admin
+
       } else {
         // Regular user flow: show payment screen
         setShowPayment(true);
-        setLoading(false);
       }
-  
+
     } catch (error: any) {
       console.error("Valuation Action Error:", error);
       const isQuotaError = error.message?.includes("429") || error.message?.toLowerCase().includes("quota");
@@ -332,7 +331,10 @@ ac: "" as any,
           ? "Our AI is currently busy. Please try again in 30 seconds."
           : "An unexpected error occurred during valuation.",
       });
-      setLoading(false);
+    } finally {
+        if (!isExemptedUser) {
+            setLoading(false);
+        }
     }
   };
 
@@ -624,3 +626,5 @@ const ValuationLoadingScreen = () => (
         </CardContent>
     </Card>
 );
+
+    
