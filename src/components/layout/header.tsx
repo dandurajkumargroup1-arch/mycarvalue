@@ -91,7 +91,7 @@ export default function Header() {
         className={cn(
           "justify-start gap-2",
           pathname.startsWith(link.href)
-            ? "bg-secondary font-semibold text-primary"
+            ? "bg-primary/10 font-semibold text-primary"
             : "",
           isMobile ? "w-full text-lg py-6" : ""
         )}
@@ -104,11 +104,11 @@ export default function Header() {
     ));
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-50 w-full border-b bg-secondary">
       <div className="container flex h-16 items-center">
         <Link href="/" className="mr-6 flex items-center space-x-2">
           <Car className="h-6 w-6 text-primary" />
-          <span className="font-bold sm:inline-block">mycarvalue<span className="text-primary">.in</span></span>
+          <span className="font-bold text-lg sm:inline-block">mycarvalue<span className="text-primary">.in</span></span>
         </Link>
         <nav className="hidden items-center space-x-1 md:flex">
           {renderNavLinks()}
