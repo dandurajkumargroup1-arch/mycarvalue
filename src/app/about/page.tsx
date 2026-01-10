@@ -1,5 +1,6 @@
 
 import { Info, CheckCircle } from 'lucide-react';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 
 export default function AboutPage() {
   const features = [
@@ -22,7 +23,7 @@ export default function AboutPage() {
   ];
 
   return (
-    <div className="bg-secondary py-16 md:py-24">
+    <div className="bg-secondary/50 py-16 md:py-24">
         <div className="container mx-auto max-w-4xl px-4 md:px-6">
             <div className="space-y-6 text-center">
                 <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-1 text-sm font-medium text-primary">
@@ -39,13 +40,17 @@ export default function AboutPage() {
 
             <div className="mt-16 grid gap-8 md:grid-cols-2">
               {features.map((feature, index) => (
-                <div key={index} className="flex items-start gap-4 p-6 bg-background rounded-lg shadow-sm">
-                    <CheckCircle className="h-6 w-6 text-green-500 mt-1 flex-shrink-0" />
-                    <div>
-                        <h3 className="text-xl font-semibold mb-1">{feature.title}</h3>
-                        <p className="text-muted-foreground">{feature.description}</p>
-                    </div>
-                </div>
+                <Card key={index} className="shadow-sm hover:shadow-md transition-shadow">
+                  <CardHeader className='flex-row items-center gap-4 space-y-0'>
+                      <div className='p-2 bg-green-100 rounded-full'>
+                        <CheckCircle className="h-6 w-6 text-green-600 flex-shrink-0" />
+                      </div>
+                      <CardTitle className='text-xl'>{feature.title}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                      <p className="text-muted-foreground">{feature.description}</p>
+                  </CardContent>
+                </Card>
               ))}
             </div>
             

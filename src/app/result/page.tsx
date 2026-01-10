@@ -142,9 +142,11 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
             </section>
 
             <section className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-                <div>
-                    <h2 className="text-lg font-semibold text-gray-700 mb-3">Price Calculation</h2>
-                    <div className="space-y-2 text-sm">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Price Calculation</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-2 text-sm">
                         <div className="flex justify-between"><span className="text-gray-500">Your Expected Price (P0)</span><span className="font-medium">{inr(valuation.p0_expectedPrice)}</span></div>
                         <div className="flex justify-between"><span className="text-gray-500">After Odometer Depreciation ({valuation.od_odometerDepreciationPercentage.toFixed(1)}%)</span><span className="font-medium">{inr(valuation.p1_afterOdometer)}</span></div>
                         <div className="flex justify-between"><span className="text-gray-500">After All Section Depreciation</span><span className="font-medium">{inr(valuation.p9_afterAllSections)}</span></div>
@@ -152,8 +154,8 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
                         {valuation.goodCarBonusApplied && <div className="flex justify-between text-green-600"><span className="text-green-600">Good Car Bonus (5%)</span><span className="font-medium">+ {inr(valuation.finalPrice - valuation.p10_afterYear)}</span></div>}
                         {valuation.sellerProtectionApplied && <div className="flex justify-between text-amber-600"><span className="text-amber-600">Seller Protection Applied</span><span className="font-medium">{inr(valuation.finalPrice)}</span></div>}
                          <div className="flex justify-between font-semibold border-t pt-2 mt-2 border-dashed"><span className="text-gray-600">Final Price (Pre-rounding)</span><span>{inr(valuation.finalPrice)}</span></div>
-                    </div>
-                </div>
+                    </CardContent>
+                </Card>
                  <div>
                     
                 </div>
@@ -169,13 +171,9 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
             <DetailSection title="Usage &amp; History" data={{ usageType, cityDriven, floodDamage, accident, serviceCenter }} />
             <DetailSection title="Additional Features" data={{ musicSystem, reverseParkingSensor, dashcam, fogLamps, gpsTracker }} />
 
-            <footer className="mt-10 pt-4 border-t border-gray-200 text-xs text-gray-500">
-                <div className="flex flex-col md:flex-row justify-between gap-4">
-                    <div className="flex items-center gap-2"> <Mail className="h-4 w-4" /> <span>mycarvalue1@gmail.com</span> </div>
-                    <div className="flex items-center gap-2"> <Phone className="h-4 w-4" /> <span>+91 9492060040</span> </div>
-                    <div className="flex items-center gap-2"> <MapPinIcon className="h-4 w-4" /> <span>Bangalore, 560045</span> </div>
-                </div>
-                <p className="text-center mt-4 text-gray-400">This is an AI-generated report and should be used as an estimate. Physical inspection may affect the final price.</p>
+            <footer className="mt-10 pt-4 border-t border-gray-200 text-xs text-center text-gray-500">
+                <p>&copy; {new Date().getFullYear()} mycarvalue.in. All rights reserved.</p>
+                <p className="mt-2 text-gray-400">This is an AI-generated report and should be used as an estimate. Physical inspection may affect the final price.</p>
             </footer>
         </div>
         <div className="text-center pt-6 flex gap-4 justify-center">
@@ -236,7 +234,3 @@ export default function ResultPage() {
         </div>
     );
 }
-
-    
-
-    

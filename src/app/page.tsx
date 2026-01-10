@@ -82,7 +82,7 @@ export default function Home() {
       
       <section className="py-16 lg:py-24 bg-secondary/50">
         <div className="container max-w-3xl">
-          <div className="flex items-center justify-center gap-3 rounded-lg bg-background p-6 border-t border-b">
+          <div className="flex items-center justify-center gap-3 rounded-lg bg-background p-6 border">
               <Users className="h-8 w-8 text-primary flex-shrink-0" />
               <p className="text-lg font-semibold text-foreground">
                   Trusted by <span className="text-primary">3000+</span> people for fair car valuations.
@@ -96,7 +96,7 @@ export default function Home() {
           <div className="flex items-center justify-center gap-3 rounded-lg bg-primary/10 p-4 border border-primary/20">
               <CheckCircle className="h-6 w-6 text-primary flex-shrink-0" />
               <p className="font-semibold text-primary text-center">
-                  Tip: Always check your car’s value before talking to any dealer.
+                  Pro Tip: Always check your car’s true value here before you talk to any dealer.
               </p>
           </div>
         </div>
