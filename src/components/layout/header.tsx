@@ -28,6 +28,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const navLinks = [
+  { href: "/valuation", label: "Valuation", icon: Sparkles },
   { href: "/emi-calculator", label: "EMI Calculator", icon: Calculator },
   { href: "/about", label: "About", icon: Info },
   { href: "/faq", label: "FAQ", icon: HelpCircle },
@@ -112,7 +113,7 @@ export default function Header() {
       <div className="container flex h-16 items-center">
         <Link href="/" className="mr-2 flex items-center space-x-2 md:mr-6">
           <Car className="h-6 w-6 text-primary" />
-          <span className="font-bold sm:text-lg">mycarvalue<span className="text-primary">.in</span></span>
+          <span className="font-bold text-base sm:text-lg">mycarvalue<span className="text-primary">.in</span></span>
         </Link>
         <nav className="hidden items-center space-x-1 md:flex">
           {renderNavLinks()}
