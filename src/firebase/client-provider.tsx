@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, type ReactNode } from 'react';
+import React, { useState, useEffect, type ReactNode } from 'react';
 import { FirebaseProvider } from '@/firebase/provider';
 import { initializeFirebase, getSdks } from '@/firebase';
 import type { FirebaseApp } from 'firebase/app';
@@ -11,29 +11,35 @@ interface FirebaseClientProviderProps {
   children: ReactNode;
 }
 
+interface FirebaseInstances {
+  firebaseApp: FirebaseApp;
+  firestore: Firestore;
+  auth: Auth;
+}
+
 export function FirebaseClientProvider({ children }: FirebaseClientProviderProps) {
-  const { firebaseApp, firestore } = useMemo(() => {
-    // Initialize Firebase on the client side, once per component mount.
-    return initializeFirebase();
-  }, []); // Empty dependency array ensures this runs only once on mount
+  const [firebaseInstances, setFirebaseInstances] = useState<FirebaseInstances | null>(null);
 
-  // Memoize the Auth instance separately to ensure it's stable
-  const auth = useMemo(() => {
-    if (!firebaseApp) return null;
-    const { auth } = getSdks(firebaseApp);
-    return auth;
-  }, [firebaseApp]);
+  useEffect(() => {
+    // This effect runs only on the client, after the component has mounted.
+    if (typeof window !== 'undefined') {
+      const { firebaseApp } = initializeFirebase();
+      const { auth, firestore } = getSdks(firebaseApp);
+      setFirebaseInstances({ firebaseApp, firestore, auth });
+    }
+  }, []); // Empty dependency array ensures this runs only once.
 
-  if (!firebaseApp || !firestore || !auth) {
-    // This can show a loading skeleton or null while Firebase initializes
-    return null;
+  if (!firebaseInstances) {
+    // While Firebase is initializing, we can show a loader or return null.
+    // Returning null prevents children from rendering and trying to access Firebase too early.
+    return null; 
   }
   
   return (
     <FirebaseProvider
-      firebaseApp={firebaseApp}
-      auth={auth}
-      firestore={firestore}
+      firebaseApp={firebaseInstances.firebaseApp}
+      auth={firebaseInstances.auth}
+      firestore={firebaseInstances.firestore}
     >
       {children}
     </FirebaseProvider>
