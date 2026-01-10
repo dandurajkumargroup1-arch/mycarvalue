@@ -30,9 +30,15 @@ export function FirebaseClientProvider({ children }: FirebaseClientProviderProps
   }, []); // Empty dependency array ensures this runs only once.
 
   if (!firebaseInstances) {
-    // While Firebase is initializing, we can show a loader or return null.
-    // Returning null prevents children from rendering and trying to access Firebase too early.
-    return null; 
+    // While Firebase is initializing on the client, we render the children
+    // but pass null values to the provider. The hooks within the provider
+    // are designed to handle this gracefully and will report a loading state.
+    // This prevents a server-client mismatch and hydration errors.
+    return (
+      <FirebaseProvider firebaseApp={null} auth={null} firestore={null}>
+        {children}
+      </FirebaseProvider>
+    );
   }
   
   return (
