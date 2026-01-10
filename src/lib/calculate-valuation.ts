@@ -134,17 +134,18 @@ export function calculateValuation(carData: CarValuationDataForAI): ValuationOut
     // Year (Age) Depreciation
     const age = carData.currentYear - carData.manufactureYear;
     let YD = 0;
-    if (age <= 1) YD = 5;
-    else if (age <= 2) YD = 10;
-    else if (age <= 3) YD = 15;
-    else if (age <= 4) YD = 20;
-    else if (age <= 5) YD = 25;
-    else if (age <= 6) YD = 30;
-    else if (age <= 7) YD = 35;
-    else if (age <= 8) YD = 40;
-    else if (age <= 9) YD = 45;
-    else if (age <= 10) YD = 50;
-    else YD = 55;
+    if (age <= 1) YD = 2.5;
+    else if (age <= 2) YD = 5;
+    else if (age <= 3) YD = 7.5;
+    else if (age <= 4) YD = 11.5;
+    else if (age <= 5) YD = 16;
+    else if (age <= 6) YD = 23;
+    else if (age <= 7) YD = 30;
+    else if (age <= 8) YD = 35;
+    else if (age <= 9) YD = 40;
+    else if (age <= 10) YD = 43;
+    else if (age <= 15) YD = 46;
+    else YD = 55; // for age > 15
     const P10 = P9 * (1 - YD / 100);
 
     // Seller Protection
