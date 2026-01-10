@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useRef } from "react";
@@ -119,7 +120,7 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
   };
   
   return (
-     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="overflow-y-auto">
         <div id="pdf-report-content" ref={reportRef} className="bg-white text-gray-800 p-8 rounded-lg border">
             <header className="flex justify-between items-start pb-4 border-b border-gray-200">
                 <div className="flex items-center gap-2">
@@ -235,5 +236,7 @@ export default function ResultPage() {
         </div>
     );
 }
+
+    
 
     
