@@ -53,7 +53,12 @@ import type { Firestore } from 'firebase/firestore';
 const PaymentDisplay = ({ onNewValuation, user, firestore }: { onNewValuation: () => void; user: User | null; firestore: Firestore | null; }) => {
   const router = useRouter();
   const [isScriptLoaded, setIsScriptLoaded] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
   const { toast } = useToast();
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const startPayment = async () => {
     if (!user || !firestore) {
@@ -77,6 +82,10 @@ const PaymentDisplay = ({ onNewValuation, user, firestore }: { onNewValuation: (
     try {
       // 1. Create Order on the server
       const orderResponse = await fetch('/api/razorpay', { method: 'POST' });
+      if (!orderResponse.ok) {
+        const errorData = await orderResponse.json();
+        throw new Error(errorData.error || `Failed to create order. Status: ${orderResponse.status}`);
+      }
       const order = await orderResponse.json();
 
       if (order.error) {
@@ -121,12 +130,16 @@ const PaymentDisplay = ({ onNewValuation, user, firestore }: { onNewValuation: (
     }
   };
 
+  if (!isMounted) {
+    return null; // Don't render anything on the server or before hydration
+  }
+
   return (
     <>
       <Script
         id="razorpay-checkout-js"
         src="https://checkout.razorpay.com/v1/checkout.js"
-        strategy="afterInteractive"
+        strategy="lazyOnload" // Use lazyOnload for better performance
         onLoad={() => {
           setIsScriptLoaded(true);
         }}
