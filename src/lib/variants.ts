@@ -92,7 +92,7 @@ export const carMakesAndModelsAndVariants: { [key: string]: { [key: string]: str
         "XUV300": ["W4", "W6", "W8", "W8(O)"],
         "XUV 3XO": ["MX1", "MX2", "MX3", "AX5", "AX7"],
         "XUV400": ["EC", "EL"],
-        "XUV500": ["W5", "W7", "W9", "W11"],
+        "XUV500": ["W3", "W4", "W5", "W6", "W7", "W8", "W8 AWD", "W9", "W10", "W10 AWD", "W11", "W11 AWD"],
         "XUV700": ["MX", "AX3", "AX5", "AX7", "AX7L"],
         "Xylo": ["D2", "D4", "H4", "H8", "H9"],
     },
@@ -270,3 +270,5 @@ export const carMakesAndModelsAndVariants: { [key: string]: { [key: string]: str
         "Other": ["Other"],
     },
 };
+
+    
