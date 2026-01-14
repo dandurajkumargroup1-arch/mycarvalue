@@ -7,7 +7,7 @@ import { MotionDiv } from "@/components/motion-div";
 export default function Home() {
   const brandName = "mycarvalue.in";
   const title = "Don’t Sell Your Car Blindly. Know Its Real Value First.";
-  const description = "Get an instant, independent car price estimate based on current Indian market demand — before you talk to dealers or buyers.";
+  const description = "This valuation helps you sell directly to buyers at the right price.";
   
   const buttonText = 'Get Your Car’s True Value Now';
   const buttonLink = '/valuation';
