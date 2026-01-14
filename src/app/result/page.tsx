@@ -10,7 +10,7 @@ import html2canvas from 'html2canvas';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Download, CarIcon, Lightbulb, TrendingUp, Target } from "lucide-react";
+import { Download, CarIcon, Lightbulb, TrendingUp, Target, ShieldCheck } from "lucide-react";
 import { format } from "date-fns";
 import { Separator } from "@/components/ui/separator";
 
@@ -53,6 +53,13 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
   const { valuation, formData } = result || {};
   const reportRef = useRef<HTMLDivElement>(null);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [reportId, setReportId] = useState('');
+
+  useEffect(() => {
+    // Generate a unique report ID when the component mounts
+    const randomPart = Math.random().toString(36).substring(2, 8).toUpperCase();
+    setReportId(`MCV-${randomPart}`);
+  }, []);
 
   if (!result || !valuation || !formData) {
     return (
@@ -133,9 +140,23 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
                 </div>
                 <div className="text-right">
                     <p className="font-semibold">{formData.make} {formData.model}</p>
-                    <p className="text-sm text-gray-500">Generated: {format(new Date(), "MMMM do, yyyy")}</p>
+                    <p className="text-sm text-gray-500">For: {formData.displayName}</p>
                 </div>
             </header>
+
+            <section className="my-6 p-4 bg-gray-50 rounded-lg border text-xs text-gray-600">
+                <div className="grid grid-cols-2 gap-4">
+                    <div><span className="font-semibold">Report ID:</span> {reportId}</div>
+                    <div><span className="font-semibold">Generated On:</span> {format(new Date(), "dd/MM/yyyy - HH:mm")}</div>
+                    <div><span className="font-semibold">Location:</span> {formData.registrationState}</div>
+                    <div><span className="font-semibold">Valuation Type:</span> Independent Market Analysis</div>
+                </div>
+                <Separator className="my-3"/>
+                <div className="flex items-start gap-2 text-gray-500">
+                    <ShieldCheck className="h-4 w-4 mt-0.5 flex-shrink-0 text-green-600" />
+                    <p><span className="font-semibold text-gray-700">Disclaimer:</span> This valuation is generated independently using market trends and vehicle condition. It is not influenced by dealers or buyers.</p>
+                </div>
+            </section>
             
             <section className="bg-primary/5 rounded-lg p-6 text-center my-8 border border-primary/20">
                 <h3 className="text-sm font-semibold text-primary">Your Final Estimated Price</h3>
