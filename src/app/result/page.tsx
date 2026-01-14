@@ -10,8 +10,9 @@ import html2canvas from 'html2canvas';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Download, CarIcon, Mail, Phone, MapPinIcon } from "lucide-react";
+import { Download, CarIcon, Lightbulb, TrendingUp, Target } from "lucide-react";
 import { format } from "date-fns";
+import { Separator } from "@/components/ui/separator";
 
 const DetailSection = ({ title, data }: { title: string, data: Record<string, any> }) => {
     const formatKey = (key: string) => {
@@ -112,19 +113,19 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
     }
   };
   
-  const inr = (value: number) => `₹${value.toLocaleString('en-IN')}`;
-  
-  const maskWhatsAppNumber = (number: string) => {
-    if (!number || number.length < 10) return '*****';
-    return number.substring(0, 5) + '*****';
-  };
+  const inr = (value: number, short = false) => {
+    if (short) {
+        return `₹${(value / 100000).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} L`;
+    }
+    return `₹${value.toLocaleString('en-IN')}`;
+  }
   
   return (
      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="overflow-y-auto">
         <div id="pdf-report-content" ref={reportRef} className="bg-white text-gray-800 p-8 rounded-lg border">
             <header className="flex justify-between items-start pb-4 border-b border-gray-200">
                 <div className="flex items-center gap-2">
-                    <CarIcon className="h-8 w-8 text-blue-600"/>
+                    <CarIcon className="h-8 w-8 text-primary"/>
                     <div>
                         <h1 className="text-xl font-bold text-gray-800">mycarvalue.in</h1>
                         <p className="text-sm text-gray-500">AI Valuation Report</p>
@@ -135,13 +136,43 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
                     <p className="text-sm text-gray-500">Generated: {format(new Date(), "MMMM do, yyyy")}</p>
                 </div>
             </header>
-
-            <section className="bg-blue-50 rounded-lg p-6 text-center my-8">
-                <h3 className="text-sm font-semibold text-blue-700">Your Best Selling Price Estimate</h3>
-                <p className="text-5xl font-bold text-blue-600 tracking-tight mt-1">{inr(valuation.bestPrice)}</p>
+            
+            <section className="bg-primary/5 rounded-lg p-6 text-center my-8 border border-primary/20">
+                <h3 className="text-sm font-semibold text-primary">Your Final Estimated Price</h3>
+                <p className="text-5xl font-bold text-primary tracking-tight mt-1">{inr(valuation.bestPrice)}</p>
             </section>
 
             <section className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                 <Card className="border-green-200 bg-green-50/50">
+                    <CardHeader>
+                        <CardTitle className="text-green-800">Price Confidence</CardTitle>
+                        <CardDescription className="text-green-700">Use these insights to negotiate the best deal.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4 text-sm">
+                        <div className="flex justify-between items-center p-2 rounded-md bg-white">
+                            <div className="flex items-center gap-2">
+                                <TrendingUp className="text-green-600"/>
+                                <span className="text-gray-600 font-medium">Fair Market Value</span>
+                            </div>
+                            <span className="font-bold text-green-700">{inr(valuation.marketValueMin, true)} - {inr(valuation.marketValueMax, true)}</span>
+                        </div>
+                        <div className="flex justify-between items-center p-2 rounded-md bg-white">
+                            <div className="flex items-center gap-2">
+                                <Target className="text-green-600"/>
+                                <span className="text-gray-600 font-medium">Ideal Listing Price</span>
+                            </div>
+                            <span className="font-bold text-green-700">{inr(valuation.idealListingPrice, true)}</span>
+                        </div>
+                        <Separator className="my-2"/>
+                         <div className="text-xs text-green-800 bg-green-100/70 p-3 rounded-md flex gap-2">
+                            <Lightbulb className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                            <div>
+                                <span className="font-semibold">Buyer Psychology Tip:</span> {valuation.buyerPsychologyTip}
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+
                 <Card>
                     <CardHeader>
                         <CardTitle>Price Calculation</CardTitle>
@@ -156,12 +187,8 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
                          <div className="flex justify-between font-semibold border-t pt-2 mt-2 border-dashed"><span className="text-gray-600">Final Price (Pre-rounding)</span><span>{inr(valuation.finalPrice)}</span></div>
                     </CardContent>
                 </Card>
-                 <div>
-                    
-                </div>
             </section>
             
-            <DetailSection title="Contact Details" data={{ name: displayName, whatsappNumber: maskWhatsAppNumber(whatsappNumber), vehicleNumber }} />
             <DetailSection title="Vehicle Details" data={{ priceCheckReason, make, model, variant, fuelType, transmission, manufactureYear, registrationYear, registrationState, ownership, odometer: `${odometer} km` }} />
             <DetailSection title="Condition: Engine &amp; Mechanical" data={{ engine, gearbox, clutch, battery, radiator, exhaust, suspension, steering, brakes }} />
             <DetailSection title="Condition: Exterior" data={{ frontBumper, rearBumper, bonnet, roof, doors, fenders, paintQuality, scratches: `${scratches}`, dents: `${dents}`, rust_areas: rust_areas, accidentHistory }} />

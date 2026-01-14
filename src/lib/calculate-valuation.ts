@@ -21,6 +21,12 @@ interface ValuationOutput {
   t_tyresDepreciationPercentage: number;
   s_safetyDepreciationPercentage: number;
   d_documentsDepreciationPercentage: number;
+  // New Price Confidence fields
+  marketValueMin: number;
+  marketValueMax: number;
+  idealListingPrice: number;
+  expectedFinalDeal: number;
+  buyerPsychologyTip: string;
 }
 
 // Mappings for depreciation percentages based on form values
@@ -167,6 +173,14 @@ export function calculateValuation(carData: CarValuationDataForAI): ValuationOut
     // Final Price
     const bestPrice = Math.round(finalPrice / 1000) * 1000;
 
+    // STEP 3: CALCULATE PRICE CONFIDENCE METRICS
+    const expectedFinalDeal = bestPrice;
+    const marketValueMin = Math.round((expectedFinalDeal * 0.96) / 1000) * 1000;
+    const marketValueMax = Math.round((expectedFinalDeal * 1.02) / 1000) * 1000;
+    const idealListingPrice = Math.round((expectedFinalDeal * 1.05) / 1000) * 1000;
+    const buyerPsychologyTip = "Always list your car slightly higher than your target price. This creates a negotiation buffer and makes the buyer feel like they are getting a good deal.";
+
+
     return {
         bestPrice,
         p0_expectedPrice: P0,
@@ -186,5 +200,11 @@ export function calculateValuation(carData: CarValuationDataForAI): ValuationOut
         t_tyresDepreciationPercentage: T,
         s_safetyDepreciationPercentage: S,
         d_documentsDepreciationPercentage: D,
+        // Price Confidence
+        marketValueMin,
+        marketValueMax,
+        idealListingPrice,
+        expectedFinalDeal,
+        buyerPsychologyTip,
     };
 }
