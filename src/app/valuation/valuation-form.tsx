@@ -43,6 +43,7 @@ import { useUser, useFirestore } from "@/firebase";
 import { useRouter } from "next/navigation";
 import type { User } from 'firebase/auth';
 import type { Firestore } from 'firebase/firestore';
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 
 
 const PaymentDisplay = ({ onNewValuation, user, firestore }: { onNewValuation: () => void; user: User | null; firestore: Firestore | null; }) => {
@@ -414,8 +415,9 @@ export function ValuationForm() {
               onValueChange={setActiveTab}
               className="w-full"
             >
-              <div className="grid grid-cols-[200px_1fr] gap-8">
-                <TabsList className="flex flex-col h-auto justify-start p-2 gap-1 w-full bg-muted/50">
+              <div className="md:grid md:grid-cols-[200px_1fr] md:gap-8">
+                {/* Desktop Tabs */}
+                <TabsList className="hidden md:flex flex-col h-auto justify-start p-2 gap-1 w-full bg-muted/50">
                   {sections.map((section) => (
                     <TabsTrigger
                       key={section.value}
@@ -428,8 +430,28 @@ export function ValuationForm() {
                   ))}
                 </TabsList>
 
+                {/* Mobile Scrollable Tabs */}
+                <div className="md:hidden">
+                    <ScrollArea className="w-full whitespace-nowrap rounded-md border">
+                        <TabsList className="inline-flex h-auto p-1">
+                             {sections.map((section) => (
+                                <TabsTrigger
+                                key={section.value}
+                                value={section.value}
+                                className="w-full justify-start gap-2 px-3 py-2 text-left"
+                                >
+                                <div className="[&>svg]:size-5">{section.icon}</div>
+                                <span>{section.title}</span>
+                                </TabsTrigger>
+                            ))}
+                        </TabsList>
+                        <ScrollBar orientation="horizontal" />
+                    </ScrollArea>
+                </div>
+
+
                 {/* Form Content */}
-                <div className="mt-0">
+                <div className="mt-4 md:mt-0">
                   <TabsContent value="contact" className="mt-0">
                     <h3 className="text-lg font-semibold mb-4">Contact Details</h3>
                     <div className="space-y-4 grid grid-cols-1 md:grid-cols-2 gap-4">
