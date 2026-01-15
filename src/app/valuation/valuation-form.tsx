@@ -427,12 +427,22 @@ export function ValuationForm() {
                 ))}
               </TabsList>
               
-              <div className="md:hidden">
-                 <TabsList className="grid w-full grid-cols-3">
-                    {sections.map((section) => (
-                        <TabsTrigger key={section.value} value={section.value}>{section.title}</TabsTrigger>
-                    ))}
-                 </TabsList>
+              <div className="md:hidden mb-4">
+                 <Select value={activeTab} onValueChange={setActiveTab}>
+                    <SelectTrigger>
+                        <SelectValue placeholder="Select a section" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {sections.map((section) => (
+                            <SelectItem key={section.value} value={section.value}>
+                                <div className="flex items-center gap-2">
+                                    {section.icon}
+                                    <span>{section.title}</span>
+                                </div>
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                 </Select>
               </div>
 
               <div className="mt-6 md:mt-0">
@@ -666,3 +676,5 @@ const ValuationLoadingScreen = () => (
         </CardContent>
     </Card>
 );
+
+    
