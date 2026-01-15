@@ -71,6 +71,7 @@ const InteriorSchema = z.object({
   seats: z.enum(["excellent", "good", "average", "poor"]),
   seatCovers: z.enum(["new", "average", "torn", "not_present"]),
   dashboard: z.enum(["excellent", "good", "average", "poor"]),
+  dashboardWarningLights: z.enum(["normal", "minor", "critical"]),
   steeringWheel: z.enum(["excellent", "normal_wear", "worn_out", "damaged"]),
   roofLining: z.enum(["clean", "dirty", "sagging", "damaged"]),
   floorMats: z.enum(["present", "not_present"]),

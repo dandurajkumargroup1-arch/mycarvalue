@@ -78,6 +78,7 @@ export async function getValuationAction(data: CarValuationFormInput) {
             seats: data.seats,
             seatCovers: data.seatCovers,
             dashboard: data.dashboard,
+            dashboardWarningLights: data.dashboardWarningLights,
             steeringWheel: data.steeringWheel,
             roofLining: data.roofLining,
             floorMats: data.floorMats,

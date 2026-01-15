@@ -88,7 +88,7 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
       engine, gearbox, clutch, battery, radiator, exhaust, suspension, steering, brakes,
       engineOil, coolant, brakeFluid, washerFluid,
       frontBumper, rearBumper, bonnet, roof, doors, fenders, paintQuality, accidentHistory, scratches, dents, rust_areas,
-      seats, seatCovers, dashboard, steeringWheel, roofLining, floorMats, ac, infotainment,
+      seats, seatCovers, dashboard, dashboardWarningLights, steeringWheel, roofLining, floorMats, ac, infotainment,
       powerWindows, centralLocking, headlights, indicators, horn, reverseCamera, sensors, wipers,
       frontTyres, rearTyres, spareTyre, alloyWheels, wheelAlignment,
       airbags, abs, seatBelts, childLock, immobilizer,
@@ -286,7 +286,7 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
             <DetailSection title="Condition: Engine &amp; Mechanical" data={{ engine, gearbox, clutch, battery, radiator, exhaust, suspension, steering, brakes }} />
             <DetailSection title="Condition: Fluids" data={{ engineOil, coolant, brakeFluid, washerFluid }} />
             <DetailSection title="Condition: Exterior" data={{ frontBumper, rearBumper, bonnet, roof, doors, fenders, paintQuality, scratches: `${scratches}`, dents: `${dents}`, rust_areas: rust_areas, accidentHistory }} />
-            <DetailSection title="Condition: Interior" data={{ seats, seatCovers, dashboard, steeringWheel, roofLining, floorMats, ac, infotainment }} />
+            <DetailSection title="Condition: Interior" data={{ seats, seatCovers, dashboard, dashboardWarningLights, steeringWheel, roofLining, floorMats, ac, infotainment }} />
             <DetailSection title="Condition: Electrical &amp; Tyres" data={{ powerWindows, centralLocking, headlights, indicators, horn, reverseCamera, sensors, wipers, frontTyres: `${frontTyres}% life`, rearTyres: `${rearTyres}% life`, spareTyre, alloyWheels, wheelAlignment }} />
             <DetailSection title="Documents &amp; Safety" data={{ rcBook, insuranceDoc, puc, serviceRecords, duplicateKey, noc, airbags, abs, seatBelts, childLock, immobilizer }} />
             <DetailSection title="Usage &amp; History" data={{ usageType, cityDriven, floodDamage, accident, serviceCenter }} />

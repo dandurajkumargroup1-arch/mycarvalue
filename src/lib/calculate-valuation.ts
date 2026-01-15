@@ -74,6 +74,7 @@ const depreciationMaps = {
     seats: { excellent: 0, good: 1, average: 2, poor: 4 },
     seatCovers: { new: 0, average: 0.5, torn: 1, not_present: 0 },
     dashboard: { excellent: 0, good: 1, average: 2, poor: 3 },
+    dashboardWarningLights: { normal: 0, minor: 2, critical: 5 },
     steeringWheel: { excellent: 0, normal_wear: 0.5, worn_out: 1, damaged: 2 },
     roofLining: { clean: 0, dirty: 0.5, sagging: 2, damaged: 3 },
     floorMats: { present: 0, not_present: 0.5 },

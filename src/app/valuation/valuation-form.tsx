@@ -228,6 +228,7 @@ export function ValuationForm() {
         seats: "" as any,
         seatCovers: "" as any,
         dashboard: "" as any,
+        dashboardWarningLights: "" as any,
         steeringWheel: "" as any,
         roofLining: "" as any,
         floorMats: "" as any,
@@ -559,6 +560,7 @@ export function ValuationForm() {
                         {renderSelect("seats", "Seats", [{value: "excellent", label: "Excellent / Clean"}, {value: "good", label: "Good / Minor Wear"}, {value: "average", label: "Average"}, {value: "poor", label: "Poor / Damaged"}], "Select Seat Condition")}
                         {renderSelect("seatCovers", "Seat Covers", [{value: "new", label: "New / Good"}, {value: "average", label: "Average"}, {value: "torn", label: "Torn / Worn"}, {value: "not_present", label: "Not Present"}], "Select Seat Cover Condition")}
                         {renderSelect("dashboard", "Dashboard", [{value: "excellent", label: "Excellent / Clean"}, {value: "good", label: "Good / Minor Wear"}, {value: "average", label: "Average"}, {value: "poor", label: "Poor / Damaged"}], "Select Dashboard Condition")}
+                        {renderSelect("dashboardWarningLights", "Dashboard Warning Lights", [{value: "normal", label: "All lights normal"}, {value: "minor", label: "Minor warning"}, {value: "critical", label: "Critical warning"}], "Select Warning Light Status")}
                         {renderSelect("steeringWheel", "Steering Wheel", [{value: "excellent", label: "Excellent"}, {value: "normal_wear", label: "Normal Wear"}, {value: "worn_out", label: "Worn Out"}, {value: "damaged", label: "Damaged"}], "Select Steering Wheel Condition")}
                         {renderSelect("roofLining", "Roof Lining", [{value: "clean", label: "Clean"}, {value: "dirty", label: "Slightly Dirty"}, {value: "sagging", label: "Sagging / Stained"}, {value: "damaged", label: "Damaged"}], "Select Roof Lining Condition")}
                         {renderRadioGroup("floorMats", "Floor Mats", [{value: "present", label: "Present"}, {value: "not_present", label: "Not Present"}])}
