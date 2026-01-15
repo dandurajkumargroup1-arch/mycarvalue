@@ -186,6 +186,7 @@ export function ValuationForm() {
         make: "",
         model: "",
         variant: "",
+        bodyType: "" as any,
         manufactureYear: "" as any,
         registrationYear: "" as any,
         registrationState: "",
@@ -407,7 +408,7 @@ export function ValuationForm() {
               onValueChange={setActiveTab}
               className="md:grid md:grid-cols-[1fr_3fr] md:gap-8"
             >
-              <TabsList className="flex flex-col h-auto justify-start p-2 gap-1 w-full bg-muted/50 hidden md:flex">
+              <TabsList className="flex-col h-auto justify-start p-2 gap-1 w-full bg-muted/50 hidden md:flex">
                 {sections.map((section) => (
                   <TabsTrigger
                     key={section.value}
@@ -421,18 +422,19 @@ export function ValuationForm() {
               </TabsList>
               
               <div className="md:hidden">
-                <Select onValueChange={setActiveTab} value={activeTab}>
-                    <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Select a section" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {sections.map((section) => (
-                            <SelectItem key={section.value} value={section.value}>
-                                {section.title}
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
+                 <TabsList className="grid w-full grid-cols-3">
+                    <TabsTrigger value="contact">Contact</TabsTrigger>
+                    <TabsTrigger value="basic">Basic</TabsTrigger>
+                    <TabsTrigger value="history">Usage</TabsTrigger>
+                    <TabsTrigger value="engine">Engine</TabsTrigger>
+                    <TabsTrigger value="exterior">Exterior</TabsTrigger>
+                    <TabsTrigger value="interior">Interior</TabsTrigger>
+                    <TabsTrigger value="electrical">Electrical</TabsTrigger>
+                    <TabsTrigger value="tyres">Tyres</TabsTrigger>
+                    <TabsTrigger value="safety">Safety</TabsTrigger>
+                    <TabsTrigger value="documents">Docs</TabsTrigger>
+                    <TabsTrigger value="additional">Features</TabsTrigger>
+                 </TabsList>
               </div>
 
               <div className="mt-6 md:mt-0">
@@ -479,6 +481,14 @@ export function ValuationForm() {
                         <FormMessage />
                       </FormItem> 
                     )} />
+                     {renderSelect("bodyType", "Body Type", [
+                        {value: "hatchback", label: "Hatchback – Compact & city friendly"},
+                        {value: "sedan", label: "Sedan – Comfort & elegance"},
+                        {value: "suv", label: "SUV – Power & ground clearance"},
+                        {value: "muv_mpv", label: "MUV/MPV – Family & space"},
+                        {value: "coupe_convertible", label: "Coupe/Convertible – Sporty & luxury"},
+                        {value: "pickup_van", label: "Pickup/Van – Utility & commercial"},
+                     ], "Select Body Type")}
                     {renderSelect("fuelType", "Fuel Type", [{value: "petrol", label: "Petrol"}, {value: "diesel", label: "Diesel"}, {value: "cng", label: "CNG"}, {value: "electric", label: "Electric"}], "Select Fuel Type")}
                     {renderSelect("transmission", "Transmission", [{value: "manual", label: "Manual"}, {value: "automatic", label: "Automatic"}], "Select Transmission")}
                     <FormField control={form.control} name="manufactureYear" render={({ field }) => ( <FormItem> <FormLabel>Year of Manufacture</FormLabel> <Select onValueChange={(val) => field.onChange(Number(val))} value={field.value ? String(field.value) : ''}> <FormControl><SelectTrigger><SelectValue placeholder="Select Year" /></SelectTrigger></FormControl> <SelectContent>{Array.from({ length: new Date().getFullYear() - 1979 }, (_, i) => new Date().getFullYear() - i).map(year => <SelectItem key={year} value={String(year)}>{year}</SelectItem>)}</SelectContent> </Select> <FormMessage /> </FormItem> )} />
@@ -647,5 +657,3 @@ const ValuationLoadingScreen = () => (
         </CardContent>
     </Card>
 );
-
-    

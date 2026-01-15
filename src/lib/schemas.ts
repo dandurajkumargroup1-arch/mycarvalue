@@ -17,6 +17,7 @@ const BasicInfoSchema = z.object({
   make: requiredString,
   model: requiredString,
   variant: requiredString,
+  bodyType: z.enum(["hatchback", "sedan", "suv", "muv_mpv", "coupe_convertible", "pickup_van"]),
   fuelType: z.enum(["petrol", "diesel", "cng", "electric"]),
   transmission: z.enum(["manual", "automatic"]),
   manufactureYear: z.coerce.number(),

@@ -18,6 +18,7 @@ export async function getValuationAction(data: CarValuationFormInput) {
         make: data.make,
         model: data.model,
         variant: data.variant,
+        bodyType: data.bodyType,
         fuelType: data.fuelType,
         transmission: data.transmission,
         manufactureYear: data.manufactureYear,
