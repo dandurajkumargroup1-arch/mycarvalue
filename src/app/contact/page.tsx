@@ -33,7 +33,7 @@ export default function ContactPage() {
                         <p className="font-semibold text-lg">Chat with us on WhatsApp</p>
                         <p className="text-muted-foreground">For the fastest support, send us a message.</p>
                         <a href="https://wa.me/919492060040" target="_blank" rel="noopener noreferrer" className="font-medium text-primary hover:underline">
-                            +91 9492060040
+                            Chat Now
                         </a>
                     </div>
                 </div>
