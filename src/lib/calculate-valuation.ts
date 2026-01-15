@@ -183,6 +183,19 @@ export function calculateValuation(carData: CarValuationDataForAI): ValuationOut
         goodCarBonusApplied = true;
     }
 
+    // Additional Features Bonus
+    let additionalFeaturesBonusPercentage = 0;
+    const additionalFeatures = carData.additional;
+    if (additionalFeatures.musicSystem === 'yes') additionalFeaturesBonusPercentage += 0.5;
+    if (additionalFeatures.reverseParkingSensor === 'yes') additionalFeaturesBonusPercentage += 0.5;
+    if (additionalFeatures.dashcam === 'yes') additionalFeaturesBonusPercentage += 0.5;
+    if (additionalFeatures.fogLamps === 'yes') additionalFeaturesBonusPercentage += 0.5;
+    if (additionalFeatures.gpsTracker === 'yes') additionalFeaturesBonusPercentage += 0.5;
+
+    if (additionalFeaturesBonusPercentage > 0) {
+        finalPrice *= (1 + additionalFeaturesBonusPercentage / 100);
+    }
+
     // Final Price
     const bestPrice = Math.round(finalPrice / 1000) * 1000;
 
