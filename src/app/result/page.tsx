@@ -10,7 +10,7 @@ import html2canvas from 'html2canvas';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Download, CarIcon, Lightbulb, TrendingUp, Target, ShieldCheck, MessageCircleWarning, ShieldQuestion } from "lucide-react";
+import { Download, CarIcon, Lightbulb, TrendingUp, Target, ShieldCheck, MessageCircleWarning, ShieldQuestion, ChevronsDown } from "lucide-react";
 import { format } from "date-fns";
 import { Separator } from "@/components/ui/separator";
 
@@ -122,10 +122,25 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
   
   const inr = (value: number, short = false) => {
     if (short) {
-        return `₹${(value / 100000).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} L`;
+        if (Math.abs(value) >= 100000) {
+            return `₹${(value / 100000).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} L`;
+        }
     }
-    return `₹${value.toLocaleString('en-IN')}`;
+    return `₹${value.toLocaleString('en-IN', {maximumFractionDigits: 0})}`;
   }
+
+  const depreciationItems = [
+    { label: "Odometer Reading", value: valuation.depreciation.odometer },
+    { label: "Usage History (Flood/Accident)", value: valuation.depreciation.usage },
+    { label: "Engine & Mechanical", value: valuation.depreciation.engine },
+    { label: "Exterior Condition", value: valuation.depreciation.exterior },
+    { label: "Interior Condition", value: valuation.depreciation.interior },
+    { label: "Electrical & Electronics", value: valuation.depreciation.electrical },
+    { label: "Tyres & Wheels", value: valuation.depreciation.tyres },
+    { label: "Safety Features", value: valuation.depreciation.safety },
+    { label: "Documents", value: valuation.depreciation.documents },
+    { label: "Car Age", value: valuation.depreciation.age },
+  ];
   
   return (
      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="overflow-y-auto">
@@ -224,6 +239,40 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
                 </Card>
             </section>
             
+            <section className="my-8">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Depreciation Breakdown</CardTitle>
+                        <CardDescription>How the final price was calculated from your expected price.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="space-y-4 text-sm">
+                            <div className="flex justify-between items-center font-semibold">
+                                <p>Expected Price</p>
+                                <p>{inr(valuation.p0_expectedPrice)}</p>
+                            </div>
+                            <Separator />
+                            <div className="space-y-2">
+                                {depreciationItems.map(item => (
+                                    <div key={item.label} className="flex justify-between items-center text-muted-foreground">
+                                        <p>{item.label}</p>
+                                        <p className="font-medium text-destructive">- {inr(item.value)}</p>
+                                    </div>
+                                ))}
+                            </div>
+                            <Separator />
+                            <div className="flex justify-between items-center font-bold text-primary text-base">
+                                <p>Final Estimated Price</p>
+                                <p>{inr(valuation.bestPrice)}</p>
+                            </div>
+                             {valuation.goodCarBonusApplied && (
+                                <p className="text-xs text-center text-green-600 pt-2">A 5% "Good Car Bonus" was applied for excellent condition!</p>
+                             )}
+                        </div>
+                    </CardContent>
+                </Card>
+            </section>
+
             <DetailSection title="Vehicle Details" data={{ priceCheckReason, make, model, variant, fuelType, transmission, manufactureYear, registrationYear, registrationState, ownership, odometer: `${odometer} km` }} />
             <DetailSection title="Condition: Engine &amp; Mechanical" data={{ engine, gearbox, clutch, battery, radiator, exhaust, suspension, steering, brakes }} />
             <DetailSection title="Condition: Exterior" data={{ frontBumper, rearBumper, bonnet, roof, doors, fenders, paintQuality, scratches: `${scratches}`, dents: `${dents}`, rust_areas: rust_areas, accidentHistory }} />

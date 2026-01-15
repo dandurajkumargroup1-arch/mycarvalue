@@ -27,6 +27,19 @@ interface ValuationOutput {
   idealListingPrice: number;
   expectedFinalDeal: number;
   buyerPsychologyTip: string;
+  // New Depreciation Price fields
+  depreciation: {
+    odometer: number;
+    usage: number;
+    engine: number;
+    exterior: number;
+    interior: number;
+    electrical: number;
+    tyres: number;
+    safety: number;
+    documents: number;
+    age: number;
+  }
 }
 
 // Mappings for depreciation percentages based on form values
@@ -180,6 +193,18 @@ export function calculateValuation(carData: CarValuationDataForAI): ValuationOut
     const idealListingPrice = Math.round((expectedFinalDeal * 1.05) / 1000) * 1000;
     const buyerPsychologyTip = "Always list your car slightly higher than your target price. This creates a negotiation buffer and makes the buyer feel like they are getting a good deal.";
 
+    const depreciation = {
+        odometer: P0 - P1,
+        usage: P1 - P2,
+        engine: P2 - P3,
+        exterior: P3 - P4,
+        interior: P4 - P5,
+        electrical: P5 - P6,
+        tyres: P6 - P7,
+        safety: P7 - P8,
+        documents: P8 - P9,
+        age: P9 - P10,
+    };
 
     return {
         bestPrice,
@@ -206,5 +231,6 @@ export function calculateValuation(carData: CarValuationDataForAI): ValuationOut
         idealListingPrice,
         expectedFinalDeal,
         buyerPsychologyTip,
+        depreciation,
     };
 }
