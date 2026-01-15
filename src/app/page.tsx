@@ -1,8 +1,11 @@
 
 import Link from "next/link";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { Sparkles, ShieldOff, Target, Lock, CheckCircle, Users } from "lucide-react";
+import { Sparkles, ShieldOff, Target, Lock, CheckCircle, Users, Wrench, Cog, Car, Power, AirVent, Armchair, Disc, GitPullRequest, CircleDotDashed, FileText } from "lucide-react";
 import { MotionDiv } from "@/components/motion-div";
+import { PlaceHolderImages } from "@/lib/placeholder-images";
+import { Card, CardContent } from "@/components/ui/card";
 
 export default function Home() {
   const brandName = "mycarvalue.in";
@@ -30,6 +33,21 @@ export default function Home() {
       text: "Our advanced AI model analyzes millions of real-time data points from the Indian market for ultimate precision.",
     },
   ];
+
+  const inspectionItems = [
+      { icon: <Wrench />, name: 'Additional Features' },
+      { icon: <Cog />, name: 'Engine' },
+      { icon: <Car />, name: 'Exterior' },
+      { icon: <Power />, name: 'Electrical' },
+      { icon: <AirVent />, name: 'AC' },
+      { icon: <Armchair />, name: 'Interior' },
+      { icon: <Disc />, name: 'Brakes' },
+      { icon: <CircleDotDashed />, name: 'Suspension' },
+      { icon: <GitPullRequest />, name: 'Transmission' },
+      { icon: <FileText />, name: 'Documents' },
+  ];
+
+  const whatWeCheckImage = PlaceHolderImages.find(p => p.id === 'what-we-check');
 
   return (
     <>
@@ -79,13 +97,34 @@ export default function Home() {
       </section>
       
       <section className="py-16 lg:py-24 bg-secondary/50">
-        <div className="container max-w-3xl">
-          <div className="flex items-center justify-center gap-3 rounded-lg bg-background p-6 border">
-              <Users className="h-8 w-8 text-primary flex-shrink-0" />
-              <p className="text-lg font-semibold text-foreground">
-                  Trusted by <span className="text-primary">3000+</span> people for fair car valuations.
-              </p>
-          </div>
+        <div className="container max-w-4xl text-center">
+            <h2 className="text-3xl font-bold tracking-tighter mb-4">What We Check</h2>
+            <p className="text-muted-foreground md:text-lg max-w-2xl mx-auto mb-12">
+                Our comprehensive AI valuation covers the following items to give you the most accurate price.
+            </p>
+            <Card className="shadow-lg overflow-hidden">
+                <CardContent className="p-6 md:p-8 grid md:grid-cols-2 gap-8 items-center">
+                    {whatWeCheckImage && (
+                        <div className="relative aspect-video rounded-lg overflow-hidden">
+                            <Image
+                                src={whatWeCheckImage.imageUrl}
+                                alt="Car inspection points"
+                                fill
+                                style={{ objectFit: 'cover' }}
+                                data-ai-hint={whatWeCheckImage.imageHint}
+                            />
+                        </div>
+                    )}
+                    <div className="grid grid-cols-2 gap-x-8 gap-y-4 text-left">
+                        {inspectionItems.map((item) => (
+                            <div key={item.name} className="flex items-center gap-3">
+                                <div className="text-primary">{item.icon}</div>
+                                <span className="font-medium">{item.name}</span>
+                            </div>
+                        ))}
+                    </div>
+                </CardContent>
+            </Card>
         </div>
       </section>
 
@@ -95,6 +134,17 @@ export default function Home() {
               <CheckCircle className="h-6 w-6 text-primary flex-shrink-0" />
               <p className="font-semibold text-primary text-center">
                   Pro Tip: Always check your car’s true value here before you talk to any dealer.
+              </p>
+          </div>
+        </div>
+      </section>
+
+       <section className="py-16 lg:py-24 bg-secondary/50">
+        <div className="container max-w-3xl">
+          <div className="flex items-center justify-center gap-3 rounded-lg bg-background p-6 border">
+              <Users className="h-8 w-8 text-primary flex-shrink-0" />
+              <p className="text-lg font-semibold text-foreground">
+                  Trusted by <span className="text-primary">3000+</span> people for fair car valuations.
               </p>
           </div>
         </div>

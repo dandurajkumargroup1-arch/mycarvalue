@@ -5,6 +5,12 @@
       "description": "A sleek, modern car parked in a stylish, well-lit garage, conveying a sense of premium quality and value.",
       "imageUrl": "https://images.unsplash.com/photo-1617531322474-32f74ae6e625?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxjYXIlMjBzdHVkaW98ZW58MHx8fHwxNzE2NDAxODg1fDA&ixlib=rb-4.1.0&q=80&w=1080",
       "imageHint": "car studio"
+    },
+    {
+      "id": "what-we-check",
+      "description": "Side profile of a modern sedan with highlighted points indicating inspection areas.",
+      "imageUrl": "https://images.unsplash.com/photo-1606577924006-27d39b132ae2?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxjYXIlMjBpbnNwZWN0aW9ufGVufDB8fHx8MTc2ODQwNDcwNXww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "car inspection"
     }
   ]
 }
