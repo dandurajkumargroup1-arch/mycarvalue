@@ -20,14 +20,22 @@ export const metadata: Metadata = {
   title: "mycarvalue.in - AI-Powered Car Valuation",
   description: "This valuation helps you sell directly to buyers at the right price.",
   icons: {
-    shortcut: { url: "/favicon.ico?v=2", type: "image/x-icon" },
-    icon: [
-      { url: "/favicon.ico?v=2", type: "image/x-icon" },
-      { url: "/favicon-16x16.png?v=2", type: "image/png", sizes: "16x16" },
-      { url: "/favicon-32x32.png?v=2", type: "image/png", sizes: "32x32" },
-    ],
-    apple: [
-      { url: "/apple-touch-icon.png?v=2", type: "image/png", sizes: "180x180" },
+    icon: '/favicon.ico?v=2',
+    shortcut: '/favicon.ico?v=2',
+    apple: '/apple-touch-icon.png?v=2',
+    other: [
+      {
+        rel: 'icon',
+        type: 'image/png',
+        sizes: '32x32',
+        url: '/favicon-32x32.png?v=2',
+      },
+      {
+        rel: 'icon',
+        type: 'image/png',
+        sizes: '16x16',
+        url: '/favicon-16x16.png?v=2',
+      },
     ],
   },
   manifest: '/site.webmanifest',
