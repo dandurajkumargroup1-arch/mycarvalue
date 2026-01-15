@@ -378,17 +378,17 @@ export function ValuationForm() {
   );
 
   const sections = [
-    { value: "contact", title: "Contact Details", icon: <UserIcon /> },
-    { value: "basic", title: "Basic Information", icon: <Info /> },
-    { value: "history", title: "Usage & History", icon: <History /> },
-    { value: "engine", title: "Engine & Mechanical", icon: <Wrench /> },
-    { value: "exterior", title: "Exterior (Body & Paint)", icon: <Car /> },
-    { value: "interior", title: "Interior (Cabin)", icon: <Package /> },
+    { value: "contact", title: "Contact", icon: <UserIcon /> },
+    { value: "basic", title: "Basic Info", icon: <Info /> },
+    { value: "history", title: "Usage", icon: <History /> },
+    { value: "engine", title: "Engine", icon: <Wrench /> },
+    { value: "exterior", title: "Exterior", icon: <Car /> },
+    { value: "interior", title: "Interior", icon: <Package /> },
     { value: "electrical", title: "Electrical", icon: <Power /> },
-    { value: "tyres", title: "Tyres & Wheels", icon: <Disc /> },
-    { value: "safety", title: "Safety Features", icon: <Shield /> },
-    { value: "documents", title: "Documents", icon: <FileText /> },
-    { value: "additional", title: "Additional Features", icon: <PlusSquare /> },
+    { value: "tyres", title: "Tyres", icon: <Disc /> },
+    { value: "safety", title: "Safety", icon: <Shield /> },
+    { value: "documents", title: "Docs", icon: <FileText /> },
+    { value: "additional", title: "Features", icon: <PlusSquare /> },
   ];
 
   return (
@@ -403,25 +403,39 @@ export function ValuationForm() {
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <Tabs
-              orientation="vertical"
               value={activeTab}
               onValueChange={setActiveTab}
-              className="flex flex-col md:flex-row gap-8"
+              className="md:grid md:grid-cols-[1fr_3fr] md:gap-8"
             >
-              <TabsList className="flex md:flex-col h-auto justify-start p-2 gap-1 w-full md:w-64 bg-muted/50">
+              <TabsList className="flex flex-col h-auto justify-start p-2 gap-1 w-full bg-muted/50 hidden md:flex">
                 {sections.map((section) => (
                   <TabsTrigger
                     key={section.value}
                     value={section.value}
                     className="w-full justify-start gap-2 px-3 py-2 text-left"
                   >
-                    {section.icon}
+                    <div className="[&>svg]:size-5">{section.icon}</div>
                     <span>{section.title}</span>
                   </TabsTrigger>
                 ))}
               </TabsList>
+              
+              <div className="md:hidden">
+                <Select onValueChange={setActiveTab} value={activeTab}>
+                    <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select a section" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {sections.map((section) => (
+                            <SelectItem key={section.value} value={section.value}>
+                                {section.title}
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+              </div>
 
-              <div className="flex-1">
+              <div className="mt-6 md:mt-0">
                 <TabsContent value="contact" className="mt-0">
                   <h3 className="text-lg font-semibold mb-4">Contact Details</h3>
                   <div className="space-y-4 grid grid-cols-1 md:grid-cols-2 gap-4">
