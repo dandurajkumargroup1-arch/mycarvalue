@@ -10,7 +10,7 @@ import html2canvas from 'html2canvas';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Download, CarIcon, Lightbulb, TrendingUp, Target, ShieldCheck } from "lucide-react";
+import { Download, CarIcon, Lightbulb, TrendingUp, Target, ShieldCheck, MessageCircleWarning, ShieldQuestion } from "lucide-react";
 import { format } from "date-fns";
 import { Separator } from "@/components/ui/separator";
 
@@ -196,16 +196,30 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>Price Calculation</CardTitle>
+                        <CardTitle className="text-amber-800">What Buyers Usually Say</CardTitle>
+                        <CardDescription className="text-amber-700">Be prepared for these negotiation tactics.</CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-2 text-sm">
-                        <div className="flex justify-between"><span className="text-gray-500">Your Expected Price (P0)</span><span className="font-medium">{inr(valuation.p0_expectedPrice)}</span></div>
-                        <div className="flex justify-between"><span className="text-gray-500">After Odometer Depreciation ({valuation.od_odometerDepreciationPercentage.toFixed(1)}%)</span><span className="font-medium">{inr(valuation.p1_afterOdometer)}</span></div>
-                        <div className="flex justify-between"><span className="text-gray-500">After All Section Depreciation</span><span className="font-medium">{inr(valuation.p9_afterAllSections)}</span></div>
-                        <div className="flex justify-between"><span className="text-gray-500">After Age Depreciation ({valuation.yd_yearDepreciationPercentage.toFixed(1)}%)</span><span className="font-medium">{inr(valuation.p10_afterYear)}</span></div>
-                        {valuation.goodCarBonusApplied && <div className="flex justify-between text-green-600"><span className="text-green-600">Good Car Bonus (5%)</span><span className="font-medium">+ {inr(valuation.finalPrice - valuation.p10_afterYear)}</span></div>}
-                        {valuation.sellerProtectionApplied && <div className="flex justify-between text-amber-600"><span className="text-amber-600">Seller Protection Applied</span><span className="font-medium">{inr(valuation.finalPrice)}</span></div>}
-                         <div className="flex justify-between font-semibold border-t pt-2 mt-2 border-dashed"><span className="text-gray-600">Final Price (Pre-rounding)</span><span>{inr(valuation.finalPrice)}</span></div>
+                    <CardContent className="space-y-3 text-sm">
+                        <div className="flex items-start gap-2 text-gray-600">
+                            <MessageCircleWarning className="h-4 w-4 mt-0.5 flex-shrink-0 text-amber-600" />
+                            <p>"Market is down right now."</p>
+                        </div>
+                        <div className="flex items-start gap-2 text-gray-600">
+                             <MessageCircleWarning className="h-4 w-4 mt-0.5 flex-shrink-0 text-amber-600" />
+                            <p>"A dealer is offering me much less for a similar car."</p>
+                        </div>
+                         <div className="flex items-start gap-2 text-gray-600">
+                             <MessageCircleWarning className="h-4 w-4 mt-0.5 flex-shrink-0 text-amber-600" />
+                            <p>"These minor scratches will cost a lot to fix."</p>
+                        </div>
+                        <Separator className="my-3"/>
+                        <div className="flex items-start gap-3 p-3 rounded-md bg-amber-100/70 text-amber-900">
+                            <ShieldQuestion className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                            <div>
+                                <p className="font-semibold">Your Response:</p>
+                                <p>Stick to the MyCarValue price range unless there are major, undisclosed defects. Your price is based on fair market data.</p>
+                            </div>
+                        </div>
                     </CardContent>
                 </Card>
             </section>
