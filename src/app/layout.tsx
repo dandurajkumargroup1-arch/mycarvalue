@@ -18,14 +18,14 @@ const openSans = Open_Sans({
 
 export const metadata: Metadata = {
   title: "mycarvalue.in - AI-Powered Car Valuation",
-  description: "The smart way to value your car in India.",
+  description: "This valuation helps you sell directly to buyers at the right price.",
   icons: {
     icon: [
-      { url: '/favicon.ico', sizes: 'any', type: 'image/x-icon' },
-      { url: '/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
-      { url: '/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
+      { url: '/favicon.ico?v=2', sizes: 'any', type: 'image/x-icon' },
+      { url: '/favicon-16x16.png?v=2', sizes: '16x16', type: 'image/png' },
+      { url: '/favicon-32x32.png?v=2', sizes: '32x32', type: 'image/png' },
     ],
-    apple: '/apple-touch-icon.png',
+    apple: '/apple-touch-icon.png?v=2',
   },
   manifest: '/site.webmanifest',
 };
