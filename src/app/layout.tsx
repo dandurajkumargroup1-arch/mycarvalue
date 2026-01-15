@@ -19,25 +19,6 @@ const openSans = Open_Sans({
 export const metadata: Metadata = {
   title: "mycarvalue.in - AI-Powered Car Valuation",
   description: "This valuation helps you sell directly to buyers at the right price.",
-  icons: {
-    icon: '/favicon.ico?v=2',
-    shortcut: '/favicon.ico?v=2',
-    apple: '/apple-touch-icon.png?v=2',
-    other: [
-      {
-        rel: 'icon',
-        type: 'image/png',
-        sizes: '32x32',
-        url: '/favicon-32x32.png?v=2',
-      },
-      {
-        rel: 'icon',
-        type: 'image/png',
-        sizes: '16x16',
-        url: '/favicon-16x16.png?v=2',
-      },
-    ],
-  },
   manifest: '/site.webmanifest',
 };
 
@@ -50,7 +31,12 @@ export default function RootLayout({
 
   return (
     <html lang="en" suppressHydrationWarning>
-      <head />
+      <head>
+        <link rel="icon" href="/favicon.ico?v=2" sizes="any" />
+        <link rel="icon" href="/favicon-16x16.png?v=2" type="image/png" sizes="16x16" />
+        <link rel="icon" href="/favicon-32x32.png?v=2" type="image/png" sizes="32x32" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=2" sizes="180x180" />
+      </head>
       <body
         className={cn(
           "min-h-screen bg-background font-sans antialiased",
