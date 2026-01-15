@@ -414,28 +414,8 @@ export function ValuationForm() {
               onValueChange={setActiveTab}
               className="w-full"
             >
-              {/* Mobile Dropdown */}
-              <div className="md:hidden mb-4">
-                 <Select value={activeTab} onValueChange={setActiveTab}>
-                    <SelectTrigger>
-                        <SelectValue placeholder="Select a section" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {sections.map((section) => (
-                            <SelectItem key={section.value} value={section.value}>
-                                <div className="flex items-center gap-2">
-                                    {section.icon}
-                                    <span>{section.title}</span>
-                                </div>
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                 </Select>
-              </div>
-
-              <div className="md:grid md:grid-cols-[200px_1fr] md:gap-8">
-                {/* Desktop Sidebar */}
-                <TabsList className="hidden md:flex flex-col h-auto justify-start p-2 gap-1 w-full bg-muted/50">
+              <div className="grid grid-cols-[200px_1fr] gap-8">
+                <TabsList className="flex flex-col h-auto justify-start p-2 gap-1 w-full bg-muted/50">
                   {sections.map((section) => (
                     <TabsTrigger
                       key={section.value}
@@ -449,7 +429,7 @@ export function ValuationForm() {
                 </TabsList>
 
                 {/* Form Content */}
-                <div className="mt-6 md:mt-0">
+                <div className="mt-0">
                   <TabsContent value="contact" className="mt-0">
                     <h3 className="text-lg font-semibold mb-4">Contact Details</h3>
                     <div className="space-y-4 grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -681,5 +661,3 @@ const ValuationLoadingScreen = () => (
         </CardContent>
     </Card>
 );
-
-    
