@@ -3,7 +3,7 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@radix-ui/react-zod";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { motion } from "framer-motion";
 import Script from "next/script";
 import { CarValuationSchema, type CarValuationFormInput } from '@/lib/schemas';
