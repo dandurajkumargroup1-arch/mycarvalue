@@ -10,7 +10,7 @@ import html2canvas from 'html2canvas';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Download, CarIcon, Lightbulb, TrendingUp, Target, ShieldCheck, MessageCircleWarning, ShieldQuestion, ChevronsDown } from "lucide-react";
+import { Download, Car, Lightbulb, TrendingUp, Target, ShieldCheck, MessageCircleWarning, ShieldQuestion, ChevronsDown } from "lucide-react";
 import { format } from "date-fns";
 import { Separator } from "@/components/ui/separator";
 
@@ -155,7 +155,7 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
         <div id="pdf-report-content" ref={reportRef} className="bg-white text-gray-800 p-8 rounded-lg border">
             <header className="flex justify-between items-start pb-4 border-b border-gray-200">
                 <div className="flex items-center gap-2">
-                    <CarIcon className="h-8 w-8 text-primary"/>
+                    <Car className="h-8 w-8 text-primary"/>
                     <div>
                         <h1 className="text-xl font-bold text-gray-800">mycarvalue.in</h1>
                         <p className="text-sm text-gray-500">AI Valuation Report</p>
