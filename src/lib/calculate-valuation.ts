@@ -15,6 +15,7 @@ interface ValuationOutput {
   yd_yearDepreciationPercentage: number;
   u_usageDepreciationPercentage: number;
   e_engineDepreciationPercentage: number;
+  f_fluidsDepreciationPercentage: number;
   ex_exteriorDepreciationPercentage: number;
   in_interiorDepreciationPercentage: number;
   el_electricalDepreciationPercentage: number;
@@ -32,6 +33,7 @@ interface ValuationOutput {
     odometer: number;
     usage: number;
     engine: number;
+    fluids: number;
     exterior: number;
     interior: number;
     electrical: number;
@@ -54,6 +56,10 @@ const depreciationMaps = {
     suspension: { good: 0, noise: 2, bumpy: 4, worn_out: 6 },
     steering: { normal: 0, play: 1, hard: 3, alignment: 2 },
     brakes: { good: 0, needs_service: 2, weak: 4 },
+    engineOil: { ok: 0, low: 1, dirty: 2, replace: 3 },
+    coolant: { ok: 0, low: 1, leak: 3 },
+    brakeFluid: { ok: 0, low: 1, contaminated: 3 },
+    washerFluid: { ok: 0, low: 0.5 },
     frontBumper: { original: 0, scratch: 1, repaint: 2, damaged: 3 },
     rearBumper: { original: 0, scratch: 1, repaint: 2, damaged: 3 },
     bonnet: { original: 0, scratch: 1, repaint: 2, dent: 3 },
@@ -116,6 +122,7 @@ export function calculateValuation(carData: CarValuationDataForAI): ValuationOut
     // STEP 1: PRE-CALCULATION: DETERMINE SECTION DEPRECIATION PERCENTAGES
     const U = carData.usage.floodDamage === 'yes' || carData.usage.accident === 'yes' ? Math.min(15, 15) : 0;
     const E = Math.min(25, getDepreciation(carData.engineMechanical, depreciationMaps));
+    const F = Math.min(5, getDepreciation(carData.fluids, depreciationMaps));
     
     // For exterior, combine the root level fields with the nested ones
     const exteriorCombined = { ...carData.exterior, scratches: carData.scratches, dents: carData.dents, rust_areas: carData.rust_areas };
@@ -143,7 +150,8 @@ export function calculateValuation(carData: CarValuationDataForAI): ValuationOut
     // Sectional Depreciation (Sequential)
     const P2 = P1 * (1 - U / 100);
     const P3 = P2 * (1 - E / 100);
-    const P4 = P3 * (1 - EX / 100);
+    const P3_5 = P3 * (1 - F / 100); // P3.5 for Fluids
+    const P4 = P3_5 * (1 - EX / 100);
     const P5 = P4 * (1 - IN / 100);
     const P6 = P5 * (1 - EL / 100);
     const P7 = P6 * (1 - T / 100);
@@ -210,7 +218,8 @@ export function calculateValuation(carData: CarValuationDataForAI): ValuationOut
         odometer: P0 - P1,
         usage: P1 - P2,
         engine: P2 - P3,
-        exterior: P3 - P4,
+        fluids: P3 - P3_5,
+        exterior: P3_5 - P4,
         interior: P4 - P5,
         electrical: P5 - P6,
         tyres: P6 - P7,
@@ -232,6 +241,7 @@ export function calculateValuation(carData: CarValuationDataForAI): ValuationOut
         yd_yearDepreciationPercentage: YD,
         u_usageDepreciationPercentage: U,
         e_engineDepreciationPercentage: E,
+        f_fluidsDepreciationPercentage: F,
         ex_exteriorDepreciationPercentage: EX,
         in_interiorDepreciationPercentage: IN,
         el_electricalDepreciationPercentage: EL,

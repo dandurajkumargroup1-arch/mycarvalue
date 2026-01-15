@@ -43,6 +43,14 @@ const EngineMechanicalSchema = z.object({
   brakes: z.enum(["good", "needs_service", "weak"]),
 });
 
+// New Section: Fluids Check
+const FluidsSchema = z.object({
+  engineOil: z.enum(["ok", "low", "dirty", "replace"]),
+  coolant: z.enum(["ok", "low", "leak"]),
+  brakeFluid: z.enum(["ok", "low", "contaminated"]),
+  washerFluid: z.enum(["ok", "low"]),
+});
+
 // Section 3: Exterior (Body & Paint)
 const ExteriorSchema = z.object({
   frontBumper: z.enum(["original", "scratch", "repaint", "damaged"]),
@@ -134,6 +142,7 @@ const AdditionalSchema = z.object({
 export const CarValuationDataForAISchema = BasicInfoSchema.extend({
     currentYear: z.number(),
     engineMechanical: EngineMechanicalSchema,
+    fluids: FluidsSchema,
     exterior: ExteriorSchema,
     interior: InteriorSchema,
     electrical: ElectricalSchema,
@@ -159,6 +168,7 @@ export type CarValuationDataForAI = z.infer<typeof CarValuationDataForAISchema>;
 export const CarValuationSchema = ContactDetailsSchema
     .merge(BasicInfoSchema)
     .merge(EngineMechanicalSchema)
+    .merge(FluidsSchema)
     .merge(ExteriorSchema)
     .merge(InteriorSchema)
     .merge(ElectricalSchema)

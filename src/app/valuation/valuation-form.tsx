@@ -38,7 +38,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
-import { Sparkles, User as UserIcon, Lock, CreditCard, Info, Wrench, Car, Package, Power, Disc, Shield, FileText, History, PlusSquare } from "lucide-react";
+import { Sparkles, User as UserIcon, Lock, CreditCard, Info, Wrench, Car, Package, Power, Disc, Shield, FileText, History, PlusSquare, Droplets } from "lucide-react";
 import { useUser, useFirestore } from "@/firebase";
 import { useRouter } from "next/navigation";
 import type { User } from 'firebase/auth';
@@ -210,6 +210,10 @@ export function ValuationForm() {
         suspension: "" as any,
         steering: "" as any,
         brakes: "" as any,
+        engineOil: "" as any,
+        coolant: "" as any,
+        brakeFluid: "" as any,
+        washerFluid: "" as any,
         frontBumper: "" as any,
         rearBumper: "" as any,
         bonnet: "" as any,
@@ -383,6 +387,7 @@ export function ValuationForm() {
     { value: "basic", title: "Basic Info", icon: <Info /> },
     { value: "history", title: "Usage", icon: <History /> },
     { value: "engine", title: "Engine", icon: <Wrench /> },
+    { value: "fluids", title: "Fluids", icon: <Droplets /> },
     { value: "exterior", title: "Exterior", icon: <Car /> },
     { value: "interior", title: "Interior", icon: <Package /> },
     { value: "electrical", title: "Electrical", icon: <Power /> },
@@ -423,17 +428,9 @@ export function ValuationForm() {
               
               <div className="md:hidden">
                  <TabsList className="grid w-full grid-cols-3">
-                    <TabsTrigger value="contact">Contact</TabsTrigger>
-                    <TabsTrigger value="basic">Basic</TabsTrigger>
-                    <TabsTrigger value="history">Usage</TabsTrigger>
-                    <TabsTrigger value="engine">Engine</TabsTrigger>
-                    <TabsTrigger value="exterior">Exterior</TabsTrigger>
-                    <TabsTrigger value="interior">Interior</TabsTrigger>
-                    <TabsTrigger value="electrical">Electrical</TabsTrigger>
-                    <TabsTrigger value="tyres">Tyres</TabsTrigger>
-                    <TabsTrigger value="safety">Safety</TabsTrigger>
-                    <TabsTrigger value="documents">Docs</TabsTrigger>
-                    <TabsTrigger value="additional">Features</TabsTrigger>
+                    {sections.map((section) => (
+                        <TabsTrigger key={section.value} value={section.value}>{section.title}</TabsTrigger>
+                    ))}
                  </TabsList>
               </div>
 
@@ -529,6 +526,16 @@ export function ValuationForm() {
                     </div>
                 </TabsContent>
                 
+                <TabsContent value="fluids" className="mt-0">
+                    <h3 className="text-lg font-semibold mb-4">Fluids Check</h3>
+                    <div className="space-y-4 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                        {renderSelect("engineOil", "Engine Oil", [{value: "ok", label: "OK"}, {value: "low", label: "Low"}, {value: "dirty", label: "Dirty"}, {value: "replace", label: "Needs Replacement"}], "Select Engine Oil Condition")}
+                        {renderSelect("coolant", "Coolant", [{value: "ok", label: "OK"}, {value: "low", label: "Low"}, {value: "leak", label: "Leak"}], "Select Coolant Condition")}
+                        {renderSelect("brakeFluid", "Brake Fluid", [{value: "ok", label: "OK"}, {value: "low", label: "Low"}, {value: "contaminated", label: "Contaminated"}], "Select Brake Fluid Condition")}
+                        {renderSelect("washerFluid", "Washer Fluid", [{value: "ok", label: "OK"}, {value: "low", label: "Low"}], "Select Washer Fluid Condition")}
+                    </div>
+                </TabsContent>
+
                 <TabsContent value="exterior" className="mt-0">
                     <h3 className="text-lg font-semibold mb-4">Exterior (Body &amp; Paint)</h3>
                     <div className="space-y-4 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
@@ -604,7 +611,7 @@ export function ValuationForm() {
                         {renderSelect("puc", "PUC", [{value: "valid", label: "Valid"}, {value: "expired", label: "Expired"}, {value: "not_available", label: "Not Available"}], "Select PUC Status")}
                         {renderSelect("serviceRecords", "Service Records", [{value: "full", label: "Full History Available"}, {value: "partial", label: "Partial History"}, {value: "none", label: "Not Available"}], "Select Service Records Status")}
                         {renderSelect("duplicateKey", "Duplicate Key", [{value: "available", label: "Available"}, {value: "not_available", label: "Not Available"}], "Select Duplicate Key Status")}
-                        {renderSelect("noc", "NOC", [{value: "not_required", label: "Not Required"}, {value: "available", label: "Available"}, {value: "pending", label: "Pending"}, {value: "not_available", label: "Required but Not Available"}], "Select NOC Status")}
+                        {renderSelect("noc", "NOC", [{value: "not_required", label: "Not Required"}, {value: "available", label: "Available"}, {value: "pending", label: "Pending"}, {value: "required but Not Available", label: "Required but Not Available"}], "Select NOC Status")}
                     </div>
                 </TabsContent>
 

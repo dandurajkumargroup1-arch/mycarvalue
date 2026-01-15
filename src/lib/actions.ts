@@ -58,6 +58,12 @@ export async function getValuationAction(data: CarValuationFormInput) {
             steering: data.steering,
             brakes: data.brakes,
         },
+        fluids: {
+            engineOil: data.engineOil,
+            coolant: data.coolant,
+            brakeFluid: data.brakeFluid,
+            washerFluid: data.washerFluid,
+        },
         exterior: {
             frontBumper: data.frontBumper,
             rearBumper: data.rearBumper,

@@ -86,6 +86,7 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
       priceCheckReason, make, model, variant, bodyType, fuelType, transmission, manufactureYear, registrationYear, registrationState, ownership,
       odometer, usageType, cityDriven, floodDamage, accident, serviceCenter,
       engine, gearbox, clutch, battery, radiator, exhaust, suspension, steering, brakes,
+      engineOil, coolant, brakeFluid, washerFluid,
       frontBumper, rearBumper, bonnet, roof, doors, fenders, paintQuality, accidentHistory, scratches, dents, rust_areas,
       seats, seatCovers, dashboard, steeringWheel, roofLining, floorMats, ac, infotainment,
       powerWindows, centralLocking, headlights, indicators, horn, reverseCamera, sensors, wipers,
@@ -139,6 +140,7 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
     { label: "Odometer Reading", value: valuation.depreciation.odometer },
     { label: "Usage History (Flood/Accident)", value: valuation.depreciation.usage },
     { label: "Engine & Mechanical", value: valuation.depreciation.engine },
+    { label: "Fluids Condition", value: valuation.depreciation.fluids },
     { label: "Exterior Condition", value: valuation.depreciation.exterior },
     { label: "Interior Condition", value: valuation.depreciation.interior },
     { label: "Electrical & Electronics", value: valuation.depreciation.electrical },
@@ -260,6 +262,7 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
                             <Separator />
                             <div className="space-y-2">
                                 {depreciationItems.map(item => (
+                                    item.value > 0 &&
                                     <div key={item.label} className="flex justify-between items-center text-muted-foreground">
                                         <p>{item.label}</p>
                                         <p className="font-medium text-destructive">- {inr(item.value)}</p>
@@ -281,6 +284,7 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
 
             <DetailSection title="Vehicle Details" data={{ priceCheckReason, make, model, variant, bodyType, fuelType, transmission, manufactureYear, registrationYear, registrationState, ownership, odometer: `${odometer} km` }} />
             <DetailSection title="Condition: Engine &amp; Mechanical" data={{ engine, gearbox, clutch, battery, radiator, exhaust, suspension, steering, brakes }} />
+            <DetailSection title="Condition: Fluids" data={{ engineOil, coolant, brakeFluid, washerFluid }} />
             <DetailSection title="Condition: Exterior" data={{ frontBumper, rearBumper, bonnet, roof, doors, fenders, paintQuality, scratches: `${scratches}`, dents: `${dents}`, rust_areas: rust_areas, accidentHistory }} />
             <DetailSection title="Condition: Interior" data={{ seats, seatCovers, dashboard, steeringWheel, roofLining, floorMats, ac, infotainment }} />
             <DetailSection title="Condition: Electrical &amp; Tyres" data={{ powerWindows, centralLocking, headlights, indicators, horn, reverseCamera, sensors, wipers, frontTyres: `${frontTyres}% life`, rearTyres: `${rearTyres}% life`, spareTyre, alloyWheels, wheelAlignment }} />

@@ -51,11 +51,10 @@ export function saveValuation(
   const userDocRef = doc(firestore, `users/${userId}`);
 
   // Firestore doesn't allow 'undefined' values. We need to clean the object.
-  const cleanedData = { ...valuationData };
+  const cleanedData: { [key: string]: any } = { ...valuationData };
   Object.keys(cleanedData).forEach(key => {
-    const typedKey = key as keyof typeof cleanedData;
-    if (cleanedData[typedKey] === undefined) {
-      delete cleanedData[typedKey];
+    if (cleanedData[key] === undefined) {
+      delete cleanedData[key];
     }
   });
 
