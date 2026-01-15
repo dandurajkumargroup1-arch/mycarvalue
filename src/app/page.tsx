@@ -112,7 +112,7 @@ export default function Home() {
                 Our comprehensive AI valuation covers the following items to give you the most accurate price.
             </p>
             <Card className="shadow-lg overflow-hidden">
-                <CardContent className="p-6 md:p-8 grid md:grid-cols-2 gap-8 items-center">
+                <CardContent className="p-6 md:p-8 grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
                     {whatWeCheckImage && (
                         <div className="relative aspect-video rounded-lg overflow-hidden">
                             <Image
