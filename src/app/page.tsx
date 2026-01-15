@@ -2,7 +2,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { Sparkles, ShieldOff, Target, Lock, CheckCircle, Users, Wrench, Cog, Car, Power, AirVent, Armchair, Disc, GitPullRequest, CircleDotDashed, FileText } from "lucide-react";
+import { Sparkles, ShieldOff, Target, Lock, CheckCircle, Users, Wrench, Cog, Car, Power, AirVent, Armchair, Disc, GitPullRequest, CircleDotDashed, FileText, BadgeCheck, Star, RefreshCw, Clock } from "lucide-react";
 import { MotionDiv } from "@/components/motion-div";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { Card, CardContent } from "@/components/ui/card";
@@ -16,21 +16,26 @@ export default function Home() {
   const buttonLink = '/valuation';
   const trustLine = "Just ₹149 for a detailed, AI-powered report.";
 
-  const features = [
+  const whyChooseUsFeatures = [
+    {
+      icon: <BadgeCheck className="h-8 w-8 text-primary" />,
+      stat: "160+",
+      text: "Check Points Analyzed",
+    },
+    {
+      icon: <Star className="h-8 w-8 text-primary" />,
+      stat: "4.8/5",
+      text: "Rated by Our Users",
+    },
     {
       icon: <Lock className="h-8 w-8 text-primary" />,
-      title: "100% Private",
-      text: "Your data is never stored or shared. Valuations are completely anonymous, giving you peace of mind.",
+      stat: "100%",
+      text: "Private & Secure",
     },
     {
-      icon: <ShieldOff className="h-8 w-8 text-primary" />,
-      title: "Truly Unbiased",
-      text: "We don't buy or sell cars. Our only goal is to give you an accurate, fair-market price, free from any hidden agenda.",
-    },
-    {
-      icon: <Target className="h-8 w-8 text-primary" />,
-      title: "Pinpoint Accurate",
-      text: "Our advanced AI model analyzes millions of real-time data points from the Indian market for ultimate precision.",
+      icon: <Clock className="h-8 w-8 text-primary" />,
+      stat: "2 Mins",
+      text: "Get Your Report Instantly",
     },
   ];
 
@@ -82,15 +87,19 @@ export default function Home() {
       
       <section className="py-16 lg:py-24 bg-background">
         <div className="container">
-            <div className="grid md:grid-cols-3 gap-8 md:gap-12">
-              {features.map((feature) => (
-                <div key={feature.title} className="text-center p-6 bg-card border rounded-lg shadow-sm">
-                  <div className="flex justify-center mb-4">
+            <div className="text-center max-w-2xl mx-auto mb-12">
+                <h2 className="text-3xl font-bold tracking-tighter">Why Choose mycarvalue.in?</h2>
+                <p className="mt-4 text-muted-foreground">We provide a fast, unbiased, and data-driven valuation you can trust.</p>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8">
+              {whyChooseUsFeatures.map((feature) => (
+                <Card key={feature.stat} className="text-center p-6 shadow-sm hover:shadow-lg transition-shadow">
+                  <div className="flex justify-center mb-3">
                     {feature.icon}
                   </div>
-                  <h3 className="text-xl font-bold">{feature.title}</h3>
-                  <p className="mt-2 text-muted-foreground">{feature.text}</p>
-                </div>
+                  <p className="text-3xl font-bold text-primary">{feature.stat}</p>
+                  <p className="mt-1 text-sm text-muted-foreground">{feature.text}</p>
+                </Card>
               ))}
             </div>
         </div>
