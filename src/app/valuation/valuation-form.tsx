@@ -3,7 +3,7 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { zodResolver } from "@radix-ui/react-zod";
 import { motion } from "framer-motion";
 import Script from "next/script";
 import { CarValuationSchema, type CarValuationFormInput } from '@/lib/schemas';
@@ -38,7 +38,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
-import { Sparkles, User as UserIcon, Lock, CreditCard, Info, Wrench, Car, Package, Power, Disc, Shield, FileText, History, PlusSquare, Droplets } from "lucide-react";
+import { Sparkles, User as UserIcon, Lock, CreditCard, Info, Wrench, Car, Package, Power, Disc, Shield, FileText, History, PlusSquare, Droplets, ChevronRight } from "lucide-react";
 import { useUser, useFirestore } from "@/firebase";
 import { useRouter } from "next/navigation";
 import type { User } from 'firebase/auth';
@@ -447,6 +447,9 @@ export function ValuationForm() {
                         </TabsList>
                         <ScrollBar orientation="horizontal" />
                     </ScrollArea>
+                    <p className="flex items-center justify-end text-xs text-muted-foreground mt-2 md:hidden">
+                        Scroll for more sections <ChevronRight className="h-4 w-4 ml-1" />
+                    </p>
                 </div>
 
 
@@ -683,3 +686,5 @@ const ValuationLoadingScreen = () => (
         </CardContent>
     </Card>
 );
+
+    
