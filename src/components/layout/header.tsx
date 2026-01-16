@@ -1,8 +1,7 @@
-
 "use client";
 
 import Link from "next/link";
-import { Car, Menu, Sparkles, LogIn, LogOut } from "lucide-react";
+import { Car, Menu, Sparkles, LogIn, LogOut, Calculator, Info, HelpCircle, Phone } from "lucide-react";
 import { usePathname } from "next/navigation";
 import {
   GoogleAuthProvider,
@@ -28,6 +27,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 const navLinks = [
   { href: "/valuation", label: "Valuation", icon: Sparkles },
+  { href: "/emi-calculator", label: "EMI Calculator", icon: Calculator },
+  { href: "/about", label: "About", icon: Info },
+  { href: "/faq", label: "FAQ", icon: HelpCircle },
+  { href: "/contact", label: "Contact", icon: Phone },
 ];
 
 export default function Header() {
