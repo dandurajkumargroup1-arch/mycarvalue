@@ -121,7 +121,7 @@ const DocumentsSchema = z.object({
 
 // Section 9: Usage & History
 const UsageSchema = z.object({
-  odometer: requiredString,
+  odometer: requiredString.regex(/^[0-9]+$/, "Odometer must be a valid number."),
   usageType: z.enum(["personal", "commercial"]),
   cityDriven: z.enum(["yes", "no"]),
   floodDamage: z.enum(["yes", "no"]),

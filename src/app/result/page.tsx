@@ -81,21 +81,53 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
     }
     setIsDownloading(true);
 
+    // Use a fixed width for rendering to ensure consistency
+    const originalWidth = reportElement.style.width;
+    reportElement.style.width = '1050px'; 
+
     html2canvas(reportElement, {
-        scale: 2,
-        useCORS: true
+        scale: 2, // Higher scale for better resolution
+        useCORS: true,
     }).then(canvas => {
+        reportElement.style.width = originalWidth; // Reset the width after capture
+
         const imgData = canvas.toDataURL('image/png');
         const pdf = new jsPDF({
             orientation: 'portrait',
-            unit: 'pt',
-            format: [canvas.width, canvas.height]
+            unit: 'mm',
+            format: 'a4'
         });
+
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
         
-        pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+        const canvasWidth = canvas.width;
+        const canvasHeight = canvas.height;
+        
+        // Calculate the aspect ratio to maintain it
+        const canvasAspectRatio = canvasWidth / canvasHeight;
+        const imgRenderWidth = pdfWidth;
+        const imgRenderHeight = imgRenderWidth / canvasAspectRatio;
+
+        let heightLeft = imgRenderHeight;
+        let position = 0;
+        
+        // Add the first page
+        pdf.addImage(imgData, 'PNG', 0, position, imgRenderWidth, imgRenderHeight);
+        heightLeft -= pdfHeight;
+
+        // Add subsequent pages if the content is longer than one page
+        while (heightLeft > 0) {
+            position -= pdfHeight;
+            pdf.addPage();
+            pdf.addImage(imgData, 'PNG', 0, position, imgRenderWidth, imgRenderHeight);
+            heightLeft -= pdfHeight;
+        }
+
         pdf.save(`mycarvalue-report-${reportId}.pdf`);
         setIsDownloading(false);
     }).catch(err => {
+        reportElement.style.width = originalWidth; // Ensure width is reset on error too
         console.error("Error generating PDF:", err);
         setIsDownloading(false);
     });

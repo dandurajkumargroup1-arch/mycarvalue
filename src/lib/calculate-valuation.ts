@@ -121,7 +121,7 @@ function getDepreciation(section: object, map: object): number {
 export function calculateValuation(carData: CarValuationDataForAI): ValuationOutput {
 
     // STEP 1: PRE-CALCULATION: DETERMINE SECTION DEPRECIATION PERCENTAGES
-    const U = carData.usage.floodDamage === 'yes' || carData.usage.accident === 'yes' ? Math.min(15, 15) : 0;
+    const U = carData.usage.floodDamage === 'yes' || carData.usage.accident === 'yes' ? 15 : 0;
     const E = Math.min(25, getDepreciation(carData.engineMechanical, depreciationMaps));
     const F = Math.min(5, getDepreciation(carData.fluids, depreciationMaps));
     const EX = Math.min(15, getDepreciation(carData.exterior, depreciationMaps));
