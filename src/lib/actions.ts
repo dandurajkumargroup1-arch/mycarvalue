@@ -31,11 +31,6 @@ export async function getValuationAction(data: CarValuationFormInput) {
         expectedPrice: data.expectedPrice,
         currentYear: new Date().getFullYear(),
 
-        // Root level exterior details
-        scratches: data.scratches,
-        dents: data.dents,
-        rust_areas: data.rust_areas,
-
         // Usage
         usage: {
             odometer: String(data.odometer),
@@ -73,6 +68,9 @@ export async function getValuationAction(data: CarValuationFormInput) {
             fenders: data.fenders,
             paintQuality: data.paintQuality,
             accidentHistory: data.accidentHistory,
+            scratches: data.scratches,
+            dents: data.dents,
+            rust_areas: data.rust_areas,
         },
         interior: {
             seats: data.seats,

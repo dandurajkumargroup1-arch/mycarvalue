@@ -124,11 +124,7 @@ export function calculateValuation(carData: CarValuationDataForAI): ValuationOut
     const U = carData.usage.floodDamage === 'yes' || carData.usage.accident === 'yes' ? Math.min(15, 15) : 0;
     const E = Math.min(25, getDepreciation(carData.engineMechanical, depreciationMaps));
     const F = Math.min(5, getDepreciation(carData.fluids, depreciationMaps));
-    
-    // For exterior, combine the root level fields with the nested ones
-    const exteriorCombined = { ...carData.exterior, scratches: carData.scratches, dents: carData.dents, rust_areas: carData.rust_areas };
-    const EX = Math.min(15, getDepreciation(exteriorCombined, depreciationMaps));
-    
+    const EX = Math.min(15, getDepreciation(carData.exterior, depreciationMaps));
     const IN = Math.min(10, getDepreciation(carData.interior, depreciationMaps));
     const EL = Math.min(8, getDepreciation(carData.electrical, depreciationMaps));
     const T = Math.min(6, getDepreciation(carData.tyres, depreciationMaps));
