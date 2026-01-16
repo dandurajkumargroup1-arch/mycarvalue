@@ -7,6 +7,7 @@ import { Slider } from '@/components/ui/slider';
 import { Separator } from '@/components/ui/separator';
 import { PieChart, Pie, Cell, Tooltip } from 'recharts';
 import { ChartConfig, ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('en-IN', {
@@ -21,6 +22,7 @@ export default function EmiCalculatorPage() {
     const [downPayment, setDownPayment] = useState(100000);
     const [rate, setRate] = useState(9.0);
     const [tenure, setTenure] = useState(5); // in years
+    const [isClient, setIsClient] = useState(false);
 
     const [principal, setPrincipal] = useState(0);
     const [emi, setEmi] = useState(0);
@@ -30,13 +32,33 @@ export default function EmiCalculatorPage() {
     const [yearlyPayment, setYearlyPayment] = useState(0);
 
     useEffect(() => {
+        setIsClient(true);
+    }, []);
+
+    useEffect(() => {
         const p = carPrice - downPayment;
         setPrincipal(p);
 
         const r = rate / 12 / 100; // monthly rate
         const n = tenure * 12; // tenure in months
 
-        if (p > 0 && r > 0 && n > 0) {
+        if (p <= 0 || n <= 0) {
+            setEmi(0);
+            setTotalPayment(0);
+            setTotalInterest(0);
+            setDailyPayment(0);
+            setYearlyPayment(0);
+            return;
+        }
+
+        if (rate === 0) {
+            const emiValue = p / n;
+            setEmi(emiValue);
+            setTotalPayment(p);
+            setTotalInterest(0);
+            setDailyPayment(emiValue / 30);
+            setYearlyPayment(emiValue * 12);
+        } else {
             const emiValue = (p * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
             const totalPaymentValue = emiValue * n;
             const totalInterestValue = totalPaymentValue - p;
@@ -46,12 +68,6 @@ export default function EmiCalculatorPage() {
             setTotalInterest(totalInterestValue);
             setDailyPayment(emiValue / 30);
             setYearlyPayment(emiValue * 12);
-        } else {
-            setEmi(0);
-            setTotalPayment(p);
-            setTotalInterest(0);
-            setDailyPayment(0);
-            setYearlyPayment(0);
         }
     }, [carPrice, downPayment, rate, tenure]);
 
@@ -120,7 +136,7 @@ export default function EmiCalculatorPage() {
                             </Label>
                            <Slider
                                 id="rate"
-                                min={6}
+                                min={0}
                                 max={18}
                                 step={0.05}
                                 value={[rate]}
@@ -146,25 +162,31 @@ export default function EmiCalculatorPage() {
                         <p className="text-sm text-muted-foreground">Monthly EMI</p>
                         <p className="text-4xl font-bold text-primary my-2">{formatCurrency(emi)}</p>
 
-                        <ChartContainer config={chartConfig} className="mx-auto aspect-square h-48">
-                            <PieChart>
-                                <Tooltip
-                                    cursor={false}
-                                    content={<ChartTooltipContent hideLabel indicator="dot" />}
-                                />
-                                <Pie
-                                    data={chartData}
-                                    dataKey="value"
-                                    nameKey="name"
-                                    innerRadius={50}
-                                    strokeWidth={2}
-                                >
-                                     {chartData.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={entry.fill} />
-                                    ))}
-                                </Pie>
-                            </PieChart>
-                        </ChartContainer>
+                        {isClient ? (
+                            <ChartContainer config={chartConfig} className="mx-auto aspect-square h-48">
+                                <PieChart>
+                                    <Tooltip
+                                        cursor={false}
+                                        content={<ChartTooltipContent hideLabel indicator="dot" />}
+                                    />
+                                    <Pie
+                                        data={chartData}
+                                        dataKey="value"
+                                        nameKey="name"
+                                        innerRadius={50}
+                                        strokeWidth={2}
+                                    >
+                                        {chartData.map((entry, index) => (
+                                            <Cell key={`cell-${index}`} fill={entry.fill} />
+                                        ))}
+                                    </Pie>
+                                </PieChart>
+                            </ChartContainer>
+                        ) : (
+                            <div className="mx-auto aspect-square h-48 flex items-center justify-center">
+                                <Skeleton className="h-48 w-48 rounded-full" />
+                            </div>
+                        )}
                         
                         <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground mb-6">
                             <div className="flex items-center gap-2">
