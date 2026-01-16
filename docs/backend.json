@@ -179,21 +179,6 @@
         "imageQualityResult": { "type": "object" }
       },
       "required": ["id", "userId", "paymentId", "make", "model", "manufactureYear", "createdAt"]
-    },
-    "Feedback": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Feedback",
-      "type": "object",
-      "description": "Represents user feedback on a car valuation.",
-      "properties": {
-        "id": { "type": "string" },
-        "userId": { "type": "string" },
-        "userName": { "type": "string" },
-        "userPhotoURL": { "type": "string" },
-        "feedback": { "type": "string" },
-        "createdAt": { "type": "string", "format": "date-time" }
-      },
-      "required": ["id", "userId", "userName", "feedback", "createdAt"]
     }
   },
   "auth": {
@@ -215,14 +200,6 @@
           "entityName": "CarValuation",
           "schema": { "$ref": "#/backend/entities/CarValuation" },
           "description": "Stores individual car valuations for a user. A user can only access their own valuations."
-        }
-      },
-      {
-        "path": "/feedback/{feedbackId}",
-        "definition": {
-          "entityName": "Feedback",
-          "schema": { "$ref": "#/backend/entities/Feedback" },
-          "description": "Stores public user feedback on valuations. Anyone can read, but only authenticated users can create."
         }
       }
     ],

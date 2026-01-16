@@ -2,7 +2,7 @@
 "use client";
 
 import Link from "next/link";
-import { Car, Menu, Sparkles, LogIn, LogOut, Info, Calculator, Phone, HelpCircle } from "lucide-react";
+import { Car, Menu, Sparkles, LogIn, LogOut } from "lucide-react";
 import { usePathname } from "next/navigation";
 import {
   GoogleAuthProvider,
@@ -22,17 +22,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
-import { ThemeToggle } from "../theme-toggle";
 import { upsertUserProfile } from "@/lib/firebase/user-profile-service";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const navLinks = [
   { href: "/valuation", label: "Valuation", icon: Sparkles },
-  { href: "/emi-calculator", label: "EMI Calculator", icon: Calculator },
-  { href: "/about", label: "About", icon: Info },
-  { href: "/faq", label: "FAQ", icon: HelpCircle },
-  { href: "/contact", label: "Contact", icon: Phone },
 ];
 
 export default function Header() {
@@ -146,7 +141,6 @@ export default function Header() {
               Sign In
             </Button>
           )}
-          <ThemeToggle />
           <div className="flex items-center justify-end md:hidden">
             <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
               <SheetTrigger asChild>

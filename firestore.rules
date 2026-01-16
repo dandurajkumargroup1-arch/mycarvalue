@@ -143,19 +143,5 @@ service cloud.firestore {
             allow update, delete: if false;
         }
     }
-    
-    /**
-     * @description Manages public user feedback.
-     * @path /feedback/{feedbackId}
-     * @allow (read) Anyone can read feedback.
-     * @allow (create) Any authenticated user can create feedback.
-     * @deny (update, delete) Nobody can modify or delete existing feedback.
-     * @principle Allows public consumption of feedback while ensuring only authenticated users can contribute.
-     */
-    match /feedback/{feedbackId} {
-        allow read: if true;
-        allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-        allow update, delete: if false;
-    }
   }
 }

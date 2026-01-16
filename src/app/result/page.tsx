@@ -1,17 +1,13 @@
 
 'use client';
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Download, Car, Lightbulb, TrendingUp, Target, ShieldCheck, MessageCircleWarning, ShieldQuestion, ChevronsDown } from "lucide-react";
-import { format } from "date-fns";
+import { Car, Lightbulb, TrendingUp, Target, ShieldCheck, MessageCircleWarning, ShieldQuestion } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 
 const DetailSection = ({ title, data }: { title: string, data: Record<string, any> }) => {
@@ -57,8 +53,6 @@ const DetailSection = ({ title, data }: { title: string, data: Record<string, an
 
 const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuation: any; formData: any; } | null, onNewValuation: () => void }) => {
   const { valuation, formData } = result || {};
-  const reportRef = useRef<HTMLDivElement>(null);
-  const [isDownloading, setIsDownloading] = useState(false);
   const [reportId, setReportId] = useState('');
   const [generatedOn, setGeneratedOn] = useState('');
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
@@ -67,7 +61,12 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
     // Generate unique/client-specific data on mount to prevent hydration errors
     const randomPart = Math.random().toString(36).substring(2, 8).toUpperCase();
     setReportId(`MCV-${randomPart}`);
-    setGeneratedOn(format(new Date(), "dd/MM/yyyy - HH:mm"));
+
+    const now = new Date();
+    const date = now.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    const time = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+    setGeneratedOn(`${date} - ${time}`);
+    
     setCurrentYear(new Date().getFullYear());
   }, []);
 
@@ -101,36 +100,6 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
   } = formData || {};
 
 
-  const handleDownloadReport = async () => {
-    const reportElement = reportRef.current;
-    if (!reportElement) return;
-
-    setIsDownloading(true);
-
-    try {
-        const canvas = await html2canvas(reportElement, {
-            scale: 2,
-            useCORS: true,
-            backgroundColor: '#ffffff',
-        });
-
-        const imgData = canvas.toDataURL('image/png');
-        const pdf = new jsPDF({
-            orientation: 'p',
-            unit: 'px',
-            format: [canvas.width, canvas.height],
-        });
-
-        pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
-        pdf.save(`mycarvalue.in-Report-${formData.make}-${formData.model}.pdf`);
-
-    } catch (error) {
-        console.error("Failed to download report:", error);
-    } finally {
-        setIsDownloading(false);
-    }
-  };
-  
   const inr = (value: number, short = false) => {
     if (short) {
         if (Math.abs(value) >= 100000) {
@@ -155,8 +124,8 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
   ];
   
   return (
-     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="overflow-y-auto">
-        <div id="pdf-report-content" ref={reportRef} className="bg-white text-gray-800 p-8 rounded-lg border">
+     <div className="overflow-y-auto">
+        <div id="report-content" className="bg-white text-gray-800 p-8 rounded-lg border">
             <header className="flex justify-between items-start pb-4 border-b border-gray-200">
                 <div className="flex items-center gap-2">
                     <Car className="h-8 w-8 text-primary"/>
@@ -305,11 +274,8 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
              <Button onClick={onNewValuation} size="lg" variant="outline">
                 Start New Valuation
             </Button>
-            <Button onClick={handleDownloadReport} size="lg" disabled={isDownloading}>
-                {isDownloading ? 'Downloading...' : <> <Download className="mr-2 h-4 w-4" /> Download Report </>}
-            </Button>
         </div>
-    </motion.div>
+    </div>
   );
 };
 
@@ -359,5 +325,3 @@ export default function ResultPage() {
         </div>
     );
 }
-
-    

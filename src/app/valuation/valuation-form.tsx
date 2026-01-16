@@ -4,47 +4,41 @@
 import { useState, useMemo, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { motion } from "framer-motion";
 import Script from "next/script";
-import { CarValuationSchema, type CarValuationFormInput } from '@/lib/schemas';
-import { getValuationAction } from '@/lib/actions';
-import { carMakesAndModelsAndVariants } from "@/lib/variants";
-import { indianStates } from "@/lib/data";
-
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Input } from "@/components/ui/input";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { useToast } from "@/hooks/use-toast";
-import { Sparkles, User as UserIcon, Lock, CreditCard, Info, Wrench, Car, Package, Power, Disc, Shield, FileText, History, PlusSquare, Droplets, ChevronRight } from "lucide-react";
-import { useUser, useFirestore } from "@/firebase";
 import { useRouter } from "next/navigation";
 import type { User } from 'firebase/auth';
 import type { Firestore } from 'firebase/firestore';
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 
+import { CarValuationSchema, type CarValuationFormInput } from '@/lib/schemas';
+import { getValuationAction } from '@/lib/actions';
+import { carMakesAndModelsAndVariants, indianStates } from "@/lib/variants";
+import { useUser, useFirestore } from "@/firebase";
+import { useToast } from "@/hooks/use-toast";
+
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { Sparkles, User as UserIcon, Lock, CreditCard, Info, Wrench, Car, Package, Power, Disc, Shield, FileText, History, PlusSquare, Droplets, ChevronRight } from "lucide-react";
+
+
+const ValuationLoadingScreen = () => (
+    <Card className="shadow-lg text-center">
+        <CardContent className="p-8 md:p-12">
+            <div className="inline-block animate-spin">
+                <Sparkles className="h-16 w-16 text-primary" />
+            </div>
+            <h2 className="mt-6 text-2xl font-semibold">Calculating Your Best Price...</h2>
+            <p className="mt-2 text-muted-foreground">
+                Please hold on, our valuation engine is running the numbers.
+            </p>
+        </CardContent>
+    </Card>
+);
 
 const PaymentDisplay = ({ onNewValuation, user, firestore }: { onNewValuation: () => void; user: User | null; firestore: Firestore | null; }) => {
   const router = useRouter();
@@ -302,7 +296,7 @@ export function ValuationForm() {
     if (user && !form.getValues('displayName')) {
       setValue('displayName', user.displayName || '');
     }
-  }, [user, setValue, form]);
+  }, [user, setValue]);
 
   const onSubmit = async (data: CarValuationFormInput) => {
     setLoading(true);
@@ -337,6 +331,31 @@ export function ValuationForm() {
     }
   };
 
+
+  const sections = [
+    { value: "contact", title: "Contact", icon: <UserIcon /> },
+    { value: "basic", title: "Basic Info", icon: <Info /> },
+    { value: "history", title: "Usage", icon: <History /> },
+    { value: "engine", title: "Engine", icon: <Wrench /> },
+    { value: "fluids", title: "Fluids", icon: <Droplets /> },
+    { value: "exterior", title: "Exterior", icon: <Car /> },
+    { value: "interior", title: "Interior", icon: <Package /> },
+    { value: "electrical", title: "Electrical", icon: <Power /> },
+    { value: "tyres", title: "Tyres", icon: <Disc /> },
+    { value: "safety", title: "Safety", icon: <Shield /> },
+    { value: "documents", title: "Docs", icon: <FileText /> },
+    { value: "additional", title: "Features", icon: <PlusSquare /> },
+  ];
+
+  const currentIndex = sections.findIndex(s => s.value === activeTab);
+  const isLastSection = currentIndex === sections.length - 1;
+
+  const handleNextSection = () => {
+    const nextIndex = currentIndex + 1;
+    if (nextIndex < sections.length) {
+        setActiveTab(sections[nextIndex].value);
+    }
+  };
 
   if (loading) {
     return <ValuationLoadingScreen />;
@@ -396,21 +415,6 @@ export function ValuationForm() {
       )}
     />
   );
-
-  const sections = [
-    { value: "contact", title: "Contact", icon: <UserIcon /> },
-    { value: "basic", title: "Basic Info", icon: <Info /> },
-    { value: "history", title: "Usage", icon: <History /> },
-    { value: "engine", title: "Engine", icon: <Wrench /> },
-    { value: "fluids", title: "Fluids", icon: <Droplets /> },
-    { value: "exterior", title: "Exterior", icon: <Car /> },
-    { value: "interior", title: "Interior", icon: <Package /> },
-    { value: "electrical", title: "Electrical", icon: <Power /> },
-    { value: "tyres", title: "Tyres", icon: <Disc /> },
-    { value: "safety", title: "Safety", icon: <Shield /> },
-    { value: "documents", title: "Docs", icon: <FileText /> },
-    { value: "additional", title: "Features", icon: <PlusSquare /> },
-  ];
 
   return (
     <Card className="shadow-lg">
@@ -642,7 +646,7 @@ export function ValuationForm() {
                             {renderSelect("puc", "PUC", [{value: "valid", label: "Valid"}, {value: "expired", label: "Expired"}, {value: "not_available", label: "Not Available"}], "Select PUC Status")}
                             {renderSelect("serviceRecords", "Service Records", [{value: "full", label: "Full History Available"}, {value: "partial", label: "Partial History"}, {value: "none", label: "Not Available"}], "Select Service Records Status")}
                             {renderSelect("duplicateKey", "Duplicate Key", [{value: "available", label: "Available"}, {value: "not_available", label: "Not Available"}], "Select Duplicate Key Status")}
-                            {renderSelect("noc", "NOC", [{value: "not_required", label: "Not Required"}, {value: "available", label: "Available"}, {value: "pending", label: "Pending"}, {value: "required but Not Available", label: "Required but Not Available"}], "Select NOC Status")}
+                            {renderSelect("noc", "NOC", [{value: "not_required", label: "Not Required"}, {value: "available", label: "Available"}, {value: "pending", label: "Pending"}, {value: "not_available", label: "Required but Not Available"}], "Select NOC Status")}
                         </div>
                     </TabsContent>
 
@@ -663,10 +667,16 @@ export function ValuationForm() {
 
             <div id="submission-section" className="pt-6 space-y-4">
                 <div className="flex flex-col items-center justify-center">
-                    <Button type="submit" className="w-full" size="lg" disabled={loading}>
-                        <Sparkles className="mr-2 h-4 w-4" />
-                        {loading ? 'Analyzing...' : 'Proceed to Pay'}
-                    </Button>
+                    {isLastSection ? (
+                        <Button type="submit" className="w-full" size="lg" disabled={loading}>
+                            <Sparkles className="mr-2 h-4 w-4" />
+                            {loading ? 'Analyzing...' : 'Proceed to Pay'}
+                        </Button>
+                    ) : (
+                        <Button type="button" onClick={handleNextSection} className="w-full" size="lg">
+                            Next Section <ChevronRight className="mr-2 h-4" />
+                        </Button>
+                    )}
                 </div>
 
                 {!form.formState.isValid && form.formState.isSubmitted && (
@@ -679,23 +689,3 @@ export function ValuationForm() {
     </Card>
   );
 }
-
-const ValuationLoadingScreen = () => (
-    <Card className="shadow-lg text-center">
-        <CardContent className="p-8 md:p-12">
-            <motion.div
-                animate={{ rotate: 360 }}
-                transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
-                className="inline-block"
-            >
-                <Sparkles className="h-16 w-16 text-primary" />
-            </motion.div>
-            <h2 className="mt-6 text-2xl font-semibold">Calculating Your Best Price...</h2>
-            <p className="mt-2 text-muted-foreground">
-                Please hold on, our valuation engine is running the numbers.
-            </p>
-        </CardContent>
-    </Card>
-);
-
-    

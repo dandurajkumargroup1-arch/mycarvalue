@@ -5,7 +5,6 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { CheckCircle2, AlertTriangle } from 'lucide-react';
-import { motion } from 'framer-motion';
 import { useUser, useFirestore } from '@/firebase';
 import { saveValuation } from '@/lib/firebase/valuation-service';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -106,14 +105,11 @@ export default function PaymentSuccessPage() {
     <div className="container mx-auto flex min-h-[60vh] items-center justify-center py-12">
       <Card className="w-full max-w-md text-center shadow-lg">
         <CardHeader>
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+          <div
             className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-100"
           >
             <CheckCircle2 className="h-10 w-10 text-green-600" />
-          </motion.div>
+          </div>
           <CardTitle className="mt-4 text-2xl">Payment Successful!</CardTitle>
           <CardDescription>
             Thank you! Your valuation report has been saved.

@@ -58,30 +58,23 @@ export default function Home() {
     <>
       <section className="w-full py-20 md:py-28 lg:py-32 flex items-center justify-center text-center bg-gradient-to-b from-secondary/50 to-background">
         <div className="container z-20 flex flex-col items-center p-4">
-          <MotionDiv 
+          <div 
             className="max-w-3xl"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
           >
             <p className="font-semibold text-primary">{brandName}</p>
             <h1 className="text-3xl md:text-5xl font-bold tracking-tighter text-foreground mt-2">
               {title}
             </h1>
             <p className="mt-4 text-lg text-muted-foreground">{description}</p>
-            <MotionDiv
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.2 }}
-            >
+            <div>
               <Button asChild size="lg" className="mt-8">
                 <Link href={buttonLink}>
                   {buttonText} <Sparkles className="ml-2 h-5 w-5" />
                 </Link>
               </Button>
               <p className="mt-3 text-sm text-muted-foreground">{trustLine}</p>
-            </MotionDiv>
-          </MotionDiv>
+            </div>
+          </div>
         </div>
       </section>
       
