@@ -3,7 +3,6 @@ import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Sparkles, ShieldOff, Target, Lock, CheckCircle, Users, Wrench, Cog, Car, Power, AirVent, Armchair, Disc, GitPullRequest, FileText, BadgeCheck, Star, RefreshCw, Clock, ChevronsDown } from "lucide-react";
-import { MotionDiv } from "@/components/motion-div";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { Card, CardContent } from "@/components/ui/card";
 
