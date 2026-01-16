@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Car, Menu, Sparkles, LogIn, LogOut, Calculator, Info, HelpCircle, Phone } from "lucide-react";
+import { Car, Menu, Sparkles, LogIn, LogOut, Calculator, Info, HelpCircle, Phone, Handshake } from "lucide-react";
 import { usePathname } from "next/navigation";
 import {
   GoogleAuthProvider,
@@ -31,6 +31,7 @@ const navLinks = [
   { href: "/about", label: "About", icon: Info },
   { href: "/faq", label: "FAQ", icon: HelpCircle },
   { href: "/contact", label: "Contact", icon: Phone },
+  { href: "/refer", label: "Refer a Friend", icon: Handshake },
 ];
 
 export default function Header() {
