@@ -3,11 +3,13 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Car, Lightbulb, TrendingUp, Target, ShieldCheck, MessageCircleWarning, ShieldQuestion } from "lucide-react";
+import { Car, Lightbulb, TrendingUp, Target, ShieldCheck, MessageCircleWarning, ShieldQuestion, Download } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 
 const DetailSection = ({ title, data }: { title: string, data: Record<string, any> }) => {
@@ -56,6 +58,7 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
   const [reportId, setReportId] = useState('');
   const [generatedOn, setGeneratedOn] = useState('');
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
+  const [isDownloading, setIsDownloading] = useState(false);
 
   useEffect(() => {
     // Generate unique/client-specific data on mount to prevent hydration errors
@@ -69,6 +72,34 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
     
     setCurrentYear(new Date().getFullYear());
   }, []);
+
+    const handleDownloadPdf = () => {
+    const reportElement = document.getElementById('report-content');
+    if (!reportElement) {
+        console.error("Report content element not found!");
+        return;
+    }
+    setIsDownloading(true);
+
+    html2canvas(reportElement, {
+        scale: 2,
+        useCORS: true
+    }).then(canvas => {
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jsPDF({
+            orientation: 'portrait',
+            unit: 'pt',
+            format: [canvas.width, canvas.height]
+        });
+        
+        pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+        pdf.save(`mycarvalue-report-${reportId}.pdf`);
+        setIsDownloading(false);
+    }).catch(err => {
+        console.error("Error generating PDF:", err);
+        setIsDownloading(false);
+    });
+  };
 
   if (!result || !valuation || !formData) {
     return (
@@ -270,9 +301,19 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
                 <p className="mt-2 text-gray-400">This is an AI-generated report and should be used as an estimate. Physical inspection may affect the final price.</p>
             </footer>
         </div>
-        <div className="text-center pt-6 flex gap-4 justify-center">
+        <div className="text-center pt-6 flex gap-4 justify-center print:hidden">
              <Button onClick={onNewValuation} size="lg" variant="outline">
                 Start New Valuation
+            </Button>
+            <Button onClick={handleDownloadPdf} size="lg" disabled={isDownloading}>
+                {isDownloading ? (
+                    'Downloading...'
+                ) : (
+                    <>
+                        <Download className="mr-2 h-4 w-4" />
+                        Download PDF
+                    </>
+                )}
             </Button>
         </div>
     </div>
