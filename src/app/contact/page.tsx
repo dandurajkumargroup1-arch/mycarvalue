@@ -15,8 +15,8 @@ export default function ContactPage() {
         <CardContent className="flex flex-col items-center space-y-4">
             <div className="flex items-center gap-4 p-4 rounded-lg border w-full max-w-sm justify-center">
                 <Mail className="h-6 w-6 text-muted-foreground"/>
-                <a href="mailto:support@mycarvalue.in" className="font-medium text-primary hover:underline">
-                    support@mycarvalue.in
+                <a href="mailto:mycarvalue1@gmail.com" className="font-medium text-primary hover:underline">
+                    mycarvalue1@gmail.com
                 </a>
             </div>
              <p className="text-sm text-muted-foreground text-center">
