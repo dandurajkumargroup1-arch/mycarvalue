@@ -15,11 +15,10 @@ export default function PaymentSuccessPage() {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
   const [status, setStatus] = useState('processing'); // processing, success, error
+  const [errorPaymentId, setErrorPaymentId] = useState<string | null>(null);
 
   useEffect(() => {
-    // This function will run when the component mounts, and re-run if dependencies change.
     const processPayment = async () => {
-      // Don't proceed until Firebase user and firestore are available.
       if (isUserLoading || !user || !firestore) {
         return;
       }
@@ -28,7 +27,6 @@ export default function PaymentSuccessPage() {
       const storedResult = localStorage.getItem('valuationResult');
 
       if (!paymentId || !storedResult) {
-        // This can happen if the user navigates directly to this page.
         console.error("Missing payment data. Redirecting.");
         router.push('/');
         return;
@@ -41,19 +39,14 @@ export default function PaymentSuccessPage() {
           paymentId: paymentId,
           ...fullResult.formData,
           valuationResult: fullResult.valuation,
-          comparableListingsResult: null, // Placeholder for future feature
-          imageQualityResult: null,     // Placeholder for future feature
+          comparableListingsResult: null,
+          imageQualityResult: null,
         });
 
-        // Mark local state as successful
         localStorage.setItem("paymentSuccess", "true");
-
-        // Clean up temporary storage
         localStorage.removeItem('razorpay_payment_id');
-
         setStatus('success');
 
-        // Redirect to the result page after a short delay
         const timer = setTimeout(() => {
           router.push('/result');
         }, 2000);
@@ -62,11 +55,12 @@ export default function PaymentSuccessPage() {
 
       } catch (error) {
         console.error("Failed to save valuation post-payment:", error);
+        // If saving fails, store the payment ID to show it to the user.
+        setErrorPaymentId(paymentId);
         setStatus('error');
       }
     };
 
-    // Call the processing function. It will run when the dependencies are ready.
     processPayment();
   }, [user, isUserLoading, firestore, router]);
   
@@ -99,7 +93,8 @@ export default function PaymentSuccessPage() {
               </div>
               <CardTitle className="mt-4 text-2xl text-destructive">Payment Error</CardTitle>
               <CardDescription>
-                There was an issue saving your report after payment. Please contact support with your payment ID.
+                There was an issue saving your report. Please contact support and provide them with your Payment ID: <br />
+                <strong className="text-foreground mt-2 inline-block">{errorPaymentId}</strong>
               </CardDescription>
             </CardHeader>
           </Card>
