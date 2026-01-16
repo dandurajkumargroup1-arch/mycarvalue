@@ -11,7 +11,7 @@ import { FirebaseClientProvider } from "@/firebase";
 const openSans = Open_Sans({
   subsets: ['latin'],
   variable: '--font-sans',
-  weight: ['400', '600', '700'],
+  weight: ['300', '400', '600', '700', '800'],
 });
 
 export const metadata: Metadata = {
