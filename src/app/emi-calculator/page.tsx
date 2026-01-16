@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Calculator } from "lucide-react";
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { Separator } from '@/components/ui/separator';
+import { PieChart, Pie, Cell, Tooltip } from 'recharts';
+import { ChartConfig, ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
 
 const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('en-IN', {
@@ -16,83 +17,120 @@ const formatCurrency = (value: number) => {
 };
 
 export default function EmiCalculatorPage() {
-    const [principal, setPrincipal] = useState(500000);
-    const [rate, setRate] = useState(9.5);
+    const [carPrice, setCarPrice] = useState(1000000);
+    const [downPayment, setDownPayment] = useState(100000);
+    const [rate, setRate] = useState(9.0);
     const [tenure, setTenure] = useState(5); // in years
 
+    const [principal, setPrincipal] = useState(0);
     const [emi, setEmi] = useState(0);
     const [totalInterest, setTotalInterest] = useState(0);
     const [totalPayment, setTotalPayment] = useState(0);
+    const [dailyPayment, setDailyPayment] = useState(0);
+    const [yearlyPayment, setYearlyPayment] = useState(0);
 
     useEffect(() => {
-        const calculateEmi = () => {
-            const p = principal;
-            const r = rate / 12 / 100; // monthly rate
-            const n = tenure * 12; // tenure in months
+        const p = carPrice - downPayment;
+        setPrincipal(p);
 
-            if (p > 0 && r > 0 && n > 0) {
-                const emiValue = (p * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
-                const totalPaymentValue = emiValue * n;
-                const totalInterestValue = totalPaymentValue - p;
+        const r = rate / 12 / 100; // monthly rate
+        const n = tenure * 12; // tenure in months
 
-                setEmi(emiValue);
-                setTotalPayment(totalPaymentValue);
-                setTotalInterest(totalInterestValue);
-            } else {
-                setEmi(0);
-                setTotalPayment(0);
-                setTotalInterest(0);
-            }
-        };
-        calculateEmi();
-    }, [principal, rate, tenure]);
+        if (p > 0 && r > 0 && n > 0) {
+            const emiValue = (p * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
+            const totalPaymentValue = emiValue * n;
+            const totalInterestValue = totalPaymentValue - p;
+
+            setEmi(emiValue);
+            setTotalPayment(totalPaymentValue);
+            setTotalInterest(totalInterestValue);
+            setDailyPayment(emiValue / 30);
+            setYearlyPayment(emiValue * 12);
+        } else {
+            setEmi(0);
+            setTotalPayment(p);
+            setTotalInterest(0);
+            setDailyPayment(0);
+            setYearlyPayment(0);
+        }
+    }, [carPrice, downPayment, rate, tenure]);
+
+    const chartData = useMemo(() => [
+        { name: 'Loan Amount', value: principal, fill: "hsl(var(--chart-1))" },
+        { name: 'Total Interest', value: totalInterest, fill: "hsl(var(--chart-2))"  },
+    ], [principal, totalInterest]);
+
+    const chartConfig: ChartConfig = {
+        'Loan Amount': {
+            label: 'Loan Amount',
+            color: 'hsl(var(--chart-1))',
+        },
+        'Total Interest': {
+            label: 'Total Interest',
+            color: 'hsl(var(--chart-2))',
+        },
+    };
 
     return (
-        <div className="container mx-auto max-w-3xl py-12">
+        <div className="container mx-auto max-w-4xl py-12">
             <Card>
-                <CardHeader className="text-center">
-                    <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 mb-4">
-                        <Calculator className="h-8 w-8 text-primary" />
-                    </div>
-                    <CardTitle>EMI Calculator</CardTitle>
-                    <CardDescription>Estimate your monthly car loan payments.</CardDescription>
+                <CardHeader>
+                    <CardTitle className="text-2xl font-bold tracking-tight">EMI Calculator with Down Payment</CardTitle>
+                    <CardDescription>Adjust the sliders to see your estimated monthly payment.</CardDescription>
                 </CardHeader>
-                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div className="space-y-6">
+                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+                    <div className="space-y-8 pt-2">
                         <div>
-                            <Label htmlFor="principal" className="flex justify-between items-center">
-                                <span>Loan Amount</span>
-                                <span className="font-bold text-primary">{formatCurrency(principal)}</span>
+                            <Label htmlFor="carPrice" className="flex justify-between items-center mb-2">
+                                <span>Total Car Price</span>
+                                <span className="font-bold text-foreground">{formatCurrency(carPrice)}</span>
                             </Label>
                             <Slider
-                                id="principal"
+                                id="carPrice"
                                 min={100000}
-                                max={5000000}
+                                max={10000000}
                                 step={50000}
-                                value={[principal]}
-                                onValueChange={(value) => setPrincipal(value[0])}
-                                className="mt-2"
+                                value={[carPrice]}
+                                onValueChange={(value) => {
+                                    setCarPrice(value[0]);
+                                    if(downPayment > value[0]){
+                                        setDownPayment(value[0])
+                                    }
+                                }}
                             />
                         </div>
                         <div>
-                            <Label htmlFor="rate" className="flex justify-between items-center">
+                            <Label htmlFor="downPayment" className="flex justify-between items-center mb-2">
+                                <span>Down Payment</span>
+                                <span className="font-bold text-foreground">{formatCurrency(downPayment)}</span>
+                            </Label>
+                           <Slider
+                                id="downPayment"
+                                min={0}
+                                max={carPrice}
+                                step={10000}
+                                value={[downPayment]}
+                                onValueChange={(value) => setDownPayment(value[0])}
+                            />
+                        </div>
+                        <div>
+                            <Label htmlFor="rate" className="flex justify-between items-center mb-2">
                                 <span>Interest Rate (% p.a.)</span>
-                                 <span className="font-bold text-primary">{rate.toFixed(1)} %</span>
+                                 <span className="font-bold text-foreground">{rate.toFixed(2)} %</span>
                             </Label>
                            <Slider
                                 id="rate"
                                 min={6}
                                 max={18}
-                                step={0.1}
+                                step={0.05}
                                 value={[rate]}
                                 onValueChange={(value) => setRate(value[0])}
-                                className="mt-2"
                             />
                         </div>
                         <div>
-                            <Label htmlFor="tenure" className="flex justify-between items-center">
+                            <Label htmlFor="tenure" className="flex justify-between items-center mb-2">
                                 <span>Loan Tenure (Years)</span>
-                                 <span className="font-bold text-primary">{tenure} {tenure > 1 ? 'Years' : 'Year'}</span>
+                                 <span className="font-bold text-foreground">{tenure} {tenure > 1 ? 'Years' : 'Year'}</span>
                             </Label>
                            <Slider
                                 id="tenure"
@@ -101,22 +139,65 @@ export default function EmiCalculatorPage() {
                                 step={1}
                                 value={[tenure]}
                                 onValueChange={(value) => setTenure(value[0])}
-                                className="mt-2"
                             />
                         </div>
                     </div>
-                    <div className="bg-primary/5 rounded-lg p-6 flex flex-col justify-center items-center text-center border">
-                        <h3 className="text-muted-foreground">Monthly EMI</h3>
+                    <div className="bg-muted/50 rounded-lg p-6 flex flex-col items-center border">
+                        <p className="text-sm text-muted-foreground">Monthly EMI</p>
                         <p className="text-4xl font-bold text-primary my-2">{formatCurrency(emi)}</p>
-                        <Separator className="my-4"/>
-                        <div className="w-full space-y-2 text-sm">
+
+                        <ChartContainer config={chartConfig} className="mx-auto aspect-square h-48">
+                            <PieChart>
+                                <Tooltip
+                                    cursor={false}
+                                    content={<ChartTooltipContent hideLabel indicator="dot" />}
+                                />
+                                <Pie
+                                    data={chartData}
+                                    dataKey="value"
+                                    nameKey="name"
+                                    innerRadius={50}
+                                    strokeWidth={2}
+                                >
+                                     {chartData.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={entry.fill} />
+                                    ))}
+                                </Pie>
+                            </PieChart>
+                        </ChartContainer>
+                        
+                        <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground mb-6">
+                            <div className="flex items-center gap-2">
+                                <span className="h-2 w-2 rounded-full bg-[hsl(var(--chart-1))]"></span>
+                                <span>Loan Amount</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <span className="h-2 w-2 rounded-full bg-[hsl(var(--chart-2))]"></span>
+                                <span>Total Interest</span>
+                            </div>
+                        </div>
+
+                        <div className="w-full space-y-3 text-sm">
                             <div className="flex justify-between">
-                                <span className="text-muted-foreground">Total Interest</span>
-                                <span className="font-medium">{formatCurrency(totalInterest)}</span>
+                                <span className="text-muted-foreground">Principal Loan</span>
+                                <span className="font-medium text-foreground">{formatCurrency(principal)}</span>
                             </div>
                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">Total Interest</span>
+                                <span className="font-medium text-foreground">{formatCurrency(totalInterest)}</span>
+                            </div>
+                             <div className="flex justify-between font-semibold">
                                 <span className="text-muted-foreground">Total Payment</span>
-                                <span className="font-medium">{formatCurrency(totalPayment)}</span>
+                                <span className="text-foreground">{formatCurrency(totalPayment)}</span>
+                            </div>
+                            <Separator className="my-2"/>
+                            <div className="flex justify-between">
+                                <span className="text-muted-foreground">Daily Payment</span>
+                                <span className="font-medium text-foreground">{formatCurrency(dailyPayment)}</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-muted-foreground">Yearly Payment</span>
+                                <span className="font-medium text-foreground">{formatCurrency(yearlyPayment)}</span>
                             </div>
                         </div>
                     </div>
