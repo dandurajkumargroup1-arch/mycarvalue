@@ -101,8 +101,21 @@ const PaymentDisplay = ({ onNewValuation, user, firestore }: { onNewValuation: (
         description: "Car Valuation Report",
         order_id: order.id,
         handler: function (response: any) {
-          localStorage.setItem("razorpay_payment_id", response.razorpay_payment_id);
-          router.push('/payment-success');
+          try {
+            if (!response || !response.razorpay_payment_id) {
+              throw new Error("Payment response is invalid or missing payment ID.");
+            }
+            localStorage.setItem("razorpay_payment_id", response.razorpay_payment_id);
+            router.push('/payment-success');
+          } catch (err: any) {
+            console.error("Razorpay handler error:", err);
+            toast({
+              variant: "destructive",
+              title: "Processing Error",
+              description: "Payment was successful, but an error occurred while redirecting. Please contact support with your payment details.",
+              duration: 9000,
+            });
+          }
         },
         prefill: {
           name: user.displayName || "Valued Customer",
@@ -415,237 +428,235 @@ export function ValuationForm() {
               onValueChange={setActiveTab}
               className="w-full"
             >
-              <div className="md:grid md:grid-cols-[200px_1fr] md:gap-8">
-                {/* Desktop Tabs */}
-                <TabsList className="hidden md:flex flex-col h-auto justify-start p-2 gap-1 w-full bg-muted/50">
-                  {sections.map((section) => (
-                    <TabsTrigger
-                      key={section.value}
-                      value={section.value}
-                      className="w-full justify-start gap-2 px-3 py-2 text-left"
-                    >
-                      <div className="[&>svg]:size-5">{section.icon}</div>
-                      <span>{section.title}</span>
-                    </TabsTrigger>
-                  ))}
-                </TabsList>
+              <div className="relative">
+                <ScrollArea className="w-full whitespace-nowrap md:hidden">
+                  <TabsList className="inline-flex h-auto p-1">
+                      {sections.map((section) => (
+                        <TabsTrigger
+                          key={section.value}
+                          value={section.value}
+                          className="w-full justify-start gap-2 px-3 py-2 text-left"
+                        >
+                          <div className="[&>svg]:size-5">{section.icon}</div>
+                          <span>{section.title}</span>
+                        </TabsTrigger>
+                      ))}
+                  </TabsList>
+                  <ScrollBar orientation="horizontal" />
+                </ScrollArea>
+                <p className="flex items-center justify-end text-xs text-muted-foreground mt-2 md:hidden">
+                    Scroll for more sections <ChevronRight className="h-4 w-4 ml-1" />
+                </p>
 
-                {/* Mobile Scrollable Tabs */}
-                <div className="md:hidden">
-                    <ScrollArea className="w-full whitespace-nowrap rounded-md border">
-                        <TabsList className="inline-flex h-auto p-1">
-                             {sections.map((section) => (
-                                <TabsTrigger
-                                key={section.value}
-                                value={section.value}
-                                className="w-full justify-start gap-2 px-3 py-2 text-left"
-                                >
-                                <div className="[&>svg]:size-5">{section.icon}</div>
-                                <span>{section.title}</span>
-                                </TabsTrigger>
-                            ))}
-                        </TabsList>
-                        <ScrollBar orientation="horizontal" />
-                    </ScrollArea>
-                    <p className="flex items-center justify-end text-xs text-muted-foreground mt-2 md:hidden">
-                        Scroll for more sections <ChevronRight className="h-4 w-4 ml-1" />
-                    </p>
-                </div>
+                <div className="md:grid md:grid-cols-[200px_1fr] md:gap-8">
+                  {/* Desktop Tabs */}
+                  <TabsList className="hidden md:flex flex-col h-auto justify-start p-2 gap-1 w-full bg-muted/50">
+                    {sections.map((section) => (
+                      <TabsTrigger
+                        key={section.value}
+                        value={section.value}
+                        className="w-full justify-start gap-2 px-3 py-2 text-left"
+                      >
+                        <div className="[&>svg]:size-5">{section.icon}</div>
+                        <span>{section.title}</span>
+                      </TabsTrigger>
+                    ))}
+                  </TabsList>
 
-
-                {/* Form Content */}
-                <div className="mt-4 md:mt-0">
-                  <TabsContent value="contact" className="mt-0">
-                    <h3 className="text-lg font-semibold mb-4">Contact Details</h3>
-                    <div className="space-y-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <FormField control={form.control} name="displayName" render={({ field }) => ( <FormItem> <FormLabel>Name</FormLabel> <FormControl><Input placeholder="Your full name" {...field} value={field.value ?? ''} /></FormControl> <FormMessage /> </FormItem> )} />
-                      <FormField control={form.control} name="whatsappNumber" render={({ field }) => ( <FormItem> <FormLabel>WhatsApp Number</FormLabel> <FormControl><Input type="tel" placeholder="e.g., 9876543210" {...field} value={field.value ?? ''} /></FormControl> <FormMessage /> </FormItem> )} />
-                      <FormField control={form.control} name="vehicleNumber" render={({ field }) => ( <FormItem> <FormLabel>Vehicle Number (Optional)</FormLabel> <FormControl><Input placeholder="e.g., AP09BUXXXX" {...field} value={field.value ?? ''} /></FormControl> <FormMessage /> </FormItem> )} />
-                    </div>
-                  </TabsContent>
-
-                  <TabsContent value="basic" className="mt-0">
-                    <h3 className="text-lg font-semibold mb-4">Basic Vehicle Information</h3>
-                    <div className="space-y-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {renderSelect("priceCheckReason", "Check price for", [{value: "immediate_sale", label: "Immediate sale"}, {value: "price_check", label: "Just price check"}, {value: "market_value", label: "Knowing the market value"}], "Select a reason")}
-                      <FormField control={form.control} name="make" render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Make</FormLabel>
-                          <Select onValueChange={(value) => { field.onChange(value); form.setValue('model', ''); form.setValue('variant', ''); }} value={field.value ?? ''}>
-                            <FormControl><SelectTrigger><SelectValue placeholder="Select Make" /></SelectTrigger></FormControl>
-                            <SelectContent>{Object.keys(carMakesAndModelsAndVariants).map(make => <SelectItem key={make} value={make}>{make}</SelectItem>)}</SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )} />
-                      <FormField control={form.control} name="model" render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Model</FormLabel>
-                          <Select onValueChange={(value) => { field.onChange(value); form.setValue('variant', ''); }} value={field.value ?? ''} disabled={!watchedMake}>
-                            <FormControl><SelectTrigger><SelectValue placeholder="Select Model" /></SelectTrigger></FormControl>
-                            <SelectContent>{models.map(model => <SelectItem key={model} value={model}>{model}</SelectItem>)}</SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )} />
-                      <FormField control={form.control} name="variant" render={({ field }) => ( 
-                        <FormItem>
-                          <FormLabel>Variant</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value ?? ''} disabled={!watchedModel || variants.length === 0}>
-                              <FormControl><SelectTrigger><SelectValue placeholder="Select Variant" /></SelectTrigger></FormControl>
-                              <SelectContent>{variants.map(variant => <SelectItem key={variant} value={variant}>{variant}</SelectItem>)}</SelectContent>
-                            </Select>
-                          <FormMessage />
-                        </FormItem> 
-                      )} />
-                      {renderSelect("bodyType", "Body Type", [
-                          {value: "hatchback", label: "Hatchback – Compact & city friendly"},
-                          {value: "sedan", label: "Sedan – Comfort & elegance"},
-                          {value: "suv", label: "SUV – Power & ground clearance"},
-                          {value: "muv_mpv", label: "MUV/MPV – Family & space"},
-                          {value: "coupe_convertible", label: "Coupe/Convertible – Sporty & luxury"},
-                          {value: "pickup_van", label: "Pickup/Van – Utility & commercial"},
-                      ], "Select Body Type")}
-                      {renderSelect("fuelType", "Fuel Type", [{value: "petrol", label: "Petrol"}, {value: "diesel", label: "Diesel"}, {value: "cng", label: "CNG"}, {value: "electric", label: "Electric"}], "Select Fuel Type")}
-                      {renderSelect("transmission", "Transmission", [{value: "manual", label: "Manual"}, {value: "automatic", label: "Automatic"}], "Select Transmission")}
-                      <FormField control={form.control} name="manufactureYear" render={({ field }) => ( <FormItem> <FormLabel>Year of Manufacture</FormLabel> <Select onValueChange={(val) => field.onChange(Number(val))} value={field.value ? String(field.value) : ''}> <FormControl><SelectTrigger><SelectValue placeholder="Select Year" /></SelectTrigger></FormControl> <SelectContent>{Array.from({ length: new Date().getFullYear() - 1979 }, (_, i) => new Date().getFullYear() - i).map(year => <SelectItem key={year} value={String(year)}>{year}</SelectItem>)}</SelectContent> </Select> <FormMessage /> </FormItem> )} />
-                      <FormField control={form.control} name="registrationYear" render={({ field }) => ( <FormItem> <FormLabel>Year of Registration</FormLabel> <Select onValueChange={(val) => field.onChange(Number(val))} value={field.value ? String(field.value) : ''}> <FormControl><SelectTrigger><SelectValue placeholder="Select Year" /></SelectTrigger></FormControl> <SelectContent>{Array.from({ length: new Date().getFullYear() - 1979 }, (_, i) => new Date().getFullYear() - i).map(year => <SelectItem key={year} value={String(year)}>{year}</SelectItem>)}</SelectContent> </Select> <FormMessage /> </FormItem> )} />
-                      <FormField control={form.control} name="registrationState" render={({ field }) => ( <FormItem> <FormLabel>Registration State</FormLabel> <Select onValueChange={field.onChange} value={field.value ?? ''}> <FormControl><SelectTrigger><SelectValue placeholder="Select State" /></SelectTrigger></FormControl> <SelectContent>{indianStates.map(state => <SelectItem key={state} value={state}>{state}</SelectItem>)}</SelectContent> </Select> <FormMessage /> </FormItem> )} />
-                      {renderSelect("ownership", "Ownership", [{value: "1st", label: "1st Owner"}, {value: "2nd", label: "2nd Owner"}, {value: "3rd", label: "3rd Owner"}, {value: "4th+", label: "4th+ Owner"}], "Select Ownership")}
-                      {renderSelect("rcStatus", "RC Status", [{value: "active", label: "Active"}, {value: "inactive", label: "Inactive"}, {value: "pending", label: "Pending"}], "Select RC Status")}
-                      {renderSelect("insurance", "Insurance", [{value: "comprehensive", label: "Comprehensive"}, {value: "third_party", label: "Third-party"}, {value: "none", label: "None"}], "Select Insurance")}
-                      {renderRadioGroup("hypothecation", "Hypothecation", [{value: "yes", label: "Yes"}, {value: "no", label: "No"}])}
-                      <FormField control={form.control} name="expectedPrice" render={({ field }) => ( <FormItem> <FormLabel>Expected Price</FormLabel> <FormControl><Input type="number" placeholder="e.g., 500000" value={field.value ?? ''} onChange={e => field.onChange(e.target.value === '' ? '' : Number(e.target.value))} /></FormControl> <FormMessage /> </FormItem> )} />
-                    </div>
-                  </TabsContent>
-
-                  <TabsContent value="history" className="mt-0">
-                      <h3 className="text-lg font-semibold mb-4">Usage &amp; History</h3>
+                  {/* Form Content */}
+                  <div className="mt-4 md:mt-0">
+                    <TabsContent value="contact" className="mt-0">
+                      <h3 className="text-lg font-semibold mb-4">Contact Details</h3>
                       <div className="space-y-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <FormField control={form.control} name="odometer" render={({ field }) => ( <FormItem> <FormLabel>Odometer (km)</FormLabel> <FormControl><Input type="number" placeholder="e.g., 45000" {...field} value={field.value ?? ''} /></FormControl> <FormMessage /> </FormItem> )} />
-                          {renderSelect("usageType", "Usage Type", [{value: "personal", label: "Personal"}, {value: "commercial", label: "Commercial"}], "Select Usage Type")}
-                          {renderRadioGroup("cityDriven", "Primarily City Driven", [{value: "yes", label: "Yes"}, {value: "no", label: "No"}])}
-                          {renderRadioGroup("floodDamage", "Flood Damage", [{value: "yes", label: "Yes"}, {value: "no", label: "No"}])}
-                          {renderRadioGroup("accident", "Accident History", [{value: "yes", label: "Yes"}, {value: "no", label: "No"}])}
-                          {renderSelect("serviceCenter", "Service Center", [{value: "authorized", label: "Authorized"}, {value: "local", label: "Local Garage"}, {value: "mixed", label: "Mixed"}], "Select Service Center")}
+                        <FormField control={form.control} name="displayName" render={({ field }) => ( <FormItem> <FormLabel>Name</FormLabel> <FormControl><Input placeholder="Your full name" {...field} value={field.value ?? ''} /></FormControl> <FormMessage /> </FormItem> )} />
+                        <FormField control={form.control} name="whatsappNumber" render={({ field }) => ( <FormItem> <FormLabel>WhatsApp Number</FormLabel> <FormControl><Input type="tel" placeholder="e.g., 9876543210" {...field} value={field.value ?? ''} /></FormControl> <FormMessage /> </FormItem> )} />
+                        <FormField control={form.control} name="vehicleNumber" render={({ field }) => ( <FormItem> <FormLabel>Vehicle Number (Optional)</FormLabel> <FormControl><Input placeholder="e.g., AP09BUXXXX" {...field} value={field.value ?? ''} /></FormControl> <FormMessage /> </FormItem> )} />
                       </div>
-                  </TabsContent>
+                    </TabsContent>
 
-                  <TabsContent value="engine" className="mt-0">
-                      <h3 className="text-lg font-semibold mb-4">Engine &amp; Mechanical</h3>
-                      <div className="space-y-4 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-                          {renderSelect("engine", "Engine", [{value: "smooth", label: "Excellent / Smooth"}, {value: "noise", label: "Good / Minor Noise"}, {value: "vibration", label: "Average / Vibration"}, {value: "other", label: "Poor / Overhaul Needed"}], "Select Engine Condition")}
-                          {renderSelect("gearbox", "Gearbox", [{value: "smooth", label: "Smooth Shifting"}, {value: "hard_shifting", label: "Minor Hard Shift"}, {value: "noise", label: "Noise / Delay"}, {value: "other", label: "Repair Required"}], "Select Gearbox Condition")}
-                          {renderSelect("clutch", "Clutch", [{value: "normal", label: "Excellent"}, {value: "hard", label: "Slightly Hard"}, {value: "slipping", label: "Slipping"}, {value: "other", label: "Replacement Needed"}], "Select Clutch Condition")}
-                          {renderSelect("battery", "Battery", [{value: "new", label: "New / Good"}, {value: "average", label: "Average"}, {value: "weak", label: "Weak"}, {value: "not_working", label: "Not Working"}], "Select Battery Condition")}
-                          {renderSelect("radiator", "Radiator", [{value: "good", label: "No Leakage"}, {value: "leakage", label: "Minor Issue"}, {value: "overheating", label: "Overheating"}, {value: "damaged", label: "Major Damage"}], "Select Radiator Condition")}
-                          {renderSelect("exhaust", "Exhaust", [{value: "normal_smoke", label: "Normal"}, {value: "noise", label: "Noise"}, {value: "smoke", label: "Smoke"}, {value: "other", label: "Replacement Needed"}], "Select Exhaust Condition")}
-                          {renderSelect("suspension", "Suspension", [{value: "good", label: "Smooth"}, {value: "noise", label: "Slight Noise"}, {value: "bumpy", label: "Bumpy Ride"}, {value: "worn_out", label: "Worn Out"}], "Select Suspension Condition")}
-                          {renderSelect("steering", "Steering", [{value: "normal", label: "Perfect"}, {value: "play", label: "Slight Play"}, {value: "hard", label: "Hard Steering"}, {value: "alignment", label: "Alignment Issue"}], "Select Steering Condition")}
-                          {renderSelect("brakes", "Brakes", [{value: "good", label: "Good"}, {value: "needs_service", label: "Needs Service"}, {value: "weak", label: "Weak"}], "Select Brakes Condition")}
+                    <TabsContent value="basic" className="mt-0">
+                      <h3 className="text-lg font-semibold mb-4">Basic Vehicle Information</h3>
+                      <div className="space-y-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {renderSelect("priceCheckReason", "Check price for", [{value: "immediate_sale", label: "Immediate sale"}, {value: "price_check", label: "Just price check"}, {value: "market_value", label: "Knowing the market value"}], "Select a reason")}
+                        <FormField control={form.control} name="make" render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Make</FormLabel>
+                            <Select onValueChange={(value) => { field.onChange(value); form.setValue('model', ''); form.setValue('variant', ''); }} value={field.value ?? ''}>
+                              <FormControl><SelectTrigger><SelectValue placeholder="Select Make" /></SelectTrigger></FormControl>
+                              <SelectContent>{Object.keys(carMakesAndModelsAndVariants).map(make => <SelectItem key={make} value={make}>{make}</SelectItem>)}</SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )} />
+                        <FormField control={form.control} name="model" render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Model</FormLabel>
+                            <Select onValueChange={(value) => { field.onChange(value); form.setValue('variant', ''); }} value={field.value ?? ''} disabled={!watchedMake}>
+                              <FormControl><SelectTrigger><SelectValue placeholder="Select Model" /></SelectTrigger></FormControl>
+                              <SelectContent>{models.map(model => <SelectItem key={model} value={model}>{model}</SelectItem>)}</SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )} />
+                        <FormField control={form.control} name="variant" render={({ field }) => ( 
+                          <FormItem>
+                            <FormLabel>Variant</FormLabel>
+                              <Select onValueChange={field.onChange} value={field.value ?? ''} disabled={!watchedModel || variants.length === 0}>
+                                <FormControl><SelectTrigger><SelectValue placeholder="Select Variant" /></SelectTrigger></FormControl>
+                                <SelectContent>{variants.map(variant => <SelectItem key={variant} value={variant}>{variant}</SelectItem>)}</SelectContent>
+                              </Select>
+                            <FormMessage />
+                          </FormItem> 
+                        )} />
+                        {renderSelect("bodyType", "Body Type", [
+                            {value: "hatchback", label: "Hatchback – Compact & city friendly"},
+                            {value: "sedan", label: "Sedan – Comfort & elegance"},
+                            {value: "suv", label: "SUV – Power & ground clearance"},
+                            {value: "muv_mpv", label: "MUV/MPV – Family & space"},
+                            {value: "coupe_convertible", label: "Coupe/Convertible – Sporty & luxury"},
+                            {value: "pickup_van", label: "Pickup/Van – Utility & commercial"},
+                        ], "Select Body Type")}
+                        {renderSelect("fuelType", "Fuel Type", [{value: "petrol", label: "Petrol"}, {value: "diesel", label: "Diesel"}, {value: "cng", label: "CNG"}, {value: "electric", label: "Electric"}], "Select Fuel Type")}
+                        {renderSelect("transmission", "Transmission", [{value: "manual", label: "Manual"}, {value: "automatic", label: "Automatic"}], "Select Transmission")}
+                        <FormField control={form.control} name="manufactureYear" render={({ field }) => ( <FormItem> <FormLabel>Year of Manufacture</FormLabel> <Select onValueChange={(val) => field.onChange(Number(val))} value={field.value ? String(field.value) : ''}> <FormControl><SelectTrigger><SelectValue placeholder="Select Year" /></SelectTrigger></FormControl> <SelectContent>{Array.from({ length: new Date().getFullYear() - 1979 }, (_, i) => new Date().getFullYear() - i).map(year => <SelectItem key={year} value={String(year)}>{year}</SelectItem>)}</SelectContent> </Select> <FormMessage /> </FormItem> )} />
+                        <FormField control={form.control} name="registrationYear" render={({ field }) => ( <FormItem> <FormLabel>Year of Registration</FormLabel> <Select onValueChange={(val) => field.onChange(Number(val))} value={field.value ? String(field.value) : ''}> <FormControl><SelectTrigger><SelectValue placeholder="Select Year" /></SelectTrigger></FormControl> <SelectContent>{Array.from({ length: new Date().getFullYear() - 1979 }, (_, i) => new Date().getFullYear() - i).map(year => <SelectItem key={year} value={String(year)}>{year}</SelectItem>)}</SelectContent> </Select> <FormMessage /> </FormItem> )} />
+                        <FormField control={form.control} name="registrationState" render={({ field }) => ( <FormItem> <FormLabel>Registration State</FormLabel> <Select onValueChange={field.onChange} value={field.value ?? ''}> <FormControl><SelectTrigger><SelectValue placeholder="Select State" /></SelectTrigger></FormControl> <SelectContent>{indianStates.map(state => <SelectItem key={state} value={state}>{state}</SelectItem>)}</SelectContent> </Select> <FormMessage /> </FormItem> )} />
+                        {renderSelect("ownership", "Ownership", [{value: "1st", label: "1st Owner"}, {value: "2nd", label: "2nd Owner"}, {value: "3rd", label: "3rd Owner"}, {value: "4th+", label: "4th+ Owner"}], "Select Ownership")}
+                        {renderSelect("rcStatus", "RC Status", [{value: "active", label: "Active"}, {value: "inactive", label: "Inactive"}, {value: "pending", label: "Pending"}], "Select RC Status")}
+                        {renderSelect("insurance", "Insurance", [{value: "comprehensive", label: "Comprehensive"}, {value: "third_party", label: "Third-party"}, {value: "none", label: "None"}], "Select Insurance")}
+                        {renderRadioGroup("hypothecation", "Hypothecation", [{value: "yes", label: "Yes"}, {value: "no", label: "No"}])}
+                        <FormField control={form.control} name="expectedPrice" render={({ field }) => ( <FormItem> <FormLabel>Expected Price</FormLabel> <FormControl><Input type="number" placeholder="e.g., 500000" value={field.value ?? ''} onChange={e => field.onChange(e.target.value === '' ? '' : Number(e.target.value))} /></FormControl> <FormMessage /> </FormItem> )} />
                       </div>
-                  </TabsContent>
-                  
-                  <TabsContent value="fluids" className="mt-0">
-                      <h3 className="text-lg font-semibold mb-4">Fluids Check</h3>
-                      <div className="space-y-4 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-                          {renderSelect("engineOil", "Engine Oil", [{value: "ok", label: "OK"}, {value: "low", label: "Low"}, {value: "dirty", label: "Dirty"}, {value: "replace", label: "Needs Replacement"}], "Select Engine Oil Condition")}
-                          {renderSelect("coolant", "Coolant", [{value: "ok", label: "OK"}, {value: "low", label: "Low"}, {value: "leak", label: "Leak"}], "Select Coolant Condition")}
-                          {renderSelect("brakeFluid", "Brake Fluid", [{value: "ok", label: "OK"}, {value: "low", label: "Low"}, {value: "contaminated", label: "Contaminated"}], "Select Brake Fluid Condition")}
-                          {renderSelect("washerFluid", "Washer Fluid", [{value: "ok", label: "OK"}, {value: "low", label: "Low"}], "Select Washer Fluid Condition")}
-                      </div>
-                  </TabsContent>
+                    </TabsContent>
 
-                  <TabsContent value="exterior" className="mt-0">
-                      <h3 className="text-lg font-semibold mb-4">Exterior (Body &amp; Paint)</h3>
-                      <div className="space-y-4 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-                          {renderSelect("frontBumper", "Front Bumper", [{value: "original", label: "Excellent / Original"}, {value: "scratch", label: "Minor Scratches"}, {value: "repaint", label: "Repainted"}, {value: "damaged", label: "Dent / Damage"}], "Select Condition")}
-                          {renderSelect("rearBumper", "Rear Bumper", [{value: "original", label: "Excellent / Original"}, {value: "scratch", label: "Minor Scratches"}, {value: "repaint", label: "Repainted"}, {value: "damaged", label: "Dent / Damage"}], "Select Condition")}
-                          {renderSelect("bonnet", "Bonnet", [{value: "original", label: "Excellent / Original"}, {value: "scratch", label: "Minor Scratches"}, {value: "repaint", label: "Repainted"}, {value: "dent", label: "Dent / Damage"}], "Select Condition")}
-                          {renderSelect("roof", "Roof", [{value: "original", label: "Original"}, {value: "repaint", label: "Repainted"}, {value: "dent", label: "Dent / Damage"}], "Select Condition")}
-                          {renderSelect("doors", "Doors (All)", [{value: "original", label: "All Original"}, {value: "repaint_one", label: "1 Door Repainted"}, {value: "repaint_multi", label: "Multiple Repainted"}, {value:"dent", label: "Dent / Damage"}], "Select Condition")}
-                          {renderSelect("fenders", "Fenders", [{value: "original", label: "Excellent / Original"}, {value: "scratch", label: "Minor Scratches"}, {value: "repaint", label: "Repainted"}, {value: "dent", label: "Dent / Damage"}], "Select Condition")}
-                          {renderSelect("paintQuality", "Paint Quality", [{value: "excellent", label: "Excellent / Glossy"}, {value: "average", label: "Average"}, {value: "dull", label: "Dull / Faded"}, {value: "poor", label: "Poor"}], "Select Paint Quality")}
-                          {renderSelect("scratches", "Scratch Count", [{value: "0", label: "None / Few"}, {value: "3-5", label: "3 - 5"}, {value: "6-10", label: "6 - 10"}, {value: ">10", label: "More than 10"}], "Select Scratch Count")}
-                          {renderSelect("dents", "Dent Count", [{value: "0", label: "None"}, {value: "1-2", label: "1 - 2"}, {value: "3-5", label: "3 - 5"}, {value: ">5", label: "More than 5"}], "Select Dent Count")}
-                          {renderSelect("rust_areas", "Rust", [{value: "none", label: "No Rust"}, {value: "minor", label: "Minor Surface Rust"}, {value: "visible", label: "Visible Rust"}, {value: "structural", label: "Structural Rust"}], "Select Rust Condition")}
-                          {renderSelect("accidentHistory", "Accident History", [{value: "none", label: "None"}, {value: "minor", label: "Minor"}, {value: "major", label: "Major"}], "Select Accident History")}
-                      </div>
-                  </TabsContent>
+                    <TabsContent value="history" className="mt-0">
+                        <h3 className="text-lg font-semibold mb-4">Usage &amp; History</h3>
+                        <div className="space-y-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <FormField control={form.control} name="odometer" render={({ field }) => ( <FormItem> <FormLabel>Odometer (km)</FormLabel> <FormControl><Input type="number" placeholder="e.g., 45000" {...field} value={field.value ?? ''} /></FormControl> <FormMessage /> </FormItem> )} />
+                            {renderSelect("usageType", "Usage Type", [{value: "personal", label: "Personal"}, {value: "commercial", label: "Commercial"}], "Select Usage Type")}
+                            {renderRadioGroup("cityDriven", "Primarily City Driven", [{value: "yes", label: "Yes"}, {value: "no", label: "No"}])}
+                            {renderRadioGroup("floodDamage", "Flood Damage", [{value: "yes", label: "Yes"}, {value: "no", label: "No"}])}
+                            {renderRadioGroup("accident", "Accident History", [{value: "yes", label: "Yes"}, {value: "no", label: "No"}])}
+                            {renderSelect("serviceCenter", "Service Center", [{value: "authorized", label: "Authorized"}, {value: "local", label: "Local Garage"}, {value: "mixed", label: "Mixed"}], "Select Service Center")}
+                        </div>
+                    </TabsContent>
 
-                  <TabsContent value="interior" className="mt-0">
-                      <h3 className="text-lg font-semibold mb-4">Interior (Cabin Condition)</h3>
-                      <div className="space-y-4 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-                          {renderSelect("seats", "Seats", [{value: "excellent", label: "Excellent / Clean"}, {value: "good", label: "Good / Minor Wear"}, {value: "average", label: "Average"}, {value: "poor", label: "Poor / Damaged"}], "Select Seat Condition")}
-                          {renderSelect("seatCovers", "Seat Covers", [{value: "new", label: "New / Good"}, {value: "average", label: "Average"}, {value: "torn", label: "Torn / Worn"}, {value: "not_present", label: "Not Present"}], "Select Seat Cover Condition")}
-                          {renderSelect("dashboard", "Dashboard", [{value: "excellent", label: "Excellent / Clean"}, {value: "good", label: "Good / Minor Wear"}, {value: "average", label: "Average"}, {value: "poor", label: "Poor / Damaged"}], "Select Dashboard Condition")}
-                          {renderSelect("dashboardWarningLights", "Dashboard Warning Lights", [{value: "normal", label: "All lights normal"}, {value: "minor", label: "Minor warning"}, {value: "critical", label: "Critical warning"}], "Select Warning Light Status")}
-                          {renderSelect("steeringWheel", "Steering Wheel", [{value: "excellent", label: "Excellent"}, {value: "normal_wear", label: "Normal Wear"}, {value: "worn_out", label: "Worn Out"}, {value: "damaged", label: "Damaged"}], "Select Steering Wheel Condition")}
-                          {renderSelect("roofLining", "Roof Lining", [{value: "clean", label: "Clean"}, {value: "dirty", label: "Slightly Dirty"}, {value: "sagging", label: "Sagging / Stained"}, {value: "damaged", label: "Damaged"}], "Select Roof Lining Condition")}
-                          {renderRadioGroup("floorMats", "Floor Mats", [{value: "present", label: "Present"}, {value: "not_present", label: "Not Present"}])}
-                          {renderSelect("ac", "A/C", [{value: "working", label: "Cooling Well"}, {value: "weak", label: "Cooling Less"}, {value: "noise", label: "Noise / Smell"}, {value: "not_working", label: "Not Working"}], "Select A/C Condition")}
-                          {renderSelect("infotainment", "Infotainment", [{value: "working", label: "Working Perfect"}, {value: "minor_issues", label: "Minor Issues"}, {value: "touch_issue", label: "Touch / Sound Issue"}, {value: "not_working", label: "Not Working"}], "Select Infotainment Condition")}
-                      </div>
-                  </TabsContent>
+                    <TabsContent value="engine" className="mt-0">
+                        <h3 className="text-lg font-semibold mb-4">Engine &amp; Mechanical</h3>
+                        <div className="space-y-4 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                            {renderSelect("engine", "Engine", [{value: "smooth", label: "Excellent / Smooth"}, {value: "noise", label: "Good / Minor Noise"}, {value: "vibration", label: "Average / Vibration"}, {value: "other", label: "Poor / Overhaul Needed"}], "Select Engine Condition")}
+                            {renderSelect("gearbox", "Gearbox", [{value: "smooth", label: "Smooth Shifting"}, {value: "hard_shifting", label: "Minor Hard Shift"}, {value: "noise", label: "Noise / Delay"}, {value: "other", label: "Repair Required"}], "Select Gearbox Condition")}
+                            {renderSelect("clutch", "Clutch", [{value: "normal", label: "Excellent"}, {value: "hard", label: "Slightly Hard"}, {value: "slipping", label: "Slipping"}, {value: "other", label: "Replacement Needed"}], "Select Clutch Condition")}
+                            {renderSelect("battery", "Battery", [{value: "new", label: "New / Good"}, {value: "average", label: "Average"}, {value: "weak", label: "Weak"}, {value: "not_working", label: "Not Working"}], "Select Battery Condition")}
+                            {renderSelect("radiator", "Radiator", [{value: "good", label: "No Leakage"}, {value: "leakage", label: "Minor Issue"}, {value: "overheating", label: "Overheating"}, {value: "damaged", label: "Major Damage"}], "Select Radiator Condition")}
+                            {renderSelect("exhaust", "Exhaust", [{value: "normal_smoke", label: "Normal"}, {value: "noise", label: "Noise"}, {value: "smoke", label: "Smoke"}, {value: "other", label: "Replacement Needed"}], "Select Exhaust Condition")}
+                            {renderSelect("suspension", "Suspension", [{value: "good", label: "Smooth"}, {value: "noise", label: "Slight Noise"}, {value: "bumpy", label: "Bumpy Ride"}, {value: "worn_out", label: "Worn Out"}], "Select Suspension Condition")}
+                            {renderSelect("steering", "Steering", [{value: "normal", label: "Perfect"}, {value: "play", label: "Slight Play"}, {value: "hard", label: "Hard Steering"}, {value: "alignment", label: "Alignment Issue"}], "Select Steering Condition")}
+                            {renderSelect("brakes", "Brakes", [{value: "good", label: "Good"}, {value: "needs_service", label: "Needs Service"}, {value: "weak", label: "Weak"}], "Select Brakes Condition")}
+                        </div>
+                    </TabsContent>
+                    
+                    <TabsContent value="fluids" className="mt-0">
+                        <h3 className="text-lg font-semibold mb-4">Fluids Check</h3>
+                        <div className="space-y-4 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                            {renderSelect("engineOil", "Engine Oil", [{value: "ok", label: "OK"}, {value: "low", label: "Low"}, {value: "dirty", label: "Dirty"}, {value: "replace", label: "Needs Replacement"}], "Select Engine Oil Condition")}
+                            {renderSelect("coolant", "Coolant", [{value: "ok", label: "OK"}, {value: "low", label: "Low"}, {value: "leak", label: "Leak"}], "Select Coolant Condition")}
+                            {renderSelect("brakeFluid", "Brake Fluid", [{value: "ok", label: "OK"}, {value: "low", label: "Low"}, {value: "contaminated", label: "Contaminated"}], "Select Brake Fluid Condition")}
+                            {renderSelect("washerFluid", "Washer Fluid", [{value: "ok", label: "OK"}, {value: "low", label: "Low"}], "Select Washer Fluid Condition")}
+                        </div>
+                    </TabsContent>
 
-                  <TabsContent value="electrical" className="mt-0">
-                      <h3 className="text-lg font-semibold mb-4">Electrical &amp; Electronics</h3>
-                      <div className="space-y-4 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-                          {renderSelect("powerWindows", "Power Windows", [{value: "all_working", label: "All Working"}, {value: "one_not_working", label: "1 Window Not Working"}, {value: "multiple_not_working", label: "Multiple Not Working"}, {value: "none_working", label: "None Working"}], "Select Power Window Condition")}
-                          {renderRadioGroup("centralLocking", "Central Locking", [{value: "working", label: "Working"}, {value: "not_working", label: "Not Working"}])}
-                          {renderRadioGroup("headlights", "Headlights", [{value: "working", label: "Working"}, {value: "not_working", label: "Not Working"}])}
-                          {renderRadioGroup("indicators", "Indicators", [{value: "working", label: "Working"}, {value: "not_working", label: "Not Working"}])}
-                          {renderRadioGroup("horn", "Horn", [{value: "working", label: "Working"}, {value: "not_working", label: "Not Working"}])}
-                          {renderSelect("reverseCamera", "Reverse Camera", [{value: "working", label: "Working"},{value: "minor_issue", label: "Minor Issue"}, {value: "not_working", label: "Not Working"}, {value: "na", label: "Not Applicable"}], "Select Reverse Camera Condition")}
-                          {renderSelect("sensors", "Parking Sensors", [{value: "working", label: "Working"}, {value: "some_not_working", label: "Some Not Working"}, {value: "not_working", label: "Not Working"}, {value: "na", label: "Not Applicable"}], "Select Sensor Condition")}
-                          {renderRadioGroup("wipers", "Wipers", [{value: "working", label: "Working"}, {value: "not_working", label: "Not Working"}])}
-                      </div>
-                  </TabsContent>
+                    <TabsContent value="exterior" className="mt-0">
+                        <h3 className="text-lg font-semibold mb-4">Exterior (Body &amp; Paint)</h3>
+                        <div className="space-y-4 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                            {renderSelect("frontBumper", "Front Bumper", [{value: "original", label: "Excellent / Original"}, {value: "scratch", label: "Minor Scratches"}, {value: "repaint", label: "Repainted"}, {value: "damaged", label: "Dent / Damage"}], "Select Condition")}
+                            {renderSelect("rearBumper", "Rear Bumper", [{value: "original", label: "Excellent / Original"}, {value: "scratch", label: "Minor Scratches"}, {value: "repaint", label: "Repainted"}, {value: "damaged", label: "Dent / Damage"}], "Select Condition")}
+                            {renderSelect("bonnet", "Bonnet", [{value: "original", label: "Excellent / Original"}, {value: "scratch", label: "Minor Scratches"}, {value: "repaint", label: "Repainted"}, {value: "dent", label: "Dent / Damage"}], "Select Condition")}
+                            {renderSelect("roof", "Roof", [{value: "original", label: "Original"}, {value: "repaint", label: "Repainted"}, {value: "dent", label: "Dent / Damage"}], "Select Condition")}
+                            {renderSelect("doors", "Doors (All)", [{value: "original", label: "All Original"}, {value: "repaint_one", label: "1 Door Repainted"}, {value: "repaint_multi", label: "Multiple Repainted"}, {value:"dent", label: "Dent / Damage"}], "Select Condition")}
+                            {renderSelect("fenders", "Fenders", [{value: "original", label: "Excellent / Original"}, {value: "scratch", label: "Minor Scratches"}, {value: "repaint", label: "Repainted"}, {value: "dent", label: "Dent / Damage"}], "Select Condition")}
+                            {renderSelect("paintQuality", "Paint Quality", [{value: "excellent", label: "Excellent / Glossy"}, {value: "average", label: "Average"}, {value: "dull", label: "Dull / Faded"}, {value: "poor", label: "Poor"}], "Select Paint Quality")}
+                            {renderSelect("scratches", "Scratch Count", [{value: "0", label: "None / Few"}, {value: "3-5", label: "3 - 5"}, {value: "6-10", label: "6 - 10"}, {value: ">10", label: "More than 10"}], "Select Scratch Count")}
+                            {renderSelect("dents", "Dent Count", [{value: "0", label: "None"}, {value: "1-2", label: "1 - 2"}, {value: "3-5", label: "3 - 5"}, {value: ">5", label: "More than 5"}], "Select Dent Count")}
+                            {renderSelect("rust_areas", "Rust", [{value: "none", label: "No Rust"}, {value: "minor", label: "Minor Surface Rust"}, {value: "visible", label: "Visible Rust"}, {value: "structural", label: "Structural Rust"}], "Select Rust Condition")}
+                            {renderSelect("accidentHistory", "Accident History", [{value: "none", label: "None"}, {value: "minor", label: "Minor"}, {value: "major", label: "Major"}], "Select Accident History")}
+                        </div>
+                    </TabsContent>
 
-                  <TabsContent value="tyres" className="mt-0">
-                      <h3 className="text-lg font-semibold mb-4">Tyres &amp; Wheels</h3>
-                      <div className="space-y-4 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-                          {renderSelect("frontTyres", "Front Tyres Life", [{value: "75-100", label: "75% - 100%"}, {value: "50-74", label: "50% - 74%"}, {value: "25-49", label: "25% - 49%"}, {value: "0-24", label: "Below 25%"}], "Select Tyre Life")}
-                          {renderSelect("rearTyres", "Rear Tyres Life", [{value: "75-100", label: "75% - 100%"}, {value: "50-74", label: "50% - 74%"}, {value: "25-49", label: "25% - 49%"}, {value: "0-24", label: "Below 25%"}], "Select Tyre Life")}
-                          {renderSelect("spareTyre", "Spare Tyre", [{value: "usable", label: "Present (Usable)"}, {value: "worn", label: "Present (Worn)"}, {value: "not_present", label: "Not Present"}], "Select Spare Tyre Condition")}
-                          {renderRadioGroup("alloyWheels", "Alloy Wheels", [{value: "yes", label: "Yes"}, {value: "no", label: "No"}])}
-                          {renderSelect("wheelAlignment", "Wheel Alignment", [{value: "ok", label: "OK"}, {value: "needed", label: "Needed"}], "Select Alignment Condition")}
-                      </div>
-                  </TabsContent>
+                    <TabsContent value="interior" className="mt-0">
+                        <h3 className="text-lg font-semibold mb-4">Interior (Cabin Condition)</h3>
+                        <div className="space-y-4 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                            {renderSelect("seats", "Seats", [{value: "excellent", label: "Excellent / Clean"}, {value: "good", label: "Good / Minor Wear"}, {value: "average", label: "Average"}, {value: "poor", label: "Poor / Damaged"}], "Select Seat Condition")}
+                            {renderSelect("seatCovers", "Seat Covers", [{value: "new", label: "New / Good"}, {value: "average", label: "Average"}, {value: "torn", label: "Torn / Worn"}, {value: "not_present", label: "Not Present"}], "Select Seat Cover Condition")}
+                            {renderSelect("dashboard", "Dashboard", [{value: "excellent", label: "Excellent / Clean"}, {value: "good", label: "Good / Minor Wear"}, {value: "average", label: "Average"}, {value: "poor", label: "Poor / Damaged"}], "Select Dashboard Condition")}
+                            {renderSelect("dashboardWarningLights", "Dashboard Warning Lights", [{value: "normal", label: "All lights normal"}, {value: "minor", label: "Minor warning"}, {value: "critical", label: "Critical warning"}], "Select Warning Light Status")}
+                            {renderSelect("steeringWheel", "Steering Wheel", [{value: "excellent", label: "Excellent"}, {value: "normal_wear", label: "Normal Wear"}, {value: "worn_out", label: "Worn Out"}, {value: "damaged", label: "Damaged"}], "Select Steering Wheel Condition")}
+                            {renderSelect("roofLining", "Roof Lining", [{value: "clean", label: "Clean"}, {value: "dirty", label: "Slightly Dirty"}, {value: "sagging", label: "Sagging / Stained"}, {value: "damaged", label: "Damaged"}], "Select Roof Lining Condition")}
+                            {renderRadioGroup("floorMats", "Floor Mats", [{value: "present", label: "Present"}, {value: "not_present", label: "Not Present"}])}
+                            {renderSelect("ac", "A/C", [{value: "working", label: "Cooling Well"}, {value: "weak", label: "Cooling Less"}, {value: "noise", label: "Noise / Smell"}, {value: "not_working", label: "Not Working"}], "Select A/C Condition")}
+                            {renderSelect("infotainment", "Infotainment", [{value: "working", label: "Working Perfect"}, {value: "minor_issues", label: "Minor Issues"}, {value: "touch_issue", label: "Touch / Sound Issue"}, {value: "not_working", label: "Not Working"}], "Select Infotainment Condition")}
+                        </div>
+                    </TabsContent>
 
-                  <TabsContent value="safety" className="mt-0">
-                      <h3 className="text-lg font-semibold mb-4">Safety Features</h3>
-                      <div className="space-y-4 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-                          {renderSelect("airbags", "Airbags", [{value: "dual_multiple", label: "Dual / Multiple Airbags"}, {value: "driver_only", label: "Driver Airbag Only"}, {value: "none", label: "No Airbags"}, {value: "deployed_faulty", label: "Deployed / Faulty"}], "Select Airbag Configuration")}
-                          {renderRadioGroup("abs", "ABS", [{value: "yes", label: "Yes"}, {value: "no", label: "No"}])}
-                          {renderSelect("seatBelts", "Seat Belts", [{value: "all_working", label: "All Working"}, {value: "one_not_working", label: "One Not Working"}, {value: "multiple_not_working", label: "Multiple Not Working"}], "Select Seat Belts Status")}
-                          {renderRadioGroup("childLock", "Child Lock", [{value: "yes", label: "Yes"}, {value: "no", label: "No"}])}
-                          {renderRadioGroup("immobilizer", "Immobilizer", [{value: "yes", label: "Yes"}, {value: "no", label: "No"}])}
-                      </div>
-                  </TabsContent>
+                    <TabsContent value="electrical" className="mt-0">
+                        <h3 className="text-lg font-semibold mb-4">Electrical &amp; Electronics</h3>
+                        <div className="space-y-4 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                            {renderSelect("powerWindows", "Power Windows", [{value: "all_working", label: "All Working"}, {value: "one_not_working", label: "1 Window Not Working"}, {value: "multiple_not_working", label: "Multiple Not Working"}, {value: "none_working", label: "None Working"}], "Select Power Window Condition")}
+                            {renderRadioGroup("centralLocking", "Central Locking", [{value: "working", label: "Working"}, {value: "not_working", label: "Not Working"}])}
+                            {renderRadioGroup("headlights", "Headlights", [{value: "working", label: "Working"}, {value: "not_working", label: "Not Working"}])}
+                            {renderRadioGroup("indicators", "Indicators", [{value: "working", label: "Working"}, {value: "not_working", label: "Not Working"}])}
+                            {renderRadioGroup("horn", "Horn", [{value: "working", label: "Working"}, {value: "not_working", label: "Not Working"}])}
+                            {renderSelect("reverseCamera", "Reverse Camera", [{value: "working", label: "Working"},{value: "minor_issue", label: "Minor Issue"}, {value: "not_working", label: "Not Working"}, {value: "na", label: "Not Applicable"}], "Select Reverse Camera Condition")}
+                            {renderSelect("sensors", "Parking Sensors", [{value: "working", label: "Working"}, {value: "some_not_working", label: "Some Not Working"}, {value: "not_working", label: "Not Working"}, {value: "na", label: "Not Applicable"}], "Select Sensor Condition")}
+                            {renderRadioGroup("wipers", "Wipers", [{value: "working", label: "Working"}, {value: "not_working", label: "Not Working"}])}
+                        </div>
+                    </TabsContent>
 
-                  <TabsContent value="documents" className="mt-0">
-                      <h3 className="text-lg font-semibold mb-4">Documents</h3>
-                      <div className="space-y-4 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-                          {renderSelect("rcBook", "RC Book", [{value: "original", label: "Original (Incl. Smart Card/Digital)"}, {value: "duplicate", label: "Duplicate RC"}, {value: "lost", label: "Lost / Not Available"}], "Select RC Book Status")}
-                          {renderSelect("insuranceDoc", "Insurance", [{value: "comprehensive", label: "Valid Comprehensive"}, {value: "third_party", label: "Valid Third-Party"}, {value: "expired_30", label: "Expired (<= 30 days)"}, {value: "expired_90", label: "Expired (> 30 days)"}, {value: "none", label: "Not Available"}], "Select Insurance Status")}
-                          {renderSelect("puc", "PUC", [{value: "valid", label: "Valid"}, {value: "expired", label: "Expired"}, {value: "not_available", label: "Not Available"}], "Select PUC Status")}
-                          {renderSelect("serviceRecords", "Service Records", [{value: "full", label: "Full History Available"}, {value: "partial", label: "Partial History"}, {value: "none", label: "Not Available"}], "Select Service Records Status")}
-                          {renderSelect("duplicateKey", "Duplicate Key", [{value: "available", label: "Available"}, {value: "not_available", label: "Not Available"}], "Select Duplicate Key Status")}
-                          {renderSelect("noc", "NOC", [{value: "not_required", label: "Not Required"}, {value: "available", label: "Available"}, {value: "pending", label: "Pending"}, {value: "required but Not Available", label: "Required but Not Available"}], "Select NOC Status")}
-                      </div>
-                  </TabsContent>
+                    <TabsContent value="tyres" className="mt-0">
+                        <h3 className="text-lg font-semibold mb-4">Tyres &amp; Wheels</h3>
+                        <div className="space-y-4 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                            {renderSelect("frontTyres", "Front Tyres Life", [{value: "75-100", label: "75% - 100%"}, {value: "50-74", label: "50% - 74%"}, {value: "25-49", label: "25% - 49%"}, {value: "0-24", label: "Below 25%"}], "Select Tyre Life")}
+                            {renderSelect("rearTyres", "Rear Tyres Life", [{value: "75-100", label: "75% - 100%"}, {value: "50-74", label: "50% - 74%"}, {value: "25-49", label: "25% - 49%"}, {value: "0-24", label: "Below 25%"}], "Select Tyre Life")}
+                            {renderSelect("spareTyre", "Spare Tyre", [{value: "usable", label: "Present (Usable)"}, {value: "worn", label: "Present (Worn)"}, {value: "not_present", label: "Not Present"}], "Select Spare Tyre Condition")}
+                            {renderRadioGroup("alloyWheels", "Alloy Wheels", [{value: "yes", label: "Yes"}, {value: "no", label: "No"}])}
+                            {renderSelect("wheelAlignment", "Wheel Alignment", [{value: "ok", label: "OK"}, {value: "needed", label: "Needed"}], "Select Alignment Condition")}
+                        </div>
+                    </TabsContent>
 
-                  <TabsContent value="additional" className="mt-0">
-                      <h3 className="text-lg font-semibold mb-4">Additional Features</h3>
-                      <div className="space-y-4 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-                          {renderRadioGroup("musicSystem", "Music System", [{value: "yes", label: "Yes"}, {value: "no", label: "No"}])}
-                          {renderRadioGroup("reverseParkingSensor", "Reverse Parking Sensor", [{value: "yes", label: "Yes"}, {value: "no", label: "No"}])}
-                          {renderRadioGroup("dashcam", "Dashcam", [{value: "yes", label: "Yes"}, {value: "no", "label": "No"}])}
-                          {renderRadioGroup("fogLamps", "Fog Lamps", [{value: "yes", label: "Yes"}, {value: "no", label: "No"}])}
-                          {renderRadioGroup("gpsTracker", "GPS Tracker", [{value: "yes", label: "Yes"}, {value: "no", label: "No"}])}
-                      </div>
-                  </TabsContent>
+                    <TabsContent value="safety" className="mt-0">
+                        <h3 className="text-lg font-semibold mb-4">Safety Features</h3>
+                        <div className="space-y-4 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                            {renderSelect("airbags", "Airbags", [{value: "dual_multiple", label: "Dual / Multiple Airbags"}, {value: "driver_only", label: "Driver Airbag Only"}, {value: "none", label: "No Airbags"}, {value: "deployed_faulty", label: "Deployed / Faulty"}], "Select Airbag Configuration")}
+                            {renderRadioGroup("abs", "ABS", [{value: "yes", label: "Yes"}, {value: "no", label: "No"}])}
+                            {renderSelect("seatBelts", "Seat Belts", [{value: "all_working", label: "All Working"}, {value: "one_not_working", label: "One Not Working"}, {value: "multiple_not_working", label: "Multiple Not Working"}], "Select Seat Belts Status")}
+                            {renderRadioGroup("childLock", "Child Lock", [{value: "yes", label: "Yes"}, {value: "no", label: "No"}])}
+                            {renderRadioGroup("immobilizer", "Immobilizer", [{value: "yes", label: "Yes"}, {value: "no", label: "No"}])}
+                        </div>
+                    </TabsContent>
+
+                    <TabsContent value="documents" className="mt-0">
+                        <h3 className="text-lg font-semibold mb-4">Documents</h3>
+                        <div className="space-y-4 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                            {renderSelect("rcBook", "RC Book", [{value: "original", label: "Original (Incl. Smart Card/Digital)"}, {value: "duplicate", label: "Duplicate RC"}, {value: "lost", label: "Lost / Not Available"}], "Select RC Book Status")}
+                            {renderSelect("insuranceDoc", "Insurance", [{value: "comprehensive", label: "Valid Comprehensive"}, {value: "third_party", label: "Valid Third-Party"}, {value: "expired_30", label: "Expired (<= 30 days)"}, {value: "expired_90", label: "Expired (> 30 days)"}, {value: "none", label: "Not Available"}], "Select Insurance Status")}
+                            {renderSelect("puc", "PUC", [{value: "valid", label: "Valid"}, {value: "expired", label: "Expired"}, {value: "not_available", label: "Not Available"}], "Select PUC Status")}
+                            {renderSelect("serviceRecords", "Service Records", [{value: "full", label: "Full History Available"}, {value: "partial", label: "Partial History"}, {value: "none", label: "Not Available"}], "Select Service Records Status")}
+                            {renderSelect("duplicateKey", "Duplicate Key", [{value: "available", label: "Available"}, {value: "not_available", label: "Not Available"}], "Select Duplicate Key Status")}
+                            {renderSelect("noc", "NOC", [{value: "not_required", label: "Not Required"}, {value: "available", label: "Available"}, {value: "pending", label: "Pending"}, {value: "required but Not Available", label: "Required but Not Available"}], "Select NOC Status")}
+                        </div>
+                    </TabsContent>
+
+                    <TabsContent value="additional" className="mt-0">
+                        <h3 className="text-lg font-semibold mb-4">Additional Features</h3>
+                        <div className="space-y-4 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                            {renderRadioGroup("musicSystem", "Music System", [{value: "yes", label: "Yes"}, {value: "no", label: "No"}])}
+                            {renderRadioGroup("reverseParkingSensor", "Reverse Parking Sensor", [{value: "yes", label: "Yes"}, {value: "no", label: "No"}])}
+                            {renderRadioGroup("dashcam", "Dashcam", [{value: "yes", label: "Yes"}, {value: "no", "label": "No"}])}
+                            {renderRadioGroup("fogLamps", "Fog Lamps", [{value: "yes", label: "Yes"}, {value: "no", label: "No"}])}
+                            {renderRadioGroup("gpsTracker", "GPS Tracker", [{value: "yes", label: "Yes"}, {value: "no", label: "No"}])}
+                        </div>
+                    </TabsContent>
+                  </div>
                 </div>
               </div>
             </Tabs>
