@@ -5,6 +5,7 @@ import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 
 const ImageQualityInputSchema = z.array(z.string()).describe("An array of Base64 data URIs of the car photos.");
+type ImageQualityInput = z.infer<typeof ImageQualityInputSchema>;
 
 const ImageQualityOutputSchema = z.object({
     overall_score: z.number().min(0).max(100).describe("A score from 0-100 representing the overall quality of the set of images for a car listing."),
@@ -37,12 +38,12 @@ const checkImageQualityFlow = ai.defineFlow(
     inputSchema: ImageQualityInputSchema,
     outputSchema: ImageQualityOutputSchema,
   },
-  async (photos) => {
+  async (photos: ImageQualityInput) => {
     const { output } = await imageQualityPrompt(photos);
     return output!;
   }
 );
 
-export async function checkImageQuality(photos: z.infer<typeof ImageQualityInputSchema>): Promise<ImageQualityOutput> {
+export async function checkImageQuality(photos: ImageQualityInput): Promise<ImageQualityOutput> {
     return checkImageQualityFlow(photos);
 }

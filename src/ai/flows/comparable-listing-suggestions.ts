@@ -46,7 +46,7 @@ const getComparableListingsFlow = ai.defineFlow(
     inputSchema: ComparableListingsInputSchema,
     outputSchema: ComparableListingsOutputSchema,
   },
-  async (carData) => {
+  async (carData: ComparableListingsInput) => {
     const { output } = await comparableListingsPrompt(carData);
     return output!;
   }
@@ -56,5 +56,3 @@ const getComparableListingsFlow = ai.defineFlow(
 export async function getComparableListings(carData: ComparableListingsInput): Promise<ComparableListingsOutput> {
   return getComparableListingsFlow(carData);
 }
-
-    
