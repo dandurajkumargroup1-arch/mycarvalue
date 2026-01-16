@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -37,7 +36,7 @@ export interface ValuationData extends CarValuationFormInput {
  * @param user - The authenticated Firebase User object.
  * @param valuationData - The complete valuation data object from the form.
  */
-export function saveValuation(
+export async function saveValuation(
   firestore: Firestore,
   user: User,
   valuationData: Omit<ValuationData, 'userId' | 'createdAt'>
@@ -82,20 +81,19 @@ export function saveValuation(
   batch.set(userDocRef, userProfileUpdate, { merge: true });
 
 
-  return new Promise((resolve, reject) => {
-    batch.commit()
-      .then(() => resolve())
-      .catch((error) => {
-        console.error('Error saving valuation and updating user profile:', error);
-        
-        const permissionError = new FirestorePermissionError({
-          path: `users/${userId}`, // A representative path for the batch operation
-          operation: 'write', // Use a generic 'write' for batch operations
-          requestResourceData: { valuationRecord, userProfileUpdate },
-        });
-        
-        errorEmitter.emit('permission-error', permissionError);
-        reject(permissionError);
-      });
-  });
+  try {
+    await batch.commit();
+  } catch (error) {
+    console.error('Error saving valuation and updating user profile:', error);
+    
+    const permissionError = new FirestorePermissionError({
+      path: `users/${userId}`, // A representative path for the batch operation
+      operation: 'write', // Use a generic 'write' for batch operations
+      requestResourceData: { valuationRecord, userProfileUpdate },
+    });
+    
+    errorEmitter.emit('permission-error', permissionError);
+    // Re-throw the custom error so the UI can catch it.
+    throw permissionError;
+  }
 }
