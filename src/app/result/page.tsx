@@ -60,11 +60,15 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
   const reportRef = useRef<HTMLDivElement>(null);
   const [isDownloading, setIsDownloading] = useState(false);
   const [reportId, setReportId] = useState('');
+  const [generatedOn, setGeneratedOn] = useState('');
+  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
 
   useEffect(() => {
-    // Generate a unique report ID when the component mounts
+    // Generate unique/client-specific data on mount to prevent hydration errors
     const randomPart = Math.random().toString(36).substring(2, 8).toUpperCase();
     setReportId(`MCV-${randomPart}`);
+    setGeneratedOn(format(new Date(), "dd/MM/yyyy - HH:mm"));
+    setCurrentYear(new Date().getFullYear());
   }, []);
 
   if (!result || !valuation || !formData) {
@@ -170,7 +174,7 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
             <section className="my-6 p-4 bg-gray-50 rounded-lg border text-xs text-gray-600">
                 <div className="grid grid-cols-2 gap-4">
                     <div><span className="font-semibold">Report ID:</span> {reportId}</div>
-                    <div><span className="font-semibold">Generated On:</span> {format(new Date(), "dd/MM/yyyy - HH:mm")}</div>
+                    <div><span className="font-semibold">Generated On:</span> {generatedOn}</div>
                     <div><span className="font-semibold">Location:</span> {formData.registrationState}</div>
                     <div><span className="font-semibold">Valuation Type:</span> Independent Market Analysis</div>
                 </div>
@@ -293,7 +297,7 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
             <DetailSection title="Additional Features" data={{ musicSystem, reverseParkingSensor, dashcam, fogLamps, gpsTracker }} />
 
             <footer className="mt-10 pt-4 border-t border-gray-200 text-xs text-center text-gray-500">
-                <p>&copy; {new Date().getFullYear()} mycarvalue.in. All rights reserved.</p>
+                <p>&copy; {currentYear} mycarvalue.in. All rights reserved.</p>
                 <p className="mt-2 text-gray-400">This is an AI-generated report and should be used as an estimate. Physical inspection may affect the final price.</p>
             </footer>
         </div>
@@ -355,3 +359,5 @@ export default function ResultPage() {
         </div>
     );
 }
+
+    
