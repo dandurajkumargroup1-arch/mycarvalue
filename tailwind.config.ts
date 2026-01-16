@@ -1,4 +1,3 @@
-
 import type {Config} from 'tailwindcss';
 
 const { fontFamily } = require("tailwindcss/defaultTheme")
@@ -21,7 +20,15 @@ const config = {
     },
     extend: {
       fontFamily: {
-        sans: ["var(--font-sans)", ...fontFamily.sans],
+        sans: [
+          '-apple-system',
+          'BlinkMacSystemFont',
+          '"Segoe UI"',
+          'Roboto',
+          'Helvetica',
+          'Arial',
+          'sans-serif',
+        ],
       },
       colors: {
         border: "hsl(var(--border))",
