@@ -57,10 +57,13 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
   const { valuation, formData } = result || {};
   const [clientData, setClientData] = useState<{ reportId: string; generatedOn: string; currentYear: number; } | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
     // This effect runs only once on the client after the component mounts.
-    // It's safe to generate client-specific data here to avoid hydration errors.
+    setIsMounted(true);
+    
+    // Now it's safe to generate client-specific data.
     const randomPart = Math.random().toString(36).substring(2, 8).toUpperCase();
     const reportId = `MCV-${randomPart}`;
 
@@ -72,7 +75,7 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
     const currentYear = new Date().getFullYear();
 
     setClientData({ reportId, generatedOn, currentYear });
-  }, []); // Empty dependency array ensures this runs only once on mount.
+  }, []);
 
   const handleDownloadPdf = () => {
     const reportElement = document.getElementById('report-content');
@@ -83,7 +86,7 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
     setIsDownloading(true);
 
     html2canvas(reportElement, {
-        scale: 2, // Using a higher scale for better resolution
+        scale: 2,
         useCORS: true,
         backgroundColor: '#ffffff'
     }).then(canvas => {
@@ -91,20 +94,15 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
         const canvasWidth = canvas.width;
         const canvasHeight = canvas.height;
 
-        // Define a fixed width for the PDF (A4 width in points)
-        const pdfWidth = 595; 
-        // Calculate the height to maintain the aspect ratio
+        const pdfWidth = 595;
         const pdfHeight = (canvasHeight * pdfWidth) / canvasWidth;
 
-        // Create a new jsPDF instance with custom dimensions in points
-        // This will create a single, long page.
         const pdf = new jsPDF({
             orientation: 'portrait',
             unit: 'pt',
             format: [pdfWidth, pdfHeight]
         });
 
-        // Add the image to the PDF, covering the whole page
         pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
         
         pdf.save(`mycarvalue-report-${clientData?.reportId || 'report'}.pdf`);
@@ -115,7 +113,13 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
     });
   };
 
-  if (!result || !valuation || !formData || !clientData) {
+  // On the server, and before the component has mounted on the client, render a skeleton.
+  // This is the key to preventing hydration errors.
+  if (!isMounted) {
+    return <Skeleton className="h-[1200px] w-full" />;
+  }
+
+  if (!result || !valuation || !formData) {
     return (
       <Card className="shadow-lg text-center">
         <CardHeader>
@@ -181,14 +185,14 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
                 </div>
                 <div className="text-right">
                     <p className="font-semibold text-black">{formData.make} {formData.model}</p>
-                    <p className="text-sm text-gray-500">For: {clientData.reportId ? formData.displayName : ''}</p>
+                    <p className="text-sm text-gray-500">For: {formData.displayName}</p>
                 </div>
             </header>
 
             <section className="my-6 p-4 bg-gray-50 rounded-lg border text-xs text-gray-600">
                 <div className="grid grid-cols-2 gap-4">
-                    <div><span className="font-semibold text-black">Report ID:</span> {clientData.reportId}</div>
-                    <div><span className="font-semibold text-black">Generated On:</span> {clientData.generatedOn}</div>
+                    <div><span className="font-semibold text-black">Report ID:</span> {clientData?.reportId}</div>
+                    <div><span className="font-semibold text-black">Generated On:</span> {clientData?.generatedOn}</div>
                     <div><span className="font-semibold text-black">Location:</span> {formData.registrationState}</div>
                     <div><span className="font-semibold text-black">Valuation Type:</span> Independent Market Analysis</div>
                 </div>
@@ -341,13 +345,17 @@ export default function ResultPage() {
     const router = useRouter();
 
     useEffect(() => {
+        // This logic runs only on the client side.
         const paid = localStorage.getItem("paymentSuccess");
         const storedResult = localStorage.getItem('valuationResult');
 
         if (!paid || !storedResult) {
-            // Keep this commented out during development to allow direct access to /result
-            // router.push('/');
-            // return;
+            // To prevent locking developers out, we allow access in development.
+            // In production, this would strictly redirect.
+            if (process.env.NODE_ENV === 'production') {
+                router.push('/');
+                return;
+            }
         }
 
         if (storedResult) {
@@ -361,16 +369,10 @@ export default function ResultPage() {
         setLoading(false);
     }, [router]);
 
-    const handleNewValuation = () => {
-        localStorage.removeItem('valuationResult');
-        localStorage.removeItem('paymentSuccess');
-        router.push('/valuation');
-    }
-
     if (loading) {
         return (
             <div className="container mx-auto max-w-3xl py-12">
-                <Skeleton className="h-96 w-full" />
+                <Skeleton className="h-[1200px] w-full" />
             </div>
         )
     }
@@ -381,3 +383,5 @@ export default function ResultPage() {
         </div>
     );
 }
+
+    
