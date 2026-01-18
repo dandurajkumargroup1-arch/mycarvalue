@@ -37,7 +37,7 @@ export default function EmiCalculatorPage() {
 
     useEffect(() => {
         // This effect runs only on the client, after the initial render.
-        // This is the safe place to perform calculations and update state.
+        // This makes it safe to perform calculations and update state.
         setIsClient(true);
     }, []);
 
@@ -88,16 +88,16 @@ export default function EmiCalculatorPage() {
     } satisfies ChartConfig;
 
     const chartData = useMemo(() => {
-        if (!emiDetails || emiDetails.principal <= 0) return [];
+        if (!isClient || !emiDetails || emiDetails.principal <= 0) return [];
         return [
             { name: 'loanAmount', value: emiDetails.principal, fill: 'var(--color-loanAmount)' },
             { name: 'totalInterest', value: emiDetails.totalInterest, fill: 'var(--color-totalInterest)' },
         ];
-    }, [emiDetails]);
+    }, [emiDetails, isClient]);
     
     const renderValue = (value: number | undefined) => {
         if (!isClient || value === undefined) {
-            return <Skeleton className="h-5 w-20 inline-block"/>;
+            return <Skeleton className="h-5 w-24 inline-block"/>;
         }
         return formatCurrency(value);
     };
@@ -118,7 +118,7 @@ export default function EmiCalculatorPage() {
                 </CardHeader>
                 <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
                     <div className="space-y-8 pt-2">
-                        {/* Sliders remain the same */}
+                        {/* Sliders are safe as their values are controlled by state */}
                         <div>
                             <Label htmlFor="carPrice" className="flex justify-between items-center mb-2">
                                 <span>Total Car Price</span>
@@ -155,7 +155,7 @@ export default function EmiCalculatorPage() {
                         <div>
                             <Label htmlFor="rate" className="flex justify-between items-center mb-2">
                                 <span>Interest Rate (% p.a.)</span>
-                                 <span className="font-bold text-foreground">{rate.toFixed(2)} %</span>
+                                 <span className="font-bold text-foreground">{isClient ? rate.toFixed(2) : '...'} %</span>
                             </Label>
                            <Slider
                                 id="rate"
@@ -185,7 +185,11 @@ export default function EmiCalculatorPage() {
                         <p className="text-sm text-muted-foreground">Monthly EMI</p>
                         {renderLargeValue(emiDetails?.emi)}
 
-                        {(isClient && chartData.length > 0) ? (
+                        {!isClient ? (
+                             <div className="mx-auto aspect-square h-48 flex items-center justify-center">
+                                <Skeleton className="h-48 w-48 rounded-full" />
+                            </div>
+                        ) : chartData.length > 0 ? (
                             <ChartContainer config={chartConfig} className="mx-auto aspect-square h-48">
                                 <PieChart>
                                     <Tooltip
@@ -206,12 +210,10 @@ export default function EmiCalculatorPage() {
                                 </PieChart>
                             </ChartContainer>
                         ) : (
-                            <div className="mx-auto aspect-square h-48 flex items-center justify-center">
-                                <Skeleton className="h-48 w-48 rounded-full" />
-                            </div>
+                           <div className="mx-auto aspect-square h-48 flex items-center justify-center text-sm text-muted-foreground">No loan data</div>
                         )}
                         
-                        <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground mb-6">
+                        <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground my-6">
                             <div className="flex items-center gap-2">
                                 <span className="h-2 w-2 rounded-full bg-[hsl(var(--chart-1))]"></span>
                                 <span>Loan Amount</span>

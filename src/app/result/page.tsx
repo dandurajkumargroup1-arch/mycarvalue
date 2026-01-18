@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from "react";
@@ -53,17 +52,13 @@ const DetailSection = ({ title, data }: { title: string, data: Record<string, an
     );
 };
 
-const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuation: any; formData: any; } | null, onNewValuation: () => void }) => {
-  const { valuation, formData } = result || {};
+const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuation: any; formData: any; }, onNewValuation: () => void }) => {
+  const { valuation, formData } = result;
   const [clientData, setClientData] = useState<{ reportId: string; generatedOn: string; currentYear: number; } | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
-  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
-    // This effect runs only once on the client after the component mounts.
-    setIsMounted(true);
-    
-    // Now it's safe to generate client-specific data.
+    // This effect runs only once on the client, generating unique, client-side data safely.
     const randomPart = Math.random().toString(36).substring(2, 8).toUpperCase();
     const reportId = `MCV-${randomPart}`;
 
@@ -91,47 +86,42 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
         backgroundColor: '#ffffff'
     }).then(canvas => {
         const imgData = canvas.toDataURL('image/png');
+        const pdf = new jsPDF('p', 'pt', 'a4');
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
         const canvasWidth = canvas.width;
         const canvasHeight = canvas.height;
+        const ratio = canvasWidth / pdfWidth;
+        const finalHeight = canvasHeight / ratio;
 
-        const pdfWidth = 595;
-        const pdfHeight = (canvasHeight * pdfWidth) / canvasWidth;
+        if (finalHeight > pdfHeight) {
+            // This case should be rare now, but kept as a fallback
+            let position = 0;
+            let heightLeft = canvasHeight;
+            const pdfInternal = new jsPDF('p', 'pt', 'a4');
+            
+            pdfInternal.addImage(imgData, 'PNG', 0, position, pdfWidth, finalHeight);
+            heightLeft -= (pdfHeight * ratio);
 
-        const pdf = new jsPDF({
-            orientation: 'portrait',
-            unit: 'pt',
-            format: [pdfWidth, pdfHeight]
-        });
+            while (heightLeft > 0) {
+                position = heightLeft - canvasHeight;
+                pdfInternal.addPage();
+                pdfInternal.addImage(imgData, 'PNG', 0, position, pdfWidth, finalHeight);
+                heightLeft -= (pdfHeight * ratio);
+            }
+             pdfInternal.save(`mycarvalue-report-${clientData?.reportId || 'report'}.pdf`);
 
-        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+        } else {
+             pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, finalHeight);
+             pdf.save(`mycarvalue-report-${clientData?.reportId || 'report'}.pdf`);
+        }
         
-        pdf.save(`mycarvalue-report-${clientData?.reportId || 'report'}.pdf`);
         setIsDownloading(false);
     }).catch(err => {
         console.error("Error generating PDF:", err);
         setIsDownloading(false);
     });
   };
-
-  // On the server, and before the component has mounted on the client, render a skeleton.
-  // This is the key to preventing hydration errors.
-  if (!isMounted) {
-    return <Skeleton className="h-[1200px] w-full" />;
-  }
-
-  if (!result || !valuation || !formData) {
-    return (
-      <Card className="shadow-lg text-center">
-        <CardHeader>
-            <CardTitle>Valuation Data Missing</CardTitle>
-            <CardDescription>Could not display the report. Please try a new valuation.</CardDescription>
-        </CardHeader>
-        <CardContent>
-            <Button onClick={onNewValuation}>Start New Valuation</Button>
-        </CardContent>
-      </Card>
-    )
-  }
   
   const {
       displayName, whatsappNumber, vehicleNumber,
@@ -191,8 +181,8 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
 
             <section className="my-6 p-4 bg-gray-50 rounded-lg border text-xs text-gray-600">
                 <div className="grid grid-cols-2 gap-4">
-                    <div><span className="font-semibold text-black">Report ID:</span> {clientData?.reportId}</div>
-                    <div><span className="font-semibold text-black">Generated On:</span> {clientData?.generatedOn}</div>
+                    <div><span className="font-semibold text-black">Report ID:</span> {clientData ? clientData.reportId : <Skeleton className="h-4 w-20 inline-block"/>}</div>
+                    <div><span className="font-semibold text-black">Generated On:</span> {clientData ? clientData.generatedOn : <Skeleton className="h-4 w-24 inline-block"/>}</div>
                     <div><span className="font-semibold text-black">Location:</span> {formData.registrationState}</div>
                     <div><span className="font-semibold text-black">Valuation Type:</span> Independent Market Analysis</div>
                 </div>
@@ -342,16 +332,25 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
 export default function ResultPage() {
     const [result, setResult] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [isClient, setIsClient] = useState(false);
     const router = useRouter();
 
+    // This effect runs once on the client to confirm we've hydrated.
     useEffect(() => {
-        // This logic runs only on the client side.
+        setIsClient(true);
+    }, []);
+
+    useEffect(() => {
+        // Only run this logic on the client side.
+        if (!isClient) {
+            return;
+        }
+
         const paid = localStorage.getItem("paymentSuccess");
         const storedResult = localStorage.getItem('valuationResult');
 
         if (!paid || !storedResult) {
-            // To prevent locking developers out, we allow access in development.
-            // In production, this would strictly redirect.
+            // In production, strictly redirect if data is missing.
             if (process.env.NODE_ENV === 'production') {
                 router.push('/');
                 return;
@@ -367,9 +366,19 @@ export default function ResultPage() {
             }
         }
         setLoading(false);
-    }, [router]);
+    }, [router, isClient]);
+    
+    const handleNewValuation = () => {
+        // Clear local storage and navigate to the valuation form
+        localStorage.removeItem('valuationResult');
+        localStorage.removeItem('paymentSuccess');
+        localStorage.removeItem('razorpay_payment_id');
+        router.push('/valuation');
+    };
 
-    if (loading) {
+    // Before the client is ready, or while data is loading, show a skeleton.
+    // This ensures the server-rendered HTML matches the initial client-render.
+    if (!isClient || loading) {
         return (
             <div className="container mx-auto max-w-3xl py-12">
                 <Skeleton className="h-[1200px] w-full" />
@@ -377,11 +386,27 @@ export default function ResultPage() {
         )
     }
 
+    // If data is ready on the client, but no result was found, show an error state.
+    if (!result) {
+        return (
+            <div className="container mx-auto max-w-3xl py-12">
+                 <Card className="shadow-lg text-center">
+                    <CardHeader>
+                        <CardTitle>Valuation Data Missing</CardTitle>
+                        <CardDescription>Could not display the report. The data may have been cleared. Please try a new valuation.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Button onClick={handleNewValuation}>Start New Valuation</Button>
+                    </CardContent>
+                </Card>
+            </div>
+        )
+    }
+
+    // Only render the full report display when everything is ready on the client.
     return (
         <div className="container mx-auto max-w-3xl py-12">
             <ValuationResultDisplay result={result} onNewValuation={handleNewValuation} />
         </div>
     );
 }
-
-    
