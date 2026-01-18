@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -17,75 +18,97 @@ const formatCurrency = (value: number) => {
     }).format(value);
 };
 
+// Represents the calculated EMI details
+type EmiDetails = {
+    principal: number;
+    emi: number;
+    totalInterest: number;
+    totalPayment: number;
+    dailyPayment: number;
+    yearlyPayment: number;
+};
+
 export default function EmiCalculatorPage() {
     const [carPrice, setCarPrice] = useState(1000000);
     const [downPayment, setDownPayment] = useState(100000);
     const [rate, setRate] = useState(9.0);
     const [tenure, setTenure] = useState(5); // in years
     const [isClient, setIsClient] = useState(false);
-
-    const [principal, setPrincipal] = useState(0);
-    const [emi, setEmi] = useState(0);
-    const [totalInterest, setTotalInterest] = useState(0);
-    const [totalPayment, setTotalPayment] = useState(0);
-    const [dailyPayment, setDailyPayment] = useState(0);
-    const [yearlyPayment, setYearlyPayment] = useState(0);
+    const [emiDetails, setEmiDetails] = useState<EmiDetails | null>(null);
 
     useEffect(() => {
+        // This effect runs only on the client, after the initial render.
+        // This is the safe place to perform calculations and update state.
         setIsClient(true);
     }, []);
 
     useEffect(() => {
-        const p = carPrice - downPayment;
-        setPrincipal(p);
+        // We only run calculations on the client side.
+        if (!isClient) return;
 
+        const p = carPrice - downPayment;
         const r = rate / 12 / 100; // monthly rate
         const n = tenure * 12; // tenure in months
 
-        if (p <= 0 || n <= 0) {
-            setEmi(0);
-            setTotalPayment(0);
-            setTotalInterest(0);
-            setDailyPayment(0);
-            setYearlyPayment(0);
-            return;
+        let calculatedEmi = 0;
+        let calculatedTotalPayment = 0;
+        let calculatedTotalInterest = 0;
+
+        if (p > 0 && n > 0) {
+            if (rate === 0) {
+                calculatedEmi = p / n;
+                calculatedTotalPayment = p;
+                calculatedTotalInterest = 0;
+            } else {
+                calculatedEmi = (p * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
+                calculatedTotalPayment = calculatedEmi * n;
+                calculatedTotalInterest = calculatedTotalPayment - p;
+            }
         }
+        
+        setEmiDetails({
+            principal: p,
+            emi: calculatedEmi,
+            totalPayment: calculatedTotalPayment,
+            totalInterest: calculatedTotalInterest,
+            dailyPayment: calculatedEmi / 30,
+            yearlyPayment: calculatedEmi * 12,
+        });
 
-        if (rate === 0) {
-            const emiValue = p / n;
-            setEmi(emiValue);
-            setTotalPayment(p);
-            setTotalInterest(0);
-            setDailyPayment(emiValue / 30);
-            setYearlyPayment(emiValue * 12);
-        } else {
-            const emiValue = (p * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
-            const totalPaymentValue = emiValue * n;
-            const totalInterestValue = totalPaymentValue - p;
-
-            setEmi(emiValue);
-            setTotalPayment(totalPaymentValue);
-            setTotalInterest(totalInterestValue);
-            setDailyPayment(emiValue / 30);
-            setYearlyPayment(emiValue * 12);
-        }
-    }, [carPrice, downPayment, rate, tenure]);
-
-    const chartData = useMemo(() => [
-        { name: 'Loan Amount', value: principal, fill: "hsl(var(--chart-1))" },
-        { name: 'Total Interest', value: totalInterest, fill: "hsl(var(--chart-2))"  },
-    ], [principal, totalInterest]);
+    }, [carPrice, downPayment, rate, tenure, isClient]);
 
     const chartConfig: ChartConfig = {
-        'Loan Amount': {
+        loanAmount: {
             label: 'Loan Amount',
             color: 'hsl(var(--chart-1))',
         },
-        'Total Interest': {
+        totalInterest: {
             label: 'Total Interest',
             color: 'hsl(var(--chart-2))',
         },
     };
+
+    const chartData = useMemo(() => {
+        if (!emiDetails) return [];
+        return [
+            { name: 'loanAmount', value: emiDetails.principal, fill: 'var(--color-loanAmount)' },
+            { name: 'totalInterest', value: emiDetails.totalInterest, fill: 'var(--color-totalInterest)' },
+        ];
+    }, [emiDetails]);
+    
+    const renderValue = (value: number | undefined) => {
+        if (!isClient || value === undefined) {
+            return <Skeleton className="h-5 w-20 inline-block"/>;
+        }
+        return formatCurrency(value);
+    };
+    
+    const renderLargeValue = (value: number | undefined) => {
+        if (!isClient || value === undefined) {
+            return <Skeleton className="h-10 w-40 my-2" />;
+        }
+        return <p className="text-4xl font-bold text-primary my-2">{formatCurrency(value)}</p>;
+    }
 
     return (
         <div className="container mx-auto max-w-4xl py-12">
@@ -96,6 +119,7 @@ export default function EmiCalculatorPage() {
                 </CardHeader>
                 <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
                     <div className="space-y-8 pt-2">
+                        {/* Sliders remain the same */}
                         <div>
                             <Label htmlFor="carPrice" className="flex justify-between items-center mb-2">
                                 <span>Total Car Price</span>
@@ -160,17 +184,14 @@ export default function EmiCalculatorPage() {
                     </div>
                     <div className="bg-muted/50 rounded-lg p-6 flex flex-col items-center border">
                         <p className="text-sm text-muted-foreground">Monthly EMI</p>
-                        {isClient ? 
-                            <p className="text-4xl font-bold text-primary my-2">{formatCurrency(emi)}</p>
-                            : <Skeleton className="h-10 w-40 my-2" />
-                        }
+                        {renderLargeValue(emiDetails?.emi)}
 
-                        {isClient ? (
+                        {isClient && emiDetails ? (
                             <ChartContainer config={chartConfig} className="mx-auto aspect-square h-48">
                                 <PieChart>
                                     <Tooltip
                                         cursor={false}
-                                        content={<ChartTooltipContent hideLabel indicator="dot" />}
+                                        content={<ChartTooltipContent nameKey="name" indicator="dot" />}
                                     />
                                     <Pie
                                         data={chartData}
@@ -205,24 +226,24 @@ export default function EmiCalculatorPage() {
                         <div className="w-full space-y-3 text-sm">
                             <div className="flex justify-between">
                                 <span className="text-muted-foreground">Principal Loan</span>
-                                <span className="font-medium text-foreground">{isClient ? formatCurrency(principal) : <Skeleton className="h-5 w-20 inline-block"/>}</span>
+                                <span className="font-medium text-foreground">{renderValue(emiDetails?.principal)}</span>
                             </div>
                              <div className="flex justify-between">
                                 <span className="text-muted-foreground">Total Interest</span>
-                                <span className="font-medium text-foreground">{isClient ? formatCurrency(totalInterest) : <Skeleton className="h-5 w-20 inline-block"/>}</span>
+                                <span className="font-medium text-foreground">{renderValue(emiDetails?.totalInterest)}</span>
                             </div>
                              <div className="flex justify-between font-semibold">
                                 <span className="text-muted-foreground">Total Payment</span>
-                                <span className="text-foreground">{isClient ? formatCurrency(totalPayment) : <Skeleton className="h-5 w-24 inline-block"/>}</span>
+                                <span className="text-foreground">{renderValue(emiDetails?.totalPayment)}</span>
                             </div>
                             <Separator className="my-2"/>
                             <div className="flex justify-between">
                                 <span className="text-muted-foreground">Daily Payment</span>
-                                <span className="font-medium text-foreground">{isClient ? formatCurrency(dailyPayment) : <Skeleton className="h-5 w-16 inline-block"/>}</span>
+                                <span className="font-medium text-foreground">{renderValue(emiDetails?.dailyPayment)}</span>
                             </div>
                             <div className="flex justify-between">
                                 <span className="text-muted-foreground">Yearly Payment</span>
-                                <span className="font-medium text-foreground">{isClient ? formatCurrency(yearlyPayment) : <Skeleton className="h-5 w-20 inline-block"/>}</span>
+                                <span className="font-medium text-foreground">{renderValue(emiDetails?.yearlyPayment)}</span>
                             </div>
                         </div>
                     </div>
