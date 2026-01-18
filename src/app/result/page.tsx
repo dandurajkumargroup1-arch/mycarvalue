@@ -180,11 +180,11 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
   return (
      <div className="overflow-y-auto">
         <div id="report-content" className="bg-white text-gray-800 p-8 rounded-lg border">
-            <header className="flex justify-between items-start pb-4 border-b border-gray-200">
+            <header className="flex justify-between items-start pb-4 border-b">
                 <div className="flex items-center gap-2">
-                    <Car className="h-8 w-8 text-gray-800"/>
+                    <Car className="h-8 w-8"/>
                     <div>
-                        <h1 className="text-xl font-bold text-gray-800">mycarvalue.in</h1>
+                        <h1 className="text-xl font-bold">mycarvalue.in</h1>
                         <p className="text-sm text-gray-500">AI Valuation Report</p>
                     </div>
                 </div>
@@ -208,9 +208,9 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
                 </div>
             </section>
             
-            <section className="bg-gray-100 rounded-lg p-6 text-center my-8 border border-gray-200">
-                <h3 className="text-sm font-semibold text-gray-800">Your Final Estimated Price</h3>
-                <p className="text-5xl font-bold text-black tracking-tight mt-1">{inr(valuation.bestPrice)}</p>
+            <section className="bg-gray-100 rounded-lg p-6 text-center my-8 border">
+                <h3 className="text-sm font-semibold">Your Final Estimated Price</h3>
+                <p className="text-5xl font-bold tracking-tight mt-1">{inr(valuation.bestPrice)}</p>
             </section>
 
             <section className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
@@ -244,7 +244,7 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
                     </CardContent>
                 </Card>
 
-                <Card className="bg-white">
+                <Card>
                     <CardHeader>
                         <CardTitle className="text-amber-800">What Buyers Usually Say</CardTitle>
                         <CardDescription className="text-amber-700">Be prepared for these negotiation tactics.</CardDescription>
@@ -275,7 +275,7 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
             </section>
             
             <section className="my-8">
-                <Card className="bg-white">
+                <Card>
                     <CardHeader>
                         <CardTitle>Depreciation Breakdown</CardTitle>
                         <CardDescription>How the final price was calculated from your expected price.</CardDescription>
@@ -319,7 +319,7 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
             <DetailSection title="Usage &amp; History" data={{ usageType, cityDriven, floodDamage, accident, serviceCenter }} />
             <DetailSection title="Additional Features" data={{ musicSystem, reverseParkingSensor, dashcam, fogLamps, gpsTracker }} />
 
-            <footer className="mt-10 pt-4 border-t border-gray-200 text-xs text-center text-gray-500">
+            <footer className="mt-10 pt-4 border-t text-xs text-center text-gray-500">
                 {clientData.currentYear && <p>&copy; {clientData.currentYear} mycarvalue.in. All rights reserved.</p>}
                 <p className="mt-2 text-gray-400">This is an AI-generated report and should be used as an estimate. Physical inspection may affect the final price.</p>
             </footer>
@@ -390,3 +390,5 @@ export default function ResultPage() {
         </div>
     );
 }
+
+    
