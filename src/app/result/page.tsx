@@ -59,8 +59,8 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
   const [isDownloading, setIsDownloading] = useState(false);
 
   useEffect(() => {
-    // Generate all client-specific data in one effect to prevent hydration errors and ensure availability
-    // This is safe because it runs only on the client.
+    // This effect runs only once on the client after the component mounts.
+    // It's safe to generate client-specific data here to avoid hydration errors.
     const randomPart = Math.random().toString(36).substring(2, 8).toUpperCase();
     const reportId = `MCV-${randomPart}`;
 
@@ -72,7 +72,7 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
     const currentYear = new Date().getFullYear();
 
     setClientData({ reportId, generatedOn, currentYear });
-  }, []); // Empty dependency array ensures this runs only once on the client after mount
+  }, []); // Empty dependency array ensures this runs only once on mount.
 
   const handleDownloadPdf = () => {
     const reportElement = document.getElementById('report-content');
@@ -181,7 +181,7 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
                 </div>
                 <div className="text-right">
                     <p className="font-semibold text-black">{formData.make} {formData.model}</p>
-                    <p className="text-sm text-gray-500">For: {formData.displayName}</p>
+                    <p className="text-sm text-gray-500">For: {clientData.reportId ? formData.displayName : ''}</p>
                 </div>
             </header>
 
@@ -311,7 +311,7 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
             <DetailSection title="Additional Features" data={{ musicSystem, reverseParkingSensor, dashcam, fogLamps, gpsTracker }} />
 
             <footer className="mt-10 pt-4 border-t text-xs text-center text-gray-500">
-                {clientData.currentYear && <p>&copy; {clientData.currentYear} mycarvalue.in. All rights reserved.</p>}
+                {clientData?.currentYear && <p>&copy; {clientData.currentYear} mycarvalue.in. All rights reserved.</p>}
                 <p className="mt-2 text-gray-400">This is an AI-generated report and should be used as an estimate. Physical inspection may affect the final price.</p>
             </footer>
         </div>
@@ -381,7 +381,3 @@ export default function ResultPage() {
         </div>
     );
 }
-
-    
-
-    
