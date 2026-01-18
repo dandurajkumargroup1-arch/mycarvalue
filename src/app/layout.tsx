@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   title: "mycarvalue.in - AI-Powered Car Valuation",
   description: "This valuation helps you sell directly to buyers at the right price.",
   icons: {
-    icon: 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚗</text></svg>',
+    icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='5' y='25' width='90' height='50' rx='25' fill='%23f94f2a'/><path d='M20 70 L20 60 C20 58 22 56 24 56 L30 56 L35 46 L65 46 L70 56 L76 56 C78 56 80 58 80 60 L80 70 Z' fill='%230D1117'/><circle cx='30' cy='70' r='8' fill='%230D1117'/><circle cx='70' cy='70' r='8' fill='%230D1117'/></svg>",
   },
 };
 
