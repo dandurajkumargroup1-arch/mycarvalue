@@ -40,12 +40,12 @@ const DetailSection = ({ title, data }: { title: string, data: Record<string, an
 
     return (
         <section className="mt-6 pt-6 border-t">
-            <h2 className="text-xl font-bold text-gray-800 mb-4">{title}</h2>
+            <h2 className="text-xl font-bold text-black mb-4">{title}</h2>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-x-8 gap-y-4 text-sm">
                 {entries.map(([key, value]) => (
                     <div key={key}>
                         <p className="text-gray-500">{formatKey(key)}</p>
-                        <p className="font-medium text-gray-800">{formatValue(value)}</p>
+                        <p className="font-medium text-black">{formatValue(value)}</p>
                     </div>
                 ))}
             </div>
@@ -60,6 +60,7 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
 
   useEffect(() => {
     // Generate all client-specific data in one effect to prevent hydration errors and ensure availability
+    // This is safe because it runs only on the client.
     const randomPart = Math.random().toString(36).substring(2, 8).toUpperCase();
     const reportId = `MCV-${randomPart}`;
 
@@ -71,7 +72,7 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
     const currentYear = new Date().getFullYear();
 
     setClientData({ reportId, generatedOn, currentYear });
-  }, []);
+  }, []); // Empty dependency array ensures this runs only once on the client after mount
 
   const handleDownloadPdf = () => {
     const reportElement = document.getElementById('report-content');
@@ -82,40 +83,30 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
     setIsDownloading(true);
 
     html2canvas(reportElement, {
-        scale: 2,
+        scale: 2, // Using a higher scale for better resolution
         useCORS: true,
-        backgroundColor: '#ffffff' // Explicitly set background to white
+        backgroundColor: '#ffffff'
     }).then(canvas => {
         const imgData = canvas.toDataURL('image/png');
-        const pdf = new jsPDF({
-            orientation: 'portrait',
-            unit: 'mm',
-            format: 'a4'
-        });
-
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = pdf.internal.pageSize.getHeight();
-        
         const canvasWidth = canvas.width;
         const canvasHeight = canvas.height;
+
+        // Define a fixed width for the PDF (A4 width in points)
+        const pdfWidth = 595; 
+        // Calculate the height to maintain the aspect ratio
+        const pdfHeight = (canvasHeight * pdfWidth) / canvasWidth;
+
+        // Create a new jsPDF instance with custom dimensions in points
+        // This will create a single, long page.
+        const pdf = new jsPDF({
+            orientation: 'portrait',
+            unit: 'pt',
+            format: [pdfWidth, pdfHeight]
+        });
+
+        // Add the image to the PDF, covering the whole page
+        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
         
-        const canvasAspectRatio = canvasWidth / canvasHeight;
-        const imgRenderWidth = pdfWidth;
-        const imgRenderHeight = imgRenderWidth / canvasAspectRatio;
-
-        let heightLeft = imgRenderHeight;
-        let position = 0;
-        
-        pdf.addImage(imgData, 'PNG', 0, position, imgRenderWidth, imgRenderHeight);
-        heightLeft -= pdfHeight;
-
-        while (heightLeft > 0) {
-            position -= pdfHeight;
-            pdf.addPage();
-            pdf.addImage(imgData, 'PNG', 0, position, imgRenderWidth, imgRenderHeight);
-            heightLeft -= pdfHeight;
-        }
-
         pdf.save(`mycarvalue-report-${clientData?.reportId || 'report'}.pdf`);
         setIsDownloading(false);
     }).catch(err => {
@@ -179,27 +170,27 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
   
   return (
      <div className="overflow-y-auto">
-        <div id="report-content" className="bg-white text-gray-800 p-8 rounded-lg border">
+        <div id="report-content" className="bg-white text-black p-8 rounded-lg border">
             <header className="flex justify-between items-start pb-4 border-b">
                 <div className="flex items-center gap-2">
-                    <Car className="h-8 w-8"/>
+                    <Car className="h-8 w-8 text-black"/>
                     <div>
-                        <h1 className="text-xl font-bold">mycarvalue.in</h1>
+                        <h1 className="text-xl font-bold text-black">mycarvalue.in</h1>
                         <p className="text-sm text-gray-500">AI Valuation Report</p>
                     </div>
                 </div>
                 <div className="text-right">
-                    <p className="font-semibold">{formData.make} {formData.model}</p>
+                    <p className="font-semibold text-black">{formData.make} {formData.model}</p>
                     <p className="text-sm text-gray-500">For: {formData.displayName}</p>
                 </div>
             </header>
 
             <section className="my-6 p-4 bg-gray-50 rounded-lg border text-xs text-gray-600">
                 <div className="grid grid-cols-2 gap-4">
-                    <div><span className="font-semibold">Report ID:</span> {clientData.reportId}</div>
-                    <div><span className="font-semibold">Generated On:</span> {clientData.generatedOn}</div>
-                    <div><span className="font-semibold">Location:</span> {formData.registrationState}</div>
-                    <div><span className="font-semibold">Valuation Type:</span> Independent Market Analysis</div>
+                    <div><span className="font-semibold text-black">Report ID:</span> {clientData.reportId}</div>
+                    <div><span className="font-semibold text-black">Generated On:</span> {clientData.generatedOn}</div>
+                    <div><span className="font-semibold text-black">Location:</span> {formData.registrationState}</div>
+                    <div><span className="font-semibold text-black">Valuation Type:</span> Independent Market Analysis</div>
                 </div>
                 <Separator className="my-3"/>
                 <div className="flex items-start gap-2 text-gray-500">
@@ -209,12 +200,12 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
             </section>
             
             <section className="bg-gray-100 rounded-lg p-6 text-center my-8 border">
-                <h3 className="text-sm font-semibold">Your Final Estimated Price</h3>
-                <p className="text-5xl font-bold tracking-tight mt-1">{inr(valuation.bestPrice)}</p>
+                <h3 className="text-sm font-semibold text-black">Your Final Estimated Price</h3>
+                <p className="text-5xl font-bold tracking-tight mt-1 text-black">{inr(valuation.bestPrice)}</p>
             </section>
 
             <section className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-                 <Card className="border-green-200 bg-green-50">
+                 <Card className="border-green-200 bg-green-50 text-black">
                     <CardHeader>
                         <CardTitle className="text-green-800">Price Confidence</CardTitle>
                         <CardDescription className="text-green-700">Use these insights to negotiate the best deal.</CardDescription>
@@ -244,7 +235,7 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
                     </CardContent>
                 </Card>
 
-                <Card>
+                <Card className="text-black">
                     <CardHeader>
                         <CardTitle className="text-amber-800">What Buyers Usually Say</CardTitle>
                         <CardDescription className="text-amber-700">Be prepared for these negotiation tactics.</CardDescription>
@@ -275,7 +266,7 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
             </section>
             
             <section className="my-8">
-                <Card>
+                <Card className="text-black">
                     <CardHeader>
                         <CardTitle>Depreciation Breakdown</CardTitle>
                         <CardDescription>How the final price was calculated from your expected price.</CardDescription>
@@ -390,5 +381,7 @@ export default function ResultPage() {
         </div>
     );
 }
+
+    
 
     
