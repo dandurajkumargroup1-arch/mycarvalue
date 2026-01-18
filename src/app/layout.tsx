@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Poppins } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import Header from "@/components/layout/header";
@@ -43,6 +44,31 @@ export default function RootLayout({
           </div>
           <Toaster />
         </FirebaseClientProvider>
+        <Script
+          id="mycarvalue-org-schema"
+          type="application/ld+json"
+          strategy="afterInteractive"
+        >
+        {`
+        {
+          "@context": "https://schema.org",
+          "@type": "Organization",
+          "name": "MyCarValue",
+          "url": "https://mycarvalue.in",
+          "logo": "https://mycarvalue.in/logo.png",
+          "description": "MyCarValue helps car owners and dealers get accurate used car valuation and inspection services across India.",
+          "foundingDate": "2025",
+          "contactPoint": {
+            "@type": "ContactPoint",
+            "telephone": "+91-9492060040",
+            "contactType": "customer support",
+            "email": "mycarvalue1@gmail.com",
+            "areaServed": "IN",
+            "availableLanguage": ["English", "Telugu", "Tamil"]
+          }
+        }
+        `}
+        </Script>
       </body>
     </html>
   );
