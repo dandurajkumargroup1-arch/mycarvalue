@@ -99,6 +99,7 @@ export async function getValuationAction(data: CarValuationFormInput) {
             spareTyre: data.spareTyre,
             alloyWheels: data.alloyWheels,
             wheelAlignment: data.wheelAlignment,
+            newlyChanged: data.newlyChanged,
         },
         safety: {
             airbags: data.airbags,

@@ -255,6 +255,7 @@ export function ValuationForm() {
         spareTyre: undefined,
         alloyWheels: undefined,
         wheelAlignment: undefined,
+        newlyChanged: undefined,
         airbags: undefined,
         abs: undefined,
         seatBelts: undefined,
@@ -624,6 +625,7 @@ export function ValuationForm() {
                             {renderSelect("spareTyre", "Spare Tyre", [{value: "usable", label: "Present (Usable)"}, {value: "worn", label: "Present (Worn)"}, {value: "not_present", label: "Not Present"}], "Select Spare Tyre Condition")}
                             {renderRadioGroup("alloyWheels", "Alloy Wheels", [{value: "yes", label: "Yes"}, {value: "no", label: "No"}])}
                             {renderSelect("wheelAlignment", "Wheel Alignment", [{value: "ok", label: "OK"}, {value: "needed", label: "Needed"}], "Select Alignment Condition")}
+                            {renderRadioGroup("newlyChanged", "Recently Changed (All Tyres)", [{value: "yes", label: "Yes (within 6 months)"}, {value: "no", label: "No"}])}
                         </div>
                     </TabsContent>
 
@@ -646,7 +648,7 @@ export function ValuationForm() {
                             {renderSelect("puc", "PUC", [{value: "valid", label: "Valid"}, {value: "expired", label: "Expired"}, {value: "not_available", label: "Not Available"}], "Select PUC Status")}
                             {renderSelect("serviceRecords", "Service Records", [{value: "full", label: "Full History Available"}, {value: "partial", label: "Partial History"}, {value: "none", label: "Not Available"}], "Select Service Records Status")}
                             {renderSelect("duplicateKey", "Duplicate Key", [{value: "available", label: "Available"}, {value: "not_available", label: "Not Available"}], "Select Duplicate Key Status")}
-                            {renderSelect("noc", "NOC", [{value: "not_required", label: "Not Required"}, {value: "available", label: "Available"}, {value: "pending", label: "Pending"}, {value: "not_available", label: "Required but Not Available"}], "Select NOC Status")}
+                            {renderSelect("noc", "NOC", [{value: "not_required", label: "Not Required"}, {value: "available", label: "Available"}, {value: "pending", label: "Pending"}, {value: "required_but_not_available", label: "Required but Not Available"}], "Select NOC Status")}
                         </div>
                     </TabsContent>
 

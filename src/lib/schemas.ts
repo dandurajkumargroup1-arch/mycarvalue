@@ -98,6 +98,7 @@ const TyresSchema = z.object({
   spareTyre: z.enum(["usable", "worn", "not_present"]),
   alloyWheels: z.enum(["yes", "no"]),
   wheelAlignment: z.enum(["ok", "needed"]),
+  newlyChanged: z.enum(["yes", "no"]),
 });
 
 // Section 7: Safety Features
