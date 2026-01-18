@@ -55,25 +55,25 @@ const DetailSection = ({ title, data }: { title: string, data: Record<string, an
 
 const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuation: any; formData: any; } | null, onNewValuation: () => void }) => {
   const { valuation, formData } = result || {};
-  const [reportId, setReportId] = useState('');
-  const [generatedOn, setGeneratedOn] = useState<string | null>(null);
-  const [currentYear, setCurrentYear] = useState<number | null>(null);
+  const [clientData, setClientData] = useState<{ reportId: string; generatedOn: string; currentYear: number; } | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
 
   useEffect(() => {
-    // Generate unique/client-specific data on mount to prevent hydration errors
+    // Generate all client-specific data in one effect to prevent hydration errors and ensure availability
     const randomPart = Math.random().toString(36).substring(2, 8).toUpperCase();
-    setReportId(`MCV-${randomPart}`);
+    const reportId = `MCV-${randomPart}`;
 
     const now = new Date();
     const date = now.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
     const time = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-    setGeneratedOn(`${date} - ${time}`);
+    const generatedOn = `${date} - ${time}`;
     
-    setCurrentYear(new Date().getFullYear());
+    const currentYear = new Date().getFullYear();
+
+    setClientData({ reportId, generatedOn, currentYear });
   }, []);
 
-    const handleDownloadPdf = () => {
+  const handleDownloadPdf = () => {
     const reportElement = document.getElementById('report-content');
     if (!reportElement) {
         console.error("Report content element not found!");
@@ -81,16 +81,11 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
     }
     setIsDownloading(true);
 
-    // Use a fixed width for rendering to ensure consistency
-    const originalWidth = reportElement.style.width;
-    reportElement.style.width = '1050px'; 
-
     html2canvas(reportElement, {
-        scale: 2, // Higher scale for better resolution
+        scale: 2,
         useCORS: true,
+        backgroundColor: '#ffffff' // Explicitly set background to white
     }).then(canvas => {
-        reportElement.style.width = originalWidth; // Reset the width after capture
-
         const imgData = canvas.toDataURL('image/png');
         const pdf = new jsPDF({
             orientation: 'portrait',
@@ -104,7 +99,6 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
         const canvasWidth = canvas.width;
         const canvasHeight = canvas.height;
         
-        // Calculate the aspect ratio to maintain it
         const canvasAspectRatio = canvasWidth / canvasHeight;
         const imgRenderWidth = pdfWidth;
         const imgRenderHeight = imgRenderWidth / canvasAspectRatio;
@@ -112,11 +106,9 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
         let heightLeft = imgRenderHeight;
         let position = 0;
         
-        // Add the first page
         pdf.addImage(imgData, 'PNG', 0, position, imgRenderWidth, imgRenderHeight);
         heightLeft -= pdfHeight;
 
-        // Add subsequent pages if the content is longer than one page
         while (heightLeft > 0) {
             position -= pdfHeight;
             pdf.addPage();
@@ -124,16 +116,15 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
             heightLeft -= pdfHeight;
         }
 
-        pdf.save(`mycarvalue-report-${reportId}.pdf`);
+        pdf.save(`mycarvalue-report-${clientData?.reportId || 'report'}.pdf`);
         setIsDownloading(false);
     }).catch(err => {
-        reportElement.style.width = originalWidth; // Ensure width is reset on error too
         console.error("Error generating PDF:", err);
         setIsDownloading(false);
     });
   };
 
-  if (!result || !valuation || !formData) {
+  if (!result || !valuation || !formData || !clientData) {
     return (
       <Card className="shadow-lg text-center">
         <CardHeader>
@@ -191,7 +182,7 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
         <div id="report-content" className="bg-white text-gray-800 p-8 rounded-lg border">
             <header className="flex justify-between items-start pb-4 border-b border-gray-200">
                 <div className="flex items-center gap-2">
-                    <Car className="h-8 w-8 text-primary"/>
+                    <Car className="h-8 w-8 text-gray-800"/>
                     <div>
                         <h1 className="text-xl font-bold text-gray-800">mycarvalue.in</h1>
                         <p className="text-sm text-gray-500">AI Valuation Report</p>
@@ -205,8 +196,8 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
 
             <section className="my-6 p-4 bg-gray-50 rounded-lg border text-xs text-gray-600">
                 <div className="grid grid-cols-2 gap-4">
-                    <div><span className="font-semibold">Report ID:</span> {reportId}</div>
-                    <div><span className="font-semibold">Generated On:</span> {generatedOn}</div>
+                    <div><span className="font-semibold">Report ID:</span> {clientData.reportId}</div>
+                    <div><span className="font-semibold">Generated On:</span> {clientData.generatedOn}</div>
                     <div><span className="font-semibold">Location:</span> {formData.registrationState}</div>
                     <div><span className="font-semibold">Valuation Type:</span> Independent Market Analysis</div>
                 </div>
@@ -217,13 +208,13 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
                 </div>
             </section>
             
-            <section className="bg-primary/5 rounded-lg p-6 text-center my-8 border border-primary/20">
-                <h3 className="text-sm font-semibold text-primary">Your Final Estimated Price</h3>
-                <p className="text-5xl font-bold text-primary tracking-tight mt-1">{inr(valuation.bestPrice)}</p>
+            <section className="bg-gray-100 rounded-lg p-6 text-center my-8 border border-gray-200">
+                <h3 className="text-sm font-semibold text-gray-800">Your Final Estimated Price</h3>
+                <p className="text-5xl font-bold text-black tracking-tight mt-1">{inr(valuation.bestPrice)}</p>
             </section>
 
             <section className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-                 <Card className="border-green-200 bg-green-50/50">
+                 <Card className="border-green-200 bg-green-50">
                     <CardHeader>
                         <CardTitle className="text-green-800">Price Confidence</CardTitle>
                         <CardDescription className="text-green-700">Use these insights to negotiate the best deal.</CardDescription>
@@ -253,7 +244,7 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
                     </CardContent>
                 </Card>
 
-                <Card>
+                <Card className="bg-white">
                     <CardHeader>
                         <CardTitle className="text-amber-800">What Buyers Usually Say</CardTitle>
                         <CardDescription className="text-amber-700">Be prepared for these negotiation tactics.</CardDescription>
@@ -284,7 +275,7 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
             </section>
             
             <section className="my-8">
-                <Card>
+                <Card className="bg-white">
                     <CardHeader>
                         <CardTitle>Depreciation Breakdown</CardTitle>
                         <CardDescription>How the final price was calculated from your expected price.</CardDescription>
@@ -299,14 +290,14 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
                             <div className="space-y-2">
                                 {depreciationItems.map(item => (
                                     item.value > 0 &&
-                                    <div key={item.label} className="flex justify-between items-center text-muted-foreground">
+                                    <div key={item.label} className="flex justify-between items-center text-gray-500">
                                         <p>{item.label}</p>
-                                        <p className="font-medium text-destructive">- {inr(item.value)}</p>
+                                        <p className="font-medium text-red-600">- {inr(item.value)}</p>
                                     </div>
                                 ))}
                             </div>
                             <Separator />
-                            <div className="flex justify-between items-center font-bold text-primary text-base">
+                            <div className="flex justify-between items-center font-bold text-black text-base">
                                 <p>Final Estimated Price</p>
                                 <p>{inr(valuation.bestPrice)}</p>
                             </div>
@@ -329,7 +320,7 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
             <DetailSection title="Additional Features" data={{ musicSystem, reverseParkingSensor, dashcam, fogLamps, gpsTracker }} />
 
             <footer className="mt-10 pt-4 border-t border-gray-200 text-xs text-center text-gray-500">
-                {currentYear && <p>&copy; {currentYear} mycarvalue.in. All rights reserved.</p>}
+                {clientData.currentYear && <p>&copy; {clientData.currentYear} mycarvalue.in. All rights reserved.</p>}
                 <p className="mt-2 text-gray-400">This is an AI-generated report and should be used as an estimate. Physical inspection may affect the final price.</p>
             </footer>
         </div>
@@ -363,8 +354,9 @@ export default function ResultPage() {
         const storedResult = localStorage.getItem('valuationResult');
 
         if (!paid || !storedResult) {
-            router.push('/');
-            return;
+            // Keep this commented out during development to allow direct access to /result
+            // router.push('/');
+            // return;
         }
 
         if (storedResult) {
