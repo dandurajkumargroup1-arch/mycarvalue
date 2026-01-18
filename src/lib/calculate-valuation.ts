@@ -129,7 +129,7 @@ export function calculateValuation(carData: CarValuationDataForAI): ValuationOut
     const EL = Math.min(8, getDepreciation(carData.electrical, depreciationMaps));
     let T = Math.min(6, getDepreciation(carData.tyres, depreciationMaps));
     if (carData.tyres.newlyChanged === 'yes') {
-        T = Math.max(0, T - 2); // Give a 2% bonus/reduction if tyres are new
+        T = Math.max(0, T - 0.2); // Give a 0.2% bonus/reduction if tyres are new
     }
     const S = Math.min(5, getDepreciation(carData.safety, depreciationMaps));
     const D = Math.min(20, getDepreciation(carData.documents, depreciationMaps));
