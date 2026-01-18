@@ -56,8 +56,8 @@ const DetailSection = ({ title, data }: { title: string, data: Record<string, an
 const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuation: any; formData: any; } | null, onNewValuation: () => void }) => {
   const { valuation, formData } = result || {};
   const [reportId, setReportId] = useState('');
-  const [generatedOn, setGeneratedOn] = useState('');
-  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
+  const [generatedOn, setGeneratedOn] = useState<string | null>(null);
+  const [currentYear, setCurrentYear] = useState<number | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
 
   useEffect(() => {
@@ -329,7 +329,7 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
             <DetailSection title="Additional Features" data={{ musicSystem, reverseParkingSensor, dashcam, fogLamps, gpsTracker }} />
 
             <footer className="mt-10 pt-4 border-t border-gray-200 text-xs text-center text-gray-500">
-                <p>&copy; {currentYear} mycarvalue.in. All rights reserved.</p>
+                {currentYear && <p>&copy; {currentYear} mycarvalue.in. All rights reserved.</p>}
                 <p className="mt-2 text-gray-400">This is an AI-generated report and should be used as an estimate. Physical inspection may affect the final price.</p>
             </footer>
         </div>
