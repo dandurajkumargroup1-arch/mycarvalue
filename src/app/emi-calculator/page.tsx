@@ -160,7 +160,10 @@ export default function EmiCalculatorPage() {
                     </div>
                     <div className="bg-muted/50 rounded-lg p-6 flex flex-col items-center border">
                         <p className="text-sm text-muted-foreground">Monthly EMI</p>
-                        <p className="text-4xl font-bold text-primary my-2">{formatCurrency(emi)}</p>
+                        {isClient ? 
+                            <p className="text-4xl font-bold text-primary my-2">{formatCurrency(emi)}</p>
+                            : <Skeleton className="h-10 w-40 my-2" />
+                        }
 
                         {isClient ? (
                             <ChartContainer config={chartConfig} className="mx-auto aspect-square h-48">
@@ -202,24 +205,24 @@ export default function EmiCalculatorPage() {
                         <div className="w-full space-y-3 text-sm">
                             <div className="flex justify-between">
                                 <span className="text-muted-foreground">Principal Loan</span>
-                                <span className="font-medium text-foreground">{formatCurrency(principal)}</span>
+                                <span className="font-medium text-foreground">{isClient ? formatCurrency(principal) : <Skeleton className="h-5 w-20 inline-block"/>}</span>
                             </div>
                              <div className="flex justify-between">
                                 <span className="text-muted-foreground">Total Interest</span>
-                                <span className="font-medium text-foreground">{formatCurrency(totalInterest)}</span>
+                                <span className="font-medium text-foreground">{isClient ? formatCurrency(totalInterest) : <Skeleton className="h-5 w-20 inline-block"/>}</span>
                             </div>
                              <div className="flex justify-between font-semibold">
                                 <span className="text-muted-foreground">Total Payment</span>
-                                <span className="text-foreground">{formatCurrency(totalPayment)}</span>
+                                <span className="text-foreground">{isClient ? formatCurrency(totalPayment) : <Skeleton className="h-5 w-24 inline-block"/>}</span>
                             </div>
                             <Separator className="my-2"/>
                             <div className="flex justify-between">
                                 <span className="text-muted-foreground">Daily Payment</span>
-                                <span className="font-medium text-foreground">{formatCurrency(dailyPayment)}</span>
+                                <span className="font-medium text-foreground">{isClient ? formatCurrency(dailyPayment) : <Skeleton className="h-5 w-16 inline-block"/>}</span>
                             </div>
                             <div className="flex justify-between">
                                 <span className="text-muted-foreground">Yearly Payment</span>
-                                <span className="font-medium text-foreground">{formatCurrency(yearlyPayment)}</span>
+                                <span className="font-medium text-foreground">{isClient ? formatCurrency(yearlyPayment) : <Skeleton className="h-5 w-20 inline-block"/>}</span>
                             </div>
                         </div>
                     </div>
