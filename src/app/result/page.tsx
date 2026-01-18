@@ -2,8 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import jsPDF from "jspdf";
-import html2canvas from "html2canvas";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -72,13 +70,16 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
     setClientData({ reportId, generatedOn, currentYear });
   }, []);
 
-  const handleDownloadPdf = () => {
+  const handleDownloadPdf = async () => {
     const reportElement = document.getElementById('report-content');
     if (!reportElement) {
         console.error("Report content element not found!");
         return;
     }
     setIsDownloading(true);
+    
+    const { default: jsPDF } = await import("jspdf");
+    const { default: html2canvas } = await import("html2canvas");
 
     html2canvas(reportElement, {
         scale: 2,
@@ -86,35 +87,21 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
         backgroundColor: '#ffffff'
     }).then(canvas => {
         const imgData = canvas.toDataURL('image/png');
-        const pdf = new jsPDF('p', 'pt', 'a4');
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = pdf.internal.pageSize.getHeight();
+        const pdfWidth = 595.28; // A4 width in points
         const canvasWidth = canvas.width;
         const canvasHeight = canvas.height;
         const ratio = canvasWidth / pdfWidth;
         const finalHeight = canvasHeight / ratio;
 
-        if (finalHeight > pdfHeight) {
-            // This case should be rare now, but kept as a fallback
-            let position = 0;
-            let heightLeft = canvasHeight;
-            const pdfInternal = new jsPDF('p', 'pt', 'a4');
-            
-            pdfInternal.addImage(imgData, 'PNG', 0, position, pdfWidth, finalHeight);
-            heightLeft -= (pdfHeight * ratio);
+        // Create a PDF with a custom height to fit the entire content on one page
+        const pdf = new jsPDF({
+            orientation: 'p',
+            unit: 'pt',
+            format: [pdfWidth, finalHeight]
+        });
 
-            while (heightLeft > 0) {
-                position = heightLeft - canvasHeight;
-                pdfInternal.addPage();
-                pdfInternal.addImage(imgData, 'PNG', 0, position, pdfWidth, finalHeight);
-                heightLeft -= (pdfHeight * ratio);
-            }
-             pdfInternal.save(`mycarvalue-report-${clientData?.reportId || 'report'}.pdf`);
-
-        } else {
-             pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, finalHeight);
-             pdf.save(`mycarvalue-report-${clientData?.reportId || 'report'}.pdf`);
-        }
+        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, finalHeight);
+        pdf.save(`mycarvalue-report-${clientData?.reportId || 'report'}.pdf`);
         
         setIsDownloading(false);
     }).catch(err => {
@@ -346,26 +333,29 @@ export default function ResultPage() {
             return;
         }
 
-        const paid = localStorage.getItem("paymentSuccess");
+        // We check for the result data in localStorage.
         const storedResult = localStorage.getItem('valuationResult');
-
-        if (!paid || !storedResult) {
-            // In production, strictly redirect if data is missing.
-            if (process.env.NODE_ENV === 'production') {
-                router.push('/');
-                return;
-            }
-        }
 
         if (storedResult) {
             try {
-                setResult(JSON.parse(storedResult));
+                // Ensure payment was marked as successful before showing the result.
+                const paid = localStorage.getItem("paymentSuccess");
+                if (paid) {
+                    setResult(JSON.parse(storedResult));
+                } else {
+                    // If no payment flag, redirect to start. In production, this prevents unpaid access.
+                    router.push('/valuation');
+                }
             } catch (error) {
                 console.error("Failed to parse valuation result from localStorage", error);
                 router.push('/'); // Redirect if data is corrupted
             }
+        } else {
+             router.push('/'); // If there's no result data at all, go home.
         }
+        
         setLoading(false);
+
     }, [router, isClient]);
     
     const handleNewValuation = () => {
@@ -393,7 +383,7 @@ export default function ResultPage() {
                  <Card className="shadow-lg text-center">
                     <CardHeader>
                         <CardTitle>Valuation Data Missing</CardTitle>
-                        <CardDescription>Could not display the report. The data may have been cleared. Please try a new valuation.</CardDescription>
+                        <CardDescription>Could not display the report. The data may have been cleared or payment was not completed.</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <Button onClick={handleNewValuation}>Start New Valuation</Button>
