@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -79,19 +80,17 @@ export default function EmiCalculatorPage() {
     const chartConfig = {
         loanAmount: {
             label: 'Loan Amount',
-            color: 'hsl(var(--chart-1))',
         },
         totalInterest: {
             label: 'Total Interest',
-            color: 'hsl(var(--chart-2))',
         },
     } satisfies ChartConfig;
 
     const chartData = useMemo(() => {
         if (!isClient || !emiDetails || emiDetails.principal <= 0) return [];
         return [
-            { name: 'loanAmount', value: emiDetails.principal, fill: 'var(--color-loanAmount)' },
-            { name: 'totalInterest', value: emiDetails.totalInterest, fill: 'var(--color-totalInterest)' },
+            { name: 'loanAmount', value: emiDetails.principal, fill: 'hsl(var(--chart-1))' },
+            { name: 'totalInterest', value: emiDetails.totalInterest, fill: 'hsl(var(--chart-2))' },
         ];
     }, [emiDetails, isClient]);
     
