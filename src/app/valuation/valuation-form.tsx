@@ -194,6 +194,7 @@ export function ValuationForm() {
         make: "",
         model: "",
         variant: "",
+        otherVariant: "",
         bodyType: undefined,
         manufactureYear: undefined,
         registrationYear: undefined,
@@ -278,6 +279,7 @@ export function ValuationForm() {
   const { watch, setValue } = form;
   const watchedMake = watch("make");
   const watchedModel = watch("model");
+  const watchedVariant = watch("variant");
 
   const models = useMemo(() => {
     if (watchedMake && carMakesAndModelsAndVariants[watchedMake]) {
@@ -513,6 +515,21 @@ export function ValuationForm() {
                             <FormMessage />
                           </FormItem> 
                         )} />
+                         {watchedVariant === 'Other' && (
+                            <FormField
+                                control={form.control}
+                                name="otherVariant"
+                                render={({ field }) => (
+                                <FormItem className="md:col-span-2">
+                                    <FormLabel>Please Specify Other Variant</FormLabel>
+                                    <FormControl>
+                                    <Input placeholder="Enter variant name" {...field} value={field.value ?? ''} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                                )}
+                            />
+                        )}
                         {renderSelect("bodyType", "Body Type", [
                             {value: "hatchback", label: "Hatchback – Compact & city friendly"},
                             {value: "sedan", label: "Sedan – Comfort & elegance"},

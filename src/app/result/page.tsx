@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from "react";
@@ -78,14 +79,16 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
     }
     setIsDownloading(true);
     
-    const { default: jsPDF } = await import("jspdf");
-    const { default: html2canvas } = await import("html2canvas");
+    try {
+        const { default: jsPDF } = await import("jspdf");
+        const { default: html2canvas } = await import("html2canvas");
 
-    html2canvas(reportElement, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: '#ffffff'
-    }).then(canvas => {
+        const canvas = await html2canvas(reportElement, {
+            scale: 2,
+            useCORS: true,
+            backgroundColor: '#ffffff'
+        });
+
         const imgData = canvas.toDataURL('image/png');
         const pdfWidth = 595.28; // A4 width in points
         const canvasWidth = canvas.width;
@@ -103,16 +106,16 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
         pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, finalHeight);
         pdf.save(`mycarvalue-report-${clientData?.reportId || 'report'}.pdf`);
         
-        setIsDownloading(false);
-    }).catch(err => {
+    } catch (err) {
         console.error("Error generating PDF:", err);
+    } finally {
         setIsDownloading(false);
-    });
+    }
   };
   
   const {
       displayName, whatsappNumber, vehicleNumber,
-      priceCheckReason, make, model, variant, bodyType, fuelType, transmission, manufactureYear, registrationYear, registrationState, ownership,
+      priceCheckReason, make, model, variant, otherVariant, bodyType, fuelType, transmission, manufactureYear, registrationYear, registrationState, ownership,
       odometer, usageType, cityDriven, floodDamage, accident, serviceCenter,
       engine, gearbox, clutch, battery, radiator, exhaust, suspension, steering, brakes,
       engineOil, coolant, brakeFluid, washerFluid,
@@ -124,6 +127,8 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
       rcBook, insuranceDoc, puc, serviceRecords, duplicateKey, noc,
       musicSystem, reverseParkingSensor, dashcam, fogLamps, gpsTracker
   } = formData || {};
+
+  const finalVariant = variant === 'Other' && otherVariant ? otherVariant : variant;
 
 
   const inr = (value: number, short = false) => {
@@ -281,7 +286,7 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
                 </Card>
             </section>
 
-            <DetailSection title="Vehicle Details" data={{ priceCheckReason, make, model, variant, bodyType, fuelType, transmission, manufactureYear, registrationYear, registrationState, ownership, odometer: `${odometer} km` }} />
+            <DetailSection title="Vehicle Details" data={{ priceCheckReason, make, model, variant: finalVariant, bodyType, fuelType, transmission, manufactureYear, registrationYear, registrationState, ownership, odometer: `${odometer} km` }} />
             <DetailSection title="Condition: Engine &amp; Mechanical" data={{ engine, gearbox, clutch, battery, radiator, exhaust, suspension, steering, brakes }} />
             <DetailSection title="Condition: Fluids" data={{ engineOil, coolant, brakeFluid, washerFluid }} />
             <DetailSection title="Condition: Exterior" data={{ frontBumper, rearBumper, bonnet, roof, doors, fenders, paintQuality, scratches: `${scratches}`, dents: `${dents}`, rust_areas: rust_areas, accidentHistory }} />
@@ -317,13 +322,13 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
 
 
 export default function ResultPage() {
-    const [result, setResult] = useState(null);
+    const [result, setResult] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [isClient, setIsClient] = useState(false);
     const router = useRouter();
 
-    // This effect runs once on the client to confirm we've hydrated.
     useEffect(() => {
+        // This effect runs once on the client to confirm we've hydrated.
         setIsClient(true);
     }, []);
 
@@ -333,8 +338,15 @@ export default function ResultPage() {
             return;
         }
 
-        // We check for the result data in localStorage.
-        const storedResult = localStorage.getItem('valuationResult');
+        let storedResult: string | null = null;
+        try {
+            // We check for the result data in localStorage.
+            storedResult = localStorage.getItem('valuationResult');
+        } catch (e) {
+            console.error("LocalStorage is not available.", e);
+            router.push('/');
+            return;
+        }
 
         if (storedResult) {
             try {
@@ -360,9 +372,13 @@ export default function ResultPage() {
     
     const handleNewValuation = () => {
         // Clear local storage and navigate to the valuation form
-        localStorage.removeItem('valuationResult');
-        localStorage.removeItem('paymentSuccess');
-        localStorage.removeItem('razorpay_payment_id');
+        try {
+            localStorage.removeItem('valuationResult');
+            localStorage.removeItem('paymentSuccess');
+            localStorage.removeItem('razorpay_payment_id');
+        } catch (e) {
+            console.error("Could not clear localStorage.", e);
+        }
         router.push('/valuation');
     };
 

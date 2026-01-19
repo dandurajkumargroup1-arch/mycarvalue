@@ -17,6 +17,7 @@ const BasicInfoSchema = z.object({
   make: requiredString,
   model: requiredString,
   variant: requiredString,
+  otherVariant: optionalString,
   bodyType: z.enum(["hatchback", "sedan", "suv", "muv_mpv", "coupe_convertible", "pickup_van"]),
   fuelType: z.enum(["petrol", "diesel", "cng", "electric"]),
   transmission: z.enum(["manual", "automatic"]),
@@ -170,6 +171,15 @@ export const CarValuationSchema = ContactDetailsSchema
     .merge(SafetySchema)
     .merge(DocumentsSchema)
     .merge(UsageSchema)
-    .merge(AdditionalSchema);
+    .merge(AdditionalSchema)
+    .superRefine((data, ctx) => {
+        if (data.variant === 'Other' && (!data.otherVariant || data.otherVariant.trim() === '')) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: "Variant name is required when 'Other' is selected",
+                path: ['otherVariant'],
+            });
+        }
+    });
 
 export type CarValuationFormInput = z.infer<typeof CarValuationSchema>;
