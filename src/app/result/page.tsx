@@ -1,9 +1,8 @@
 
 'use client';
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter } from "next/navigation";
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -14,8 +13,8 @@ const DetailItem = ({ label, value }: { label: string, value: string | number | 
     if (value === undefined || value === null || value === '') return null;
     return (
         <div>
-            <p className="text-xs text-gray-500 capitalize">{label.replace(/([A-Z])/g, ' $1')}</p>
-            <p className="font-medium text-black text-sm">{String(value)}</p>
+            <p className="text-xs text-slate-500 capitalize">{label.replace(/([A-Z])/g, ' $1')}</p>
+            <p className="font-medium text-slate-800 text-sm">{String(value)}</p>
         </div>
     );
 };
@@ -23,7 +22,7 @@ const DetailItem = ({ label, value }: { label: string, value: string | number | 
 // Helper component for report sections
 const ReportSection = ({ title, children }: { title: string, children: React.ReactNode }) => (
     <section className="mt-6">
-        <h2 className="text-base font-semibold text-black pb-2 border-b mb-4">{title}</h2>
+        <h2 className="text-base font-semibold text-slate-900 pb-2 border-b mb-4">{title}</h2>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-4">
             {children}
         </div>
@@ -127,27 +126,27 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
   };
 
   return (
-     <div className="bg-gray-100 p-2 md:p-8">
-        <div id="report-content" className="bg-white text-black p-6 md:p-8 rounded-lg shadow-lg max-w-4xl mx-auto">
+     <div className="bg-slate-100 p-2 md:p-8">
+        <div id="report-content" className="bg-white text-slate-800 p-6 md:p-8 rounded-lg shadow-lg max-w-4xl mx-auto">
             
-            <header className="flex justify-between items-center pb-4 border-b">
+            <header className="flex justify-between items-center pb-4 border-b border-slate-200">
                 <div>
                     <div className="flex items-center gap-2">
-                        <Car className="h-7 w-7 text-primary"/>
-                        <span className="font-bold text-xl text-black">mycarvalue.in</span>
+                        <Car className="h-7 w-7 text-slate-900"/>
+                        <span className="font-bold text-xl text-slate-900">mycarvalue.in</span>
                     </div>
-                    <p className="text-xs text-gray-500 ml-1">AI Valuation Report</p>
+                    <p className="text-xs text-slate-500 ml-1">AI Valuation Report</p>
                 </div>
                 <div className="text-right">
-                    <p className="font-semibold text-base text-black">{make} {model}</p>
-                    {clientData && <p className="text-xs text-gray-500">Generated: {clientData.generatedOn}</p>}
+                    <p className="font-semibold text-base text-slate-900">{make} {model}</p>
+                    {clientData && <p className="text-xs text-slate-500">Generated: {clientData.generatedOn}</p>}
                 </div>
             </header>
 
-            <section className="bg-blue-50 rounded-lg p-6 text-center my-8 border border-blue-100">
-                <h3 className="text-sm font-semibold text-blue-800">Your Best Selling Price Estimate</h3>
-                <p className="text-5xl font-bold tracking-tight my-2 text-blue-900">{inr(valuation.bestPrice)}</p>
-                <div className="inline-flex items-center gap-2 rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-800">
+            <section className="bg-slate-50 rounded-lg p-6 text-center my-8 border border-slate-200">
+                <h3 className="text-sm font-semibold text-slate-700">Your Best Selling Price Estimate</h3>
+                <p className="text-5xl font-bold tracking-tight my-2 text-slate-900">{inr(valuation.bestPrice)}</p>
+                <div className="inline-flex items-center gap-2 rounded-full bg-slate-200 px-3 py-1 text-xs font-semibold text-slate-800">
                     <ShieldCheck className="h-4 w-4"/>
                     Verified by mycarvalue.in
                 </div>
@@ -155,23 +154,23 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
             
             <section className="grid grid-cols-1 md:grid-cols-2 gap-8 my-8">
                 <div>
-                    <h2 className="text-base font-semibold text-black mb-3">Price Calculation</h2>
+                    <h2 className="text-base font-semibold text-slate-900 mb-3">Price Calculation</h2>
                     <div className="space-y-2 text-sm">
-                        <div className="flex justify-between"><span className="text-gray-600">Your Expected Price</span> <span className="font-medium text-black">{inr(valuation.p0_expectedPrice)}</span></div>
-                        <div className="flex justify-between"><span className="text-gray-600">After Odometer Depreciation ({valuation.od_odometerDepreciationPercentage.toFixed(1)}%)</span> <span className="font-medium text-black">{inr(valuation.p1_afterOdometer)}</span></div>
-                        <div className="flex justify-between"><span className="text-gray-600">After All Section Depreciation</span> <span className="font-medium text-black">{inr(valuation.p9_afterAllSections)}</span></div>
-                        <div className="flex justify-between"><span className="text-gray-600">After Age Depreciation ({valuation.yd_yearDepreciationPercentage.toFixed(1)}%)</span> <span className="font-medium text-black">{inr(valuation.p10_afterYear)}</span></div>
-                        {valuation.goodCarBonusApplied && <div className="flex justify-between text-green-600"><span className="font-medium">Good Car Bonus (5%)</span> <span className="font-medium">+ {inr(valuation.finalPrice - valuation.p10_afterYear)}</span></div>}
-                        <div className="flex justify-between pt-2 border-t font-bold"><span className="text-gray-800">Final Price (Pre-rounding)</span> <span className="text-black">{inr(valuation.finalPrice)}</span></div>
+                        <div className="flex justify-between"><span className="text-slate-600">Your Expected Price</span> <span className="font-medium text-slate-800">{inr(valuation.p0_expectedPrice)}</span></div>
+                        <div className="flex justify-between"><span className="text-slate-600">After Odometer Depreciation ({valuation.od_odometerDepreciationPercentage.toFixed(1)}%)</span> <span className="font-medium text-slate-800">{inr(valuation.p1_afterOdometer)}</span></div>
+                        <div className="flex justify-between"><span className="text-slate-600">After All Section Depreciation</span> <span className="font-medium text-slate-800">{inr(valuation.p9_afterAllSections)}</span></div>
+                        <div className="flex justify-between"><span className="text-slate-600">After Age Depreciation ({valuation.yd_yearDepreciationPercentage.toFixed(1)}%)</span> <span className="font-medium text-slate-800">{inr(valuation.p10_afterYear)}</span></div>
+                        {valuation.goodCarBonusApplied && <div className="flex justify-between text-emerald-600"><span className="font-medium">Good Car Bonus (5%)</span> <span className="font-medium">+ {inr(valuation.finalPrice - valuation.p10_afterYear)}</span></div>}
+                        <div className="flex justify-between pt-2 border-t font-bold"><span className="text-slate-800">Final Price (Pre-rounding)</span> <span className="text-slate-900">{inr(valuation.finalPrice)}</span></div>
                     </div>
                 </div>
                 <div>
-                    <h2 className="text-base font-semibold text-black mb-3">Section Depreciation Applied</h2>
+                    <h2 className="text-base font-semibold text-slate-900 mb-3">Section Depreciation Applied</h2>
                      <div className="space-y-2 text-sm">
                         {depreciationSections.map(sec => (
                             <div key={sec.label} className="flex justify-between">
-                                <span className="text-gray-600">{sec.label}</span>
-                                <span className="font-medium text-black">{sec.value.toFixed(1)}%</span>
+                                <span className="text-slate-600">{sec.label}</span>
+                                <span className="font-medium text-slate-800">{sec.value.toFixed(1)}%</span>
                             </div>
                         ))}
                     </div>
@@ -277,7 +276,7 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
             </ReportSection>
 
 
-            <footer className="mt-10 pt-4 border-t text-xs text-center text-gray-500">
+            <footer className="mt-10 pt-4 border-t border-slate-200 text-xs text-center text-slate-500">
                 <p>mycarvalue1@gmail.com | +91-9492060040</p>
                 <p className="mt-2">This is an AI-generated report and should be used as an estimate. Physical inspection may affect the final price.</p>
             </footer>
@@ -286,7 +285,7 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
              <Button onClick={onNewValuation} size="lg" variant="outline">
                 Start New Valuation
             </Button>
-            <Button onClick={handleDownloadPdf} size="lg" disabled={!isClient || isDownloading}>
+            <Button onClick={handleDownloadPdf} size="lg" disabled={!clientData || isDownloading}>
                 {isDownloading ? (
                     'Downloading...'
                 ) : (
@@ -301,22 +300,12 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
   );
 };
 
-
-export default function ResultPage() {
+const ResultPageClient = () => {
     const [result, setResult] = useState<any>(null);
     const [loading, setLoading] = useState(true);
-    const [isClient, setIsClient] = useState(false);
     const router = useRouter();
 
     useEffect(() => {
-        setIsClient(true);
-    }, []);
-
-    useEffect(() => {
-        if (!isClient) {
-            return;
-        }
-
         let storedResult: string | null = null;
         try {
             storedResult = localStorage.getItem('valuationResult');
@@ -344,7 +333,7 @@ export default function ResultPage() {
         
         setLoading(false);
 
-    }, [router, isClient]);
+    }, [router]);
     
     const handleNewValuation = () => {
         try {
@@ -357,7 +346,7 @@ export default function ResultPage() {
         router.push('/valuation');
     };
 
-    if (!isClient || loading) {
+    if (loading) {
         return (
             <div className="container mx-auto max-w-4xl py-12">
                 <Skeleton className="h-[1200px] w-full" />
@@ -382,7 +371,7 @@ export default function ResultPage() {
     }
 
     return (
-        <div className="bg-muted">
+        <div className="bg-slate-100">
             <div className="container mx-auto max-w-4xl py-8">
                 <ValuationResultDisplay result={result} onNewValuation={handleNewValuation} />
             </div>
@@ -390,3 +379,14 @@ export default function ResultPage() {
     );
 }
 
+export default function ResultPage() {
+    return (
+        <Suspense fallback={
+            <div className="container mx-auto max-w-4xl py-12">
+                <Skeleton className="h-[1200px] w-full" />
+            </div>
+        }>
+            <ResultPageClient />
+        </Suspense>
+    );
+}
