@@ -6,7 +6,9 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Car, Download, ShieldCheck } from "lucide-react";
+import { Car, Download, ShieldCheck, TrendingUp, Tag, Target, Info } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+
 
 // Helper component for displaying a single detail item in the report
 const DetailItem = ({ label, value }: { label: string, value: string | number | undefined | null }) => {
@@ -21,7 +23,7 @@ const DetailItem = ({ label, value }: { label: string, value: string | number | 
 
 // Helper component for report sections
 const ReportSection = ({ title, children }: { title: string, children: React.ReactNode }) => (
-    <section className="mt-6">
+    <section className="mt-8">
         <h2 className="text-base font-semibold text-slate-900 pb-2 border-b mb-4">{title}</h2>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-4">
             {children}
@@ -47,16 +49,17 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
   }, []);
 
   const handleDownloadPdf = async () => {
-    const reportElement = document.getElementById('report-content');
-    if (!reportElement) {
-        console.error("Report content element not found!");
-        return;
-    }
     setIsDownloading(true);
-    
     try {
         const { default: jsPDF } = await import("jspdf");
         const { default: html2canvas } = await import("html2canvas");
+
+        const reportElement = document.getElementById('report-content');
+        if (!reportElement) {
+            console.error("Report content element not found!");
+            setIsDownloading(false);
+            return;
+        }
 
         const canvas = await html2canvas(reportElement, {
             scale: 2,
@@ -65,19 +68,30 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
         });
 
         const imgData = canvas.toDataURL('image/png');
-        const pdfWidth = 595.28; // A4 width in points
+        const pdf = new jsPDF({
+            orientation: 'p',
+            unit: 'pt',
+            format: 'a4'
+        });
+
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
         const canvasWidth = canvas.width;
         const canvasHeight = canvas.height;
         const ratio = canvasWidth / pdfWidth;
         const finalHeight = canvasHeight / ratio;
 
-        const pdf = new jsPDF({
-            orientation: 'p',
-            unit: 'pt',
-            format: [pdfWidth, finalHeight + 20] // Add some padding
-        });
+        if (finalHeight > pdfHeight) {
+            const numPages = Math.ceil(finalHeight / pdfHeight);
+            for (let i = 0; i < numPages; i++) {
+                if (i > 0) pdf.addPage();
+                const yPos = -(pdfHeight * i);
+                pdf.addImage(imgData, 'PNG', 0, yPos, pdfWidth, finalHeight);
+            }
+        } else {
+            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, finalHeight);
+        }
 
-        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, finalHeight);
         pdf.save(`mycarvalue-report-${clientData?.reportId || 'report'}.pdf`);
         
     } catch (err) {
@@ -110,6 +124,7 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
   const depreciationSections = [
     { label: "Usage", value: valuation.u_usageDepreciationPercentage },
     { label: "Engine & Mechanical", value: valuation.e_engineDepreciationPercentage },
+    { label: "Fluids", value: valuation.f_fluidsDepreciationPercentage },
     { label: "Exterior", value: valuation.ex_exteriorDepreciationPercentage },
     { label: "Interior", value: valuation.in_interiorDepreciationPercentage },
     { label: "Electrical", value: valuation.el_electricalDepreciationPercentage },
@@ -117,6 +132,19 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
     { label: "Safety", value: valuation.s_safetyDepreciationPercentage },
     { label: "Documents", value: valuation.d_documentsDepreciationPercentage },
   ];
+
+  const depreciationBreakdown = [
+    { category: 'Odometer', value: valuation.depreciation.odometer },
+    { category: 'Vehicle Age', value: valuation.depreciation.age },
+    { category: 'Usage History', value: valuation.depreciation.usage },
+    { category: 'Engine Condition', value: valuation.depreciation.engine },
+    { category: 'Exterior Condition', value: valuation.depreciation.exterior },
+    { category: 'Interior Condition', value: valuation.depreciation.interior },
+    { category: 'Tyre Condition', value: valuation.depreciation.tyres },
+    { category: 'Documents', value: valuation.depreciation.documents },
+    { category: 'Other (Electrical, Safety, Fluids)', value: valuation.depreciation.electrical + valuation.depreciation.safety + valuation.depreciation.fluids },
+  ].filter(item => item.value > 0);
+
 
   const formatValue = (val: any) => {
       if (val === undefined || val === null || val === '') return 'N/A';
@@ -129,7 +157,7 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
      <div className="bg-slate-100 p-2 md:p-8">
         <div id="report-content" className="bg-white text-slate-800 p-6 md:p-8 rounded-lg shadow-lg max-w-4xl mx-auto">
             
-            <header className="flex justify-between items-center pb-4 border-b border-slate-200">
+            <header className="flex justify-between items-start pb-4 border-b border-slate-200">
                 <div>
                     <div className="flex items-center gap-2">
                         <Car className="h-7 w-7 text-slate-900"/>
@@ -139,7 +167,7 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
                 </div>
                 <div className="text-right">
                     <p className="font-semibold text-base text-slate-900">{make} {model}</p>
-                    {clientData && <p className="text-xs text-slate-500">Generated: {clientData.generatedOn}</p>}
+                    {clientData && <p className="text-xs text-slate-500">Report ID: {clientData.reportId} | Generated: {clientData.generatedOn}</p>}
                 </div>
             </header>
 
@@ -152,20 +180,45 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
                 </div>
             </section>
             
+            <section className="my-8">
+                <h2 className="text-base font-semibold text-slate-900 mb-3 text-center">Price Confidence Guide</h2>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+                    <Card className="p-4 bg-slate-50">
+                        <TrendingUp className="mx-auto h-7 w-7 text-slate-600 mb-2"/>
+                        <CardTitle className="text-lg">Market Value</CardTitle>
+                        <CardDescription className="text-xl font-bold text-slate-800">{inr(valuation.marketValueMin)} - {inr(valuation.marketValueMax)}</CardDescription>
+                    </Card>
+                    <Card className="p-4 bg-slate-50 border-primary/50">
+                        <Target className="mx-auto h-7 w-7 text-primary mb-2"/>
+                        <CardTitle className="text-lg">Expected Final Deal</CardTitle>
+                        <CardDescription className="text-xl font-bold text-primary">{inr(valuation.expectedFinalDeal)}</CardDescription>
+                    </Card>
+                    <Card className="p-4 bg-slate-50">
+                        <Tag className="mx-auto h-7 w-7 text-slate-600 mb-2"/>
+                        <CardTitle className="text-lg">Ideal Listing Price</CardTitle>
+                        <CardDescription className="text-xl font-bold text-slate-800">{inr(valuation.idealListingPrice)}</CardDescription>
+                    </Card>
+                </div>
+                 <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-center">
+                    <Info className="inline-block h-5 w-5 text-blue-600 mr-2" />
+                    <span className="text-sm text-blue-800">{valuation.buyerPsychologyTip}</span>
+                </div>
+            </section>
+
             <section className="grid grid-cols-1 md:grid-cols-2 gap-8 my-8">
                 <div>
-                    <h2 className="text-base font-semibold text-slate-900 mb-3">Price Calculation</h2>
+                    <h2 className="text-base font-semibold text-slate-900 mb-3">Price Calculation Summary</h2>
                     <div className="space-y-2 text-sm">
                         <div className="flex justify-between"><span className="text-slate-600">Your Expected Price</span> <span className="font-medium text-slate-800">{inr(valuation.p0_expectedPrice)}</span></div>
                         <div className="flex justify-between"><span className="text-slate-600">After Odometer Depreciation ({valuation.od_odometerDepreciationPercentage.toFixed(1)}%)</span> <span className="font-medium text-slate-800">{inr(valuation.p1_afterOdometer)}</span></div>
-                        <div className="flex justify-between"><span className="text-slate-600">After All Section Depreciation</span> <span className="font-medium text-slate-800">{inr(valuation.p9_afterAllSections)}</span></div>
+                        <div className="flex justify-between"><span className="text-slate-600">After Condition Depreciation</span> <span className="font-medium text-slate-800">{inr(valuation.p9_afterAllSections)}</span></div>
                         <div className="flex justify-between"><span className="text-slate-600">After Age Depreciation ({valuation.yd_yearDepreciationPercentage.toFixed(1)}%)</span> <span className="font-medium text-slate-800">{inr(valuation.p10_afterYear)}</span></div>
-                        {valuation.goodCarBonusApplied && <div className="flex justify-between text-emerald-600"><span className="font-medium">Good Car Bonus (5%)</span> <span className="font-medium">+ {inr(valuation.finalPrice - valuation.p10_afterYear)}</span></div>}
-                        <div className="flex justify-between pt-2 border-t font-bold"><span className="text-slate-800">Final Price (Pre-rounding)</span> <span className="text-slate-900">{inr(valuation.finalPrice)}</span></div>
+                        {valuation.goodCarBonusApplied && <div className="flex justify-between text-emerald-600"><span className="font-medium">Good Car Bonus</span> <span className="font-medium">+ {inr(valuation.finalPrice - valuation.p10_afterYear)}</span></div>}
+                        <div className="flex justify-between pt-2 border-t font-bold"><span className="text-slate-800">Final Assessed Value</span> <span className="text-slate-900">{inr(valuation.finalPrice)}</span></div>
                     </div>
                 </div>
                 <div>
-                    <h2 className="text-base font-semibold text-slate-900 mb-3">Section Depreciation Applied</h2>
+                    <h2 className="text-base font-semibold text-slate-900 mb-3">Depreciation by Section (%)</h2>
                      <div className="space-y-2 text-sm">
                         {depreciationSections.map(sec => (
                             <div key={sec.label} className="flex justify-between">
@@ -177,6 +230,26 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
                 </div>
             </section>
             
+            <section className="my-8">
+                 <h2 className="text-base font-semibold text-slate-900 mb-3 text-center">Depreciation Breakdown (Estimated Value Lost)</h2>
+                 <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Depreciation Factor</TableHead>
+                            <TableHead className="text-right">Value Lost</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {depreciationBreakdown.map((item) => (
+                            <TableRow key={item.category}>
+                                <TableCell className="font-medium">{item.category}</TableCell>
+                                <TableCell className="text-right font-mono">-{inr(item.value)}</TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                 </Table>
+            </section>
+
             <ReportSection title="Vehicle Details">
                 <DetailItem label="Make" value={make} />
                 <DetailItem label="Model" value={model} />
@@ -303,9 +376,13 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
 const ResultPageClient = () => {
     const [result, setResult] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+    const [isClient, setIsClient] = useState(false);
     const router = useRouter();
 
     useEffect(() => {
+        setIsClient(true);
+        if (typeof window === 'undefined') return;
+
         let storedResult: string | null = null;
         try {
             storedResult = localStorage.getItem('valuationResult');
@@ -346,7 +423,7 @@ const ResultPageClient = () => {
         router.push('/valuation');
     };
 
-    if (loading) {
+    if (!isClient || loading) {
         return (
             <div className="container mx-auto max-w-4xl py-12">
                 <Skeleton className="h-[1200px] w-full" />
