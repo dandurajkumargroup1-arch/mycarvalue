@@ -7,68 +7,44 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Car, Lightbulb, TrendingUp, Target, ShieldCheck, MessageCircleWarning, ShieldQuestion, Download } from "lucide-react";
-import { Separator } from "@/components/ui/separator";
+import { Car, Download, ShieldCheck } from "lucide-react";
 
-const DetailSection = ({ title, data }: { title: string, data: Record<string, any> }) => {
-    const formatKey = (key: string) => {
-        return key
-            .replace(/([A-Z])/g, ' $1')
-            .replace(/^./, (str) => str.toUpperCase());
-    };
-
-    const formatValue = (value: any) => {
-        if (typeof value === 'boolean') return value ? 'Yes' : 'No';
-        if (value === undefined || value === null || value === '') return 'N/A';
-        if (value === 'immediate_sale') return 'Immediate Sale';
-        if (value === 'price_check') return 'Just Price Check';
-        if (value === 'market_value') return 'Knowing Market Value';
-        if (value === 'hatchback') return 'Hatchback';
-        if (value === 'sedan') return 'Sedan';
-        if (value === 'suv') return 'SUV';
-        if (value === 'muv_mpv') return 'MUV/MPV';
-        if (value === 'coupe_convertible') return 'Coupe/Convertible';
-        if (value === 'pickup_van') return 'Pickup/Van';
-        return String(value);
-    };
-
-    const entries = Object.entries(data).filter(([_, value]) => value !== undefined && value !== null && value !== '');
-
-    if (entries.length === 0) return null;
-
+// Helper component for displaying a single detail item in the report
+const DetailItem = ({ label, value }: { label: string, value: string | number | undefined | null }) => {
+    if (value === undefined || value === null || value === '') return null;
     return (
-        <section className="mt-6 pt-6 border-t">
-            <h2 className="text-xl font-bold text-black mb-4">{title}</h2>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-x-8 gap-y-4 text-sm">
-                {entries.map(([key, value]) => (
-                    <div key={key}>
-                        <p className="text-gray-500">{formatKey(key)}</p>
-                        <p className="font-medium text-black">{formatValue(value)}</p>
-                    </div>
-                ))}
-            </div>
-        </section>
+        <div>
+            <p className="text-xs text-gray-500 capitalize">{label.replace(/([A-Z])/g, ' $1')}</p>
+            <p className="font-medium text-black text-sm">{String(value)}</p>
+        </div>
     );
 };
 
+// Helper component for report sections
+const ReportSection = ({ title, children }: { title: string, children: React.ReactNode }) => (
+    <section className="mt-6">
+        <h2 className="text-base font-semibold text-black pb-2 border-b mb-4">{title}</h2>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-4">
+            {children}
+        </div>
+    </section>
+);
+
+
 const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuation: any; formData: any; }, onNewValuation: () => void }) => {
   const { valuation, formData } = result;
-  const [clientData, setClientData] = useState<{ reportId: string; generatedOn: string; currentYear: number; } | null>(null);
+  const [clientData, setClientData] = useState<{ reportId: string; generatedOn: string; } | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
 
   useEffect(() => {
-    // This effect runs only once on the client, generating unique, client-side data safely.
     const randomPart = Math.random().toString(36).substring(2, 8).toUpperCase();
     const reportId = `MCV-${randomPart}`;
 
-    const now = new Date();
-    const date = now.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
-    const time = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-    const generatedOn = `${date} - ${time}`;
+    const generatedOn = new Date().toLocaleDateString('en-GB', {
+        day: 'numeric', month: 'long', year: 'numeric'
+    });
     
-    const currentYear = new Date().getFullYear();
-
-    setClientData({ reportId, generatedOn, currentYear });
+    setClientData({ reportId, generatedOn });
   }, []);
 
   const handleDownloadPdf = async () => {
@@ -96,11 +72,10 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
         const ratio = canvasWidth / pdfWidth;
         const finalHeight = canvasHeight / ratio;
 
-        // Create a PDF with a custom height to fit the entire content on one page
         const pdf = new jsPDF({
             orientation: 'p',
             unit: 'pt',
-            format: [pdfWidth, finalHeight]
+            format: [pdfWidth, finalHeight + 20] // Add some padding
         });
 
         pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, finalHeight);
@@ -114,198 +89,204 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
   };
   
   const {
-      displayName, whatsappNumber, vehicleNumber,
-      priceCheckReason, make, model, variant, otherVariant, bodyType, fuelType, transmission, manufactureYear, registrationYear, registrationState, ownership,
-      odometer, usageType, cityDriven, floodDamage, accident, serviceCenter,
+      make, model, variant, otherVariant, fuelType, transmission, manufactureYear, registrationYear, registrationState, ownership, odometer,
       engine, gearbox, clutch, battery, radiator, exhaust, suspension, steering, brakes,
-      engineOil, coolant, brakeFluid, washerFluid,
-      frontBumper, rearBumper, bonnet, roof, doors, fenders, paintQuality, accidentHistory, scratches, dents, rust_areas,
-      seats, seatCovers, dashboard, dashboardWarningLights, steeringWheel, roofLining, floorMats, ac, infotainment,
+      frontBumper, rearBumper, bonnet, roof, doors, fenders, paintQuality, scratches, dents, rust_areas, accidentHistory,
+      seats, seatCovers, dashboard, steeringWheel, roofLining, floorMats, ac, infotainment, dashboardWarningLights,
       powerWindows, centralLocking, headlights, indicators, horn, reverseCamera, sensors, wipers,
-      frontTyres, rearTyres, spareTyre, alloyWheels, wheelAlignment,
-      airbags, abs, seatBelts, childLock, immobilizer,
-      rcBook, insuranceDoc, puc, serviceRecords, duplicateKey, noc,
+      frontTyres, rearTyres, spareTyre, alloyWheels, wheelAlignment, newlyChanged,
+      rcBook, insuranceDoc, puc, serviceRecords, duplicateKey, noc, airbags, abs, seatBelts, childLock, immobilizer,
+      usageType, cityDriven, floodDamage, accident, serviceCenter,
       musicSystem, reverseParkingSensor, dashcam, fogLamps, gpsTracker
   } = formData || {};
 
   const finalVariant = variant === 'Other' && otherVariant ? otherVariant : variant;
 
 
-  const inr = (value: number, short = false) => {
-    if (short) {
-        if (Math.abs(value) >= 100000) {
-            return `₹${(value / 100000).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} L`;
-        }
-    }
-    return `₹${value.toLocaleString('en-IN', {maximumFractionDigits: 0})}`;
+  const inr = (value: number) => {
+    if (isNaN(value)) return 'N/A';
+    return `₹${Math.round(value).toLocaleString('en-IN')}`;
   }
-
-  const depreciationItems = [
-    { label: "Odometer Reading", value: valuation.depreciation.odometer },
-    { label: "Usage History (Flood/Accident)", value: valuation.depreciation.usage },
-    { label: "Engine & Mechanical", value: valuation.depreciation.engine },
-    { label: "Fluids Condition", value: valuation.depreciation.fluids },
-    { label: "Exterior Condition", value: valuation.depreciation.exterior },
-    { label: "Interior Condition", value: valuation.depreciation.interior },
-    { label: "Electrical & Electronics", value: valuation.depreciation.electrical },
-    { label: "Tyres & Wheels", value: valuation.depreciation.tyres },
-    { label: "Safety Features", value: valuation.depreciation.safety },
-    { label: "Documents", value: valuation.depreciation.documents },
-    { label: "Car Age", value: valuation.depreciation.age },
-  ];
   
+  const depreciationSections = [
+    { label: "Usage", value: valuation.u_usageDepreciationPercentage },
+    { label: "Engine & Mechanical", value: valuation.e_engineDepreciationPercentage },
+    { label: "Exterior", value: valuation.ex_exteriorDepreciationPercentage },
+    { label: "Interior", value: valuation.in_interiorDepreciationPercentage },
+    { label: "Electrical", value: valuation.el_electricalDepreciationPercentage },
+    { label: "Tyres", value: valuation.t_tyresDepreciationPercentage },
+    { label: "Safety", value: valuation.s_safetyDepreciationPercentage },
+    { label: "Documents", value: valuation.d_documentsDepreciationPercentage },
+  ];
+
+  const formatValue = (val: any) => {
+      if (val === undefined || val === null || val === '') return 'N/A';
+      return String(val)
+        .replace(/_/g, ' ')
+        .replace(/\b\w/g, l => l.toUpperCase());
+  };
+
   return (
-     <div className="overflow-y-auto">
-        <div id="report-content" className="bg-white text-black p-8 rounded-lg border">
-            <header className="flex justify-between items-start pb-4 border-b">
-                <div className="flex items-center gap-2">
-                    <Car className="h-8 w-8 text-black"/>
-                    <div>
-                        <h1 className="text-xl font-bold text-black">mycarvalue.in</h1>
-                        <p className="text-sm text-gray-500">AI Valuation Report</p>
+     <div className="bg-gray-100 p-2 md:p-8">
+        <div id="report-content" className="bg-white text-black p-6 md:p-8 rounded-lg shadow-lg max-w-4xl mx-auto">
+            
+            <header className="flex justify-between items-center pb-4 border-b">
+                <div>
+                    <div className="flex items-center gap-2">
+                        <Car className="h-7 w-7 text-primary"/>
+                        <span className="font-bold text-xl text-black">mycarvalue.in</span>
                     </div>
+                    <p className="text-xs text-gray-500 ml-1">AI Valuation Report</p>
                 </div>
                 <div className="text-right">
-                    <p className="font-semibold text-black">{formData.make} {formData.model}</p>
-                    <p className="text-sm text-gray-500">For: {formData.displayName}</p>
+                    <p className="font-semibold text-base text-black">{make} {model}</p>
+                    {clientData && <p className="text-xs text-gray-500">Generated: {clientData.generatedOn}</p>}
                 </div>
             </header>
 
-            <section className="my-6 p-4 bg-gray-50 rounded-lg border text-xs text-gray-600">
-                <div className="grid grid-cols-2 gap-4">
-                    <div><span className="font-semibold text-black">Report ID:</span> {clientData ? clientData.reportId : <Skeleton className="h-4 w-20 inline-block"/>}</div>
-                    <div><span className="font-semibold text-black">Generated On:</span> {clientData ? clientData.generatedOn : <Skeleton className="h-4 w-24 inline-block"/>}</div>
-                    <div><span className="font-semibold text-black">Location:</span> {formData.registrationState}</div>
-                    <div><span className="font-semibold text-black">Valuation Type:</span> Independent Market Analysis</div>
-                </div>
-                <Separator className="my-3"/>
-                <div className="flex items-start gap-2 text-gray-500">
-                    <ShieldCheck className="h-4 w-4 mt-0.5 flex-shrink-0 text-green-600" />
-                    <p><span className="font-semibold text-gray-700">Disclaimer:</span> This valuation is generated independently using market trends and vehicle condition. It is not influenced by dealers or buyers.</p>
+            <section className="bg-blue-50 rounded-lg p-6 text-center my-8 border border-blue-100">
+                <h3 className="text-sm font-semibold text-blue-800">Your Best Selling Price Estimate</h3>
+                <p className="text-5xl font-bold tracking-tight my-2 text-blue-900">{inr(valuation.bestPrice)}</p>
+                <div className="inline-flex items-center gap-2 rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-800">
+                    <ShieldCheck className="h-4 w-4"/>
+                    Verified by mycarvalue.in
                 </div>
             </section>
             
-            <section className="bg-gray-100 rounded-lg p-6 text-center my-8 border">
-                <h3 className="text-sm font-semibold text-black">Your Final Estimated Price</h3>
-                <p className="text-5xl font-bold tracking-tight mt-1 text-black">{inr(valuation.bestPrice)}</p>
-            </section>
-
-            <section className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-                 <Card className="border-green-200 bg-green-50 text-black">
-                    <CardHeader>
-                        <CardTitle className="text-green-800">Price Confidence</CardTitle>
-                        <CardDescription className="text-green-700">Use these insights to negotiate the best deal.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4 text-sm">
-                        <div className="flex justify-between items-center p-2 rounded-md bg-white">
-                            <div className="flex items-center gap-2">
-                                <TrendingUp className="text-green-600"/>
-                                <span className="text-gray-600 font-medium">Fair Market Value</span>
+            <section className="grid grid-cols-1 md:grid-cols-2 gap-8 my-8">
+                <div>
+                    <h2 className="text-base font-semibold text-black mb-3">Price Calculation</h2>
+                    <div className="space-y-2 text-sm">
+                        <div className="flex justify-between"><span className="text-gray-600">Your Expected Price</span> <span className="font-medium text-black">{inr(valuation.p0_expectedPrice)}</span></div>
+                        <div className="flex justify-between"><span className="text-gray-600">After Odometer Depreciation ({valuation.od_odometerDepreciationPercentage.toFixed(1)}%)</span> <span className="font-medium text-black">{inr(valuation.p1_afterOdometer)}</span></div>
+                        <div className="flex justify-between"><span className="text-gray-600">After All Section Depreciation</span> <span className="font-medium text-black">{inr(valuation.p9_afterAllSections)}</span></div>
+                        <div className="flex justify-between"><span className="text-gray-600">After Age Depreciation ({valuation.yd_yearDepreciationPercentage.toFixed(1)}%)</span> <span className="font-medium text-black">{inr(valuation.p10_afterYear)}</span></div>
+                        {valuation.goodCarBonusApplied && <div className="flex justify-between text-green-600"><span className="font-medium">Good Car Bonus (5%)</span> <span className="font-medium">+ {inr(valuation.finalPrice - valuation.p10_afterYear)}</span></div>}
+                        <div className="flex justify-between pt-2 border-t font-bold"><span className="text-gray-800">Final Price (Pre-rounding)</span> <span className="text-black">{inr(valuation.finalPrice)}</span></div>
+                    </div>
+                </div>
+                <div>
+                    <h2 className="text-base font-semibold text-black mb-3">Section Depreciation Applied</h2>
+                     <div className="space-y-2 text-sm">
+                        {depreciationSections.map(sec => (
+                            <div key={sec.label} className="flex justify-between">
+                                <span className="text-gray-600">{sec.label}</span>
+                                <span className="font-medium text-black">{sec.value.toFixed(1)}%</span>
                             </div>
-                            <span className="font-bold text-green-700">{inr(valuation.marketValueMin, true)} - {inr(valuation.marketValueMax, true)}</span>
-                        </div>
-                        <div className="flex justify-between items-center p-2 rounded-md bg-white">
-                            <div className="flex items-center gap-2">
-                                <Target className="text-green-600"/>
-                                <span className="text-gray-600 font-medium">Ideal Listing Price</span>
-                            </div>
-                            <span className="font-bold text-green-700">{inr(valuation.idealListingPrice, true)}</span>
-                        </div>
-                        <Separator className="my-2"/>
-                         <div className="text-xs text-green-800 bg-green-100/70 p-3 rounded-md flex gap-2">
-                            <Lightbulb className="h-4 w-4 flex-shrink-0 mt-0.5" />
-                            <div>
-                                <span className="font-semibold">Buyer Psychology Tip:</span> {valuation.buyerPsychologyTip}
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                <Card className="text-black">
-                    <CardHeader>
-                        <CardTitle className="text-amber-800">What Buyers Usually Say</CardTitle>
-                        <CardDescription className="text-amber-700">Be prepared for these negotiation tactics.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-3 text-sm">
-                        <div className="flex items-start gap-2 text-gray-600">
-                            <MessageCircleWarning className="h-4 w-4 mt-0.5 flex-shrink-0 text-amber-600" />
-                            <p>"Market is down right now."</p>
-                        </div>
-                        <div className="flex items-start gap-2 text-gray-600">
-                             <MessageCircleWarning className="h-4 w-4 mt-0.5 flex-shrink-0 text-amber-600" />
-                            <p>"A dealer is offering me much less for a similar car."</p>
-                        </div>
-                         <div className="flex items-start gap-2 text-gray-600">
-                             <MessageCircleWarning className="h-4 w-4 mt-0.5 flex-shrink-0 text-amber-600" />
-                            <p>"These minor scratches will cost a lot to fix."</p>
-                        </div>
-                        <Separator className="my-3"/>
-                        <div className="flex items-start gap-3 p-3 rounded-md bg-amber-100/70 text-amber-900">
-                            <ShieldQuestion className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                            <div>
-                                <p className="font-semibold">Your Response:</p>
-                                <p>Stick to the MyCarValue price range unless there are major, undisclosed defects. Your price is based on fair market data.</p>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
+                        ))}
+                    </div>
+                </div>
             </section>
             
-            <section className="my-8">
-                <Card className="text-black">
-                    <CardHeader>
-                        <CardTitle>Depreciation Breakdown</CardTitle>
-                        <CardDescription>How the final price was calculated from your expected price.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="space-y-4 text-sm">
-                            <div className="flex justify-between items-center font-semibold">
-                                <p>Expected Price</p>
-                                <p>{inr(valuation.p0_expectedPrice)}</p>
-                            </div>
-                            <Separator />
-                            <div className="space-y-2">
-                                {depreciationItems.map(item => (
-                                    item.value > 0 &&
-                                    <div key={item.label} className="flex justify-between items-center text-gray-500">
-                                        <p>{item.label}</p>
-                                        <p className="font-medium text-red-600">- {inr(item.value)}</p>
-                                    </div>
-                                ))}
-                            </div>
-                            <Separator />
-                            <div className="flex justify-between items-center font-bold text-black text-base">
-                                <p>Final Estimated Price</p>
-                                <p>{inr(valuation.bestPrice)}</p>
-                            </div>
-                             {valuation.goodCarBonusApplied && (
-                                <p className="text-xs text-center text-green-600 pt-2">A 5% "Good Car Bonus" was applied for excellent condition!</p>
-                             )}
-                        </div>
-                    </CardContent>
-                </Card>
-            </section>
+            <ReportSection title="Vehicle Details">
+                <DetailItem label="Make" value={make} />
+                <DetailItem label="Model" value={model} />
+                <DetailItem label="Variant" value={finalVariant} />
+                <DetailItem label="Fuel Type" value={fuelType} />
+                <DetailItem label="Transmission" value={transmission} />
+                <DetailItem label="Manufacture Year" value={manufactureYear} />
+                <DetailItem label="Registration Year" value={registrationYear} />
+                <DetailItem label="Registration State" value={registrationState} />
+                <DetailItem label="Ownership" value={ownership} />
+                <DetailItem label="Odometer" value={`${odometer} km`} />
+            </ReportSection>
 
-            <DetailSection title="Vehicle Details" data={{ priceCheckReason, make, model, variant: finalVariant, bodyType, fuelType, transmission, manufactureYear, registrationYear, registrationState, ownership, odometer: `${odometer} km` }} />
-            <DetailSection title="Condition: Engine &amp; Mechanical" data={{ engine, gearbox, clutch, battery, radiator, exhaust, suspension, steering, brakes }} />
-            <DetailSection title="Condition: Fluids" data={{ engineOil, coolant, brakeFluid, washerFluid }} />
-            <DetailSection title="Condition: Exterior" data={{ frontBumper, rearBumper, bonnet, roof, doors, fenders, paintQuality, scratches: `${scratches}`, dents: `${dents}`, rust_areas: rust_areas, accidentHistory }} />
-            <DetailSection title="Condition: Interior" data={{ seats, seatCovers, dashboard, dashboardWarningLights, steeringWheel, roofLining, floorMats, ac, infotainment }} />
-            <DetailSection title="Condition: Electrical &amp; Tyres" data={{ powerWindows, centralLocking, headlights, indicators, horn, reverseCamera, sensors, wipers, frontTyres: `${frontTyres}% life`, rearTyres: `${rearTyres}% life`, spareTyre, alloyWheels, wheelAlignment }} />
-            <DetailSection title="Documents &amp; Safety" data={{ rcBook, insuranceDoc, puc, serviceRecords, duplicateKey, noc, airbags, abs, seatBelts, childLock, immobilizer }} />
-            <DetailSection title="Usage &amp; History" data={{ usageType, cityDriven, floodDamage, accident, serviceCenter }} />
-            <DetailSection title="Additional Features" data={{ musicSystem, reverseParkingSensor, dashcam, fogLamps, gpsTracker }} />
+            <ReportSection title="Condition: Engine & Mechanical">
+                <DetailItem label="Engine" value={formatValue(engine)} />
+                <DetailItem label="Gearbox" value={formatValue(gearbox)} />
+                <DetailItem label="Clutch" value={formatValue(clutch)} />
+                <DetailItem label="Battery" value={formatValue(battery)} />
+                <DetailItem label="Radiator" value={formatValue(radiator)} />
+                <DetailItem label="Exhaust" value={formatValue(exhaust)} />
+                <DetailItem label="Suspension" value={formatValue(suspension)} />
+                <DetailItem label="Steering" value={formatValue(steering)} />
+                <DetailItem label="Brakes" value={formatValue(brakes)} />
+            </ReportSection>
+
+            <ReportSection title="Condition: Exterior">
+                <DetailItem label="Front Bumper" value={formatValue(frontBumper)} />
+                <DetailItem label="Rear Bumper" value={formatValue(rearBumper)} />
+                <DetailItem label="Bonnet" value={formatValue(bonnet)} />
+                <DetailItem label="Roof" value={formatValue(roof)} />
+                <DetailItem label="Doors" value={formatValue(doors)} />
+                <DetailItem label="Fenders" value={formatValue(fenders)} />
+                <DetailItem label="Paint Quality" value={formatValue(paintQuality)} />
+                <DetailItem label="Scratches" value={`${scratches}`} />
+                <DetailItem label="Dents" value={`${dents}`} />
+                <DetailItem label="Rust Areas" value={formatValue(rust_areas)} />
+                <DetailItem label="Accident History" value={formatValue(accidentHistory)} />
+            </ReportSection>
+
+            <ReportSection title="Condition: Interior">
+                <DetailItem label="Seats" value={formatValue(seats)} />
+                <DetailItem label="Seat Covers" value={formatValue(seatCovers)} />
+                <DetailItem label="Dashboard" value={formatValue(dashboard)} />
+                <DetailItem label="Steering Wheel" value={formatValue(steeringWheel)} />
+                <DetailItem label="Roof Lining" value={formatValue(roofLining)} />
+                <DetailItem label="Floor Mats" value={formatValue(floorMats)} />
+                <DetailItem label="A/C" value={formatValue(ac)} />
+                <DetailItem label="Infotainment" value={formatValue(infotainment)} />
+                <DetailItem label="Dashboard Warning Lights" value={formatValue(dashboardWarningLights)} />
+            </ReportSection>
+
+            <ReportSection title="Condition: Electrical & Tyres">
+                <DetailItem label="Power Windows" value={formatValue(powerWindows)} />
+                <DetailItem label="Central Locking" value={formatValue(centralLocking)} />
+                <DetailItem label="Headlights" value={formatValue(headlights)} />
+                <DetailItem label="Indicators" value={formatValue(indicators)} />
+                <DetailItem label="Horn" value={formatValue(horn)} />
+                <DetailItem label="Reverse Camera" value={formatValue(reverseCamera)} />
+                <DetailItem label="Parking Sensors" value={formatValue(sensors)} />
+                <DetailItem label="Wipers" value={formatValue(wipers)} />
+                <DetailItem label="Front Tyres Life" value={`${frontTyres}%`} />
+                <DetailItem label="Rear Tyres Life" value={`${rearTyres}%`} />
+                <DetailItem label="Spare Tyre" value={formatValue(spareTyre)} />
+                <DetailItem label="Alloy Wheels" value={formatValue(alloyWheels)} />
+                <DetailItem label="Wheel Alignment" value={formatValue(wheelAlignment)} />
+                <DetailItem label="Tyres Newly Changed" value={formatValue(newlyChanged)} />
+            </ReportSection>
+            
+            <ReportSection title="Documents & Safety">
+                <DetailItem label="RC Book" value={formatValue(rcBook)} />
+                <DetailItem label="Insurance" value={formatValue(insuranceDoc)} />
+                <DetailItem label="PUC" value={formatValue(puc)} />
+                <DetailItem label="Service Records" value={formatValue(serviceRecords)} />
+                <DetailItem label="Duplicate Key" value={formatValue(duplicateKey)} />
+                <DetailItem label="NOC" value={formatValue(noc)} />
+                <DetailItem label="Airbags" value={formatValue(airbags)} />
+                <DetailItem label="ABS" value={formatValue(abs)} />
+                <DetailItem label="Seat Belts" value={formatValue(seatBelts)} />
+                <DetailItem label="Child Lock" value={formatValue(childLock)} />
+                <DetailItem label="Immobilizer" value={formatValue(immobilizer)} />
+            </ReportSection>
+
+            <ReportSection title="Usage & History">
+                <DetailItem label="Usage Type" value={formatValue(usageType)} />
+                <DetailItem label="Primarily City Driven" value={formatValue(cityDriven)} />
+                <DetailItem label="Flood Damage" value={formatValue(floodDamage)} />
+                <DetailItem label="Accident" value={formatValue(accident)} />
+                <DetailItem label="Service Center" value={formatValue(serviceCenter)} />
+            </ReportSection>
+
+            <ReportSection title="Additional Features">
+                <DetailItem label="Music System" value={formatValue(musicSystem)} />
+                <DetailItem label="Reverse Parking Sensor" value={formatValue(reverseParkingSensor)} />
+                <DetailItem label="Dashcam" value={formatValue(dashcam)} />
+                <DetailItem label="Fog Lamps" value={formatValue(fogLamps)} />
+                <DetailItem label="GPS Tracker" value={formatValue(gpsTracker)} />
+            </ReportSection>
+
 
             <footer className="mt-10 pt-4 border-t text-xs text-center text-gray-500">
-                {clientData?.currentYear && <p>&copy; {clientData.currentYear} mycarvalue.in. All rights reserved.</p>}
-                <p className="mt-2 text-gray-400">This is an AI-generated report and should be used as an estimate. Physical inspection may affect the final price.</p>
+                <p>mycarvalue1@gmail.com | +91-9492060040</p>
+                <p className="mt-2">This is an AI-generated report and should be used as an estimate. Physical inspection may affect the final price.</p>
             </footer>
         </div>
         <div className="text-center pt-6 flex gap-4 justify-center print:hidden">
              <Button onClick={onNewValuation} size="lg" variant="outline">
                 Start New Valuation
             </Button>
-            <Button onClick={handleDownloadPdf} size="lg" disabled={isDownloading}>
+            <Button onClick={handleDownloadPdf} size="lg" disabled={!isClient || isDownloading}>
                 {isDownloading ? (
                     'Downloading...'
                 ) : (
@@ -328,19 +309,16 @@ export default function ResultPage() {
     const router = useRouter();
 
     useEffect(() => {
-        // This effect runs once on the client to confirm we've hydrated.
         setIsClient(true);
     }, []);
 
     useEffect(() => {
-        // Only run this logic on the client side.
         if (!isClient) {
             return;
         }
 
         let storedResult: string | null = null;
         try {
-            // We check for the result data in localStorage.
             storedResult = localStorage.getItem('valuationResult');
         } catch (e) {
             console.error("LocalStorage is not available.", e);
@@ -350,20 +328,18 @@ export default function ResultPage() {
 
         if (storedResult) {
             try {
-                // Ensure payment was marked as successful before showing the result.
                 const paid = localStorage.getItem("paymentSuccess");
                 if (paid) {
                     setResult(JSON.parse(storedResult));
                 } else {
-                    // If no payment flag, redirect to start. In production, this prevents unpaid access.
                     router.push('/valuation');
                 }
             } catch (error) {
                 console.error("Failed to parse valuation result from localStorage", error);
-                router.push('/'); // Redirect if data is corrupted
+                router.push('/');
             }
         } else {
-             router.push('/'); // If there's no result data at all, go home.
+             router.push('/');
         }
         
         setLoading(false);
@@ -371,7 +347,6 @@ export default function ResultPage() {
     }, [router, isClient]);
     
     const handleNewValuation = () => {
-        // Clear local storage and navigate to the valuation form
         try {
             localStorage.removeItem('valuationResult');
             localStorage.removeItem('paymentSuccess');
@@ -382,17 +357,14 @@ export default function ResultPage() {
         router.push('/valuation');
     };
 
-    // Before the client is ready, or while data is loading, show a skeleton.
-    // This ensures the server-rendered HTML matches the initial client-render.
     if (!isClient || loading) {
         return (
-            <div className="container mx-auto max-w-3xl py-12">
+            <div className="container mx-auto max-w-4xl py-12">
                 <Skeleton className="h-[1200px] w-full" />
             </div>
         )
     }
 
-    // If data is ready on the client, but no result was found, show an error state.
     if (!result) {
         return (
             <div className="container mx-auto max-w-3xl py-12">
@@ -409,10 +381,12 @@ export default function ResultPage() {
         )
     }
 
-    // Only render the full report display when everything is ready on the client.
     return (
-        <div className="container mx-auto max-w-3xl py-12">
-            <ValuationResultDisplay result={result} onNewValuation={handleNewValuation} />
+        <div className="bg-muted">
+            <div className="container mx-auto max-w-4xl py-8">
+                <ValuationResultDisplay result={result} onNewValuation={handleNewValuation} />
+            </div>
         </div>
     );
 }
+
