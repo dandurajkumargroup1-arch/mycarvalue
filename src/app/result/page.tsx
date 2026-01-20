@@ -49,7 +49,7 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
     setClientData({ reportId, generatedOn });
   }, []);
 
-  const handleDownloadPdf = async () => {
+ const handleDownloadPdf = async () => {
     setIsDownloading(true);
     try {
         const { default: jsPDF } = await import("jspdf");
@@ -75,28 +75,26 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
             format: 'a4'
         });
 
-        const imgWidth = canvas.width;
-        const imgHeight = canvas.height;
         const pdfWidth = pdf.internal.pageSize.getWidth();
         const pdfHeight = pdf.internal.pageSize.getHeight();
+        
+        const canvasWidth = canvas.width;
+        const canvasHeight = canvas.height;
+        const canvasAspectRatio = canvasWidth / canvasHeight;
 
-        // Calculate the aspect ratio of the image
-        const ratio = imgWidth / imgHeight;
+        let finalPdfWidth = pdfWidth;
+        let finalPdfHeight = pdfWidth / canvasAspectRatio;
 
-        let finalWidth = pdfWidth;
-        let finalHeight = finalWidth / ratio;
-
-        // If the calculated height is greater than the page height,
-        // it means the image is "taller" than the page.
-        // So, we should constrain by height instead.
-        if (finalHeight > pdfHeight) {
-            finalHeight = pdfHeight;
-            finalWidth = finalHeight * ratio;
+        if (finalPdfHeight > pdfHeight) {
+            finalPdfHeight = pdfHeight;
+            finalPdfWidth = pdfHeight * canvasAspectRatio;
         }
         
-        const xOffset = (pdfWidth - finalWidth) / 2;
+        const xOffset = (pdfWidth - finalPdfWidth) / 2;
+        const yOffset = (pdfHeight - finalPdfHeight) / 2;
 
-        pdf.addImage(imgData, 'PNG', xOffset, 0, finalWidth, finalHeight);
+
+        pdf.addImage(imgData, 'PNG', xOffset, yOffset, finalPdfWidth, finalPdfHeight);
 
         pdf.save(`mycarvalue-report-${clientData?.reportId || 'report'}.pdf`);
         
@@ -180,9 +178,9 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
             <section className="bg-slate-50 rounded-lg p-6 text-center my-8 border border-slate-200">
                 <h3 className="text-sm font-semibold text-slate-700">Your Best Selling Price Estimate</h3>
                 <p className="text-5xl font-bold tracking-tight my-2 text-slate-900">{inr(valuation.bestPrice)}</p>
-                <div className="inline-flex items-center gap-2 rounded-full bg-slate-200 px-3 py-1 text-xs font-semibold text-slate-800">
+                <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary border border-primary/20">
                     <ShieldCheck className="h-4 w-4"/>
-                    Verified by mycarvalue.in
+                    Valuation Verified by mycarvalue.in
                 </div>
             </section>
             
