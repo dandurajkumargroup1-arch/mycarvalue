@@ -38,6 +38,7 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
   const [isDownloading, setIsDownloading] = useState(false);
 
   useEffect(() => {
+    // This effect is safe because this component is only rendered on the client.
     const randomPart = Math.random().toString(36).substring(2, 8).toUpperCase();
     const reportId = `MCV-${randomPart}`;
 
@@ -74,23 +75,28 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
             format: 'a4'
         });
 
+        const imgWidth = canvas.width;
+        const imgHeight = canvas.height;
         const pdfWidth = pdf.internal.pageSize.getWidth();
         const pdfHeight = pdf.internal.pageSize.getHeight();
-        const canvasWidth = canvas.width;
-        const canvasHeight = canvas.height;
-        const ratio = canvasWidth / pdfWidth;
-        const finalHeight = canvasHeight / ratio;
 
+        // Calculate the aspect ratio of the image
+        const ratio = imgWidth / imgHeight;
+
+        let finalWidth = pdfWidth;
+        let finalHeight = finalWidth / ratio;
+
+        // If the calculated height is greater than the page height,
+        // it means the image is "taller" than the page.
+        // So, we should constrain by height instead.
         if (finalHeight > pdfHeight) {
-            const numPages = Math.ceil(finalHeight / pdfHeight);
-            for (let i = 0; i < numPages; i++) {
-                if (i > 0) pdf.addPage();
-                const yPos = -(pdfHeight * i);
-                pdf.addImage(imgData, 'PNG', 0, yPos, pdfWidth, finalHeight);
-            }
-        } else {
-            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, finalHeight);
+            finalHeight = pdfHeight;
+            finalWidth = finalHeight * ratio;
         }
+        
+        const xOffset = (pdfWidth - finalWidth) / 2;
+
+        pdf.addImage(imgData, 'PNG', xOffset, 0, finalWidth, finalHeight);
 
         pdf.save(`mycarvalue-report-${clientData?.reportId || 'report'}.pdf`);
         
