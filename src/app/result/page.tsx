@@ -49,58 +49,69 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
     setClientData({ reportId, generatedOn });
   }, []);
 
- const handleDownloadPdf = async () => {
+  const handleDownloadPdf = async () => {
     setIsDownloading(true);
+    const report = document.getElementById("report-content");
+    if (!report) {
+        console.error("Report content element not found!");
+        setIsDownloading(false);
+        return;
+    }
+
+    // Backup original styles
+    const originalWidth = report.style.width;
+
     try {
         const { default: jsPDF } = await import("jspdf");
         const { default: html2canvas } = await import("html2canvas");
 
-        const reportElement = document.getElementById('report-content');
-        if (!reportElement) {
-            console.error("Report content element not found!");
-            setIsDownloading(false);
-            return;
-        }
+        // Lock report to A4 width and apply PDF-specific styles
+        report.style.width = "794px"; // A4 width @ 96 DPI
+        report.classList.add("pdf-mode");
 
-        const canvas = await html2canvas(reportElement, {
+        const canvas = await html2canvas(report, {
             scale: 2,
+            backgroundColor: "#ffffff",
             useCORS: true,
-            backgroundColor: '#ffffff'
+            windowWidth: 794,
+            scrollY: -window.scrollY
         });
 
-        const imgData = canvas.toDataURL('image/png');
-        const pdf = new jsPDF({
-            orientation: 'p',
-            unit: 'pt',
-            format: 'a4'
-        });
+        const imgData = canvas.toDataURL("image/png");
+        const pdf = new jsPDF("p", "mm", "a4");
 
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = pdf.internal.pageSize.getHeight();
-        
-        const canvasWidth = canvas.width;
-        const canvasHeight = canvas.height;
-        const canvasAspectRatio = canvasWidth / canvasHeight;
+        const pdfWidth = 210;   // A4 width in mm
+        const pdfHeight = 297;  // A4 height in mm
 
-        let finalPdfWidth = pdfWidth;
-        let finalPdfHeight = pdfWidth / canvasAspectRatio;
+        const imgWidth = canvas.width;
+        const imgHeight = canvas.height;
 
-        if (finalPdfHeight > pdfHeight) {
-            finalPdfHeight = pdfHeight;
-            finalPdfWidth = pdfHeight * canvasAspectRatio;
-        }
-        
-        const xOffset = (pdfWidth - finalPdfWidth) / 2;
-        const yOffset = (pdfHeight - finalPdfHeight) / 2;
+        // Scale by width only
+        const scale = pdfWidth / imgWidth;
+        const scaledHeight = imgHeight * scale;
 
+        // Perfect vertical centering
+        const yPosition = scaledHeight < pdfHeight ? (pdfHeight - scaledHeight) / 2 : 0;
 
-        pdf.addImage(imgData, 'PNG', xOffset, yOffset, finalPdfWidth, finalPdfHeight);
+        pdf.addImage(
+            imgData,
+            "PNG",
+            0,
+            yPosition,
+            pdfWidth,
+            scaledHeight,
+            undefined,
+            "FAST"
+        );
 
         pdf.save(`mycarvalue-report-${clientData?.reportId || 'report'}.pdf`);
-        
+
     } catch (err) {
         console.error("Error generating PDF:", err);
     } finally {
+        // Restore original layout
+        report.style.width = originalWidth;
+        report.classList.remove("pdf-mode");
         setIsDownloading(false);
     }
   };
@@ -158,6 +169,32 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
   };
 
   return (
+     <>
+     <style jsx global>{`
+      .pdf-mode {
+        background: white !important;
+        padding: 24px !important;
+      }
+      .pdf-mode .grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        gap: 20px !important;
+      }
+      .pdf-mode .text-5xl {
+        font-size: 42px !important;
+        line-height: 1.1 !important;
+      }
+      .pdf-mode p {
+        margin: 4px 0 !important;
+        line-height: 1.4 !important;
+      }
+      .pdf-mode .shadow,
+      .pdf-mode .shadow-lg {
+        box-shadow: none !important;
+      }
+      .pdf-mode .rounded-lg {
+        border-radius: 8px !important;
+      }
+     `}</style>
      <div className="bg-slate-100 p-2 md:p-8">
         <div id="report-content" className="bg-white text-slate-800 p-6 md:p-8 rounded-lg shadow-lg max-w-4xl mx-auto">
             
@@ -374,6 +411,7 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
             </Button>
         </div>
     </div>
+    </>
   );
 };
 
