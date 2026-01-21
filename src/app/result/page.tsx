@@ -8,6 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Skeleton } from "@/components/ui/skeleton";
 import { Car, Download, ShieldCheck, TrendingUp, Tag, Target, Info } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 
 
 // Helper component for displaying a single detail item in the report
@@ -60,13 +62,11 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
 
     // Backup original styles
     const originalWidth = report.style.width;
+    const originalClass = report.className;
 
     try {
-        const { default: jsPDF } = await import("jspdf");
-        const { default: html2canvas } = await import("html2canvas");
-
-        // Lock report to A4 width and apply PDF-specific styles
-        report.style.width = "794px"; // A4 width @ 96 DPI
+        // Lock report to A4 width
+        report.style.width = "794px"; // A4 @ 96 DPI
         report.classList.add("pdf-mode");
 
         const canvas = await html2canvas(report, {
@@ -111,7 +111,7 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
     } finally {
         // Restore original layout
         report.style.width = originalWidth;
-        report.classList.remove("pdf-mode");
+        report.className = originalClass;
         setIsDownloading(false);
     }
   };
@@ -125,7 +125,8 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
       frontTyres, rearTyres, spareTyre, alloyWheels, wheelAlignment, newlyChanged,
       rcBook, insuranceDoc, puc, serviceRecords, duplicateKey, noc, airbags, abs, seatBelts, childLock, immobilizer,
       usageType, cityDriven, floodDamage, accident, serviceCenter,
-      musicSystem, reverseParkingSensor, dashcam, fogLamps, gpsTracker
+      musicSystem, reverseParkingSensor, dashcam, fogLamps, gpsTracker,
+      engineOil, coolant, brakeFluid, washerFluid,
   } = formData || {};
 
   const finalVariant = variant === 'Other' && otherVariant ? otherVariant : variant;
@@ -212,7 +213,7 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
                 </div>
             </header>
 
-            <section className="bg-slate-50 rounded-lg p-6 text-center my-8 border border-slate-200">
+            <section className="bg-slate-50 rounded-lg p-6 text-center my-8 border border-primary/50">
                 <h3 className="text-sm font-semibold text-slate-700">Your Best Selling Price Estimate</h3>
                 <p className="text-5xl font-bold tracking-tight my-2 text-slate-900">{inr(valuation.bestPrice)}</p>
                 <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary border border-primary/20">
@@ -314,6 +315,13 @@ const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuatio
                 <DetailItem label="Suspension" value={formatValue(suspension)} />
                 <DetailItem label="Steering" value={formatValue(steering)} />
                 <DetailItem label="Brakes" value={formatValue(brakes)} />
+            </ReportSection>
+            
+            <ReportSection title="Condition: Fluids">
+                <DetailItem label="Engine Oil" value={formatValue(engineOil)} />
+                <DetailItem label="Coolant" value={formatValue(coolant)} />
+                <DetailItem label="Brake Fluid" value={formatValue(brakeFluid)} />
+                <DetailItem label="Washer Fluid" value={formatValue(washerFluid)} />
             </ReportSection>
 
             <ReportSection title="Condition: Exterior">
