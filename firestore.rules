@@ -25,9 +25,9 @@
  *   users' profiles or data, unless the requester is an admin.
  * - Path-Based Security: Authorization is determined primarily by the document
  *   path, which is fast, scalable, and easy to reason about.
- * - Admin Privileges: A user with the 'Admin' role has read access to all user
- *   data and write access to specific collections like `withdrawalRequests` for
- *   management purposes.
+ * - Admin Privileges: A user with the 'Admin' role or a hardcoded super-admin email
+ *   has read access to all user data and write access to specific collections like 
+ *   `withdrawalRequests` for management purposes.
  */
 rules_version = '2';
 service cloud.firestore {
@@ -66,7 +66,12 @@ service cloud.firestore {
     }
     
     function isAdmin() {
-      return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Admin';
+      // Check if user has 'Admin' role in their profile
+      let isRoleAdmin = isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Admin';
+      // Check for the permanent super-admin email
+      let isSuperAdmin = isSignedIn() && request.auth.token.email == 'rajmycarvalu@gmail.com';
+      
+      return isRoleAdmin || isSuperAdmin;
     }
 
 
@@ -98,15 +103,13 @@ service cloud.firestore {
     
     match /withdrawalRequests/{requestId} {
         allow create: if isOwner(request.resource.data.userId);
-        // User can read/list their own requests. Admin can read/list all.
+        // User can read their own requests. Admin can read all.
         allow read: if isOwner(resource.data.userId) || isAdmin();
         // The list rule is CRITICAL for security. A non-admin user can ONLY list documents
-        // where their UID matches the 'userId' field in the document.
-        allow list: if isAdmin() || (request.query.where.userId == request.auth.uid);
+        // where their UID matches the 'userId' field in the document. Admins can list all.
+        allow list: if isAdmin() || (isSignedIn() && request.query.where.userId == request.auth.uid);
         allow update: if isAdmin(); // Only admins can approve/reject requests
         allow delete: if false;
     }
   }
 }
-
-    
