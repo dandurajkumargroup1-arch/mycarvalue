@@ -187,6 +187,7 @@ export default function RegisterPage() {
                             <SelectItem value="Owner">Car Owner</SelectItem>
                             <SelectItem value="Agent">Agent / Dealer</SelectItem>
                             <SelectItem value="Mechanic">Mechanic</SelectItem>
+                            <SelectItem value="Admin">Admin</SelectItem>
                         </SelectContent>
                     </Select>
                     <FormMessage />
@@ -243,5 +244,3 @@ export default function RegisterPage() {
     </div>
   );
 }
-
-    
