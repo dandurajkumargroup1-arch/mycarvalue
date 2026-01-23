@@ -158,7 +158,8 @@ service cloud.firestore {
          * @path /users/{userId}/withdrawalRequests/{requestId}
          */
         match /withdrawalRequests/{requestId} {
-            allow read, list, create: if isOwner(userId) && hasCorrectOwnerDataOnCreate(userId);
+            allow read, list: if isOwner(userId);
+            allow create: if isOwner(userId) && hasCorrectOwnerDataOnCreate(userId);
             allow update, delete: if false; // Only admin can update status
         }
     }
