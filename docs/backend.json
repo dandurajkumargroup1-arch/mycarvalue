@@ -43,11 +43,19 @@
         "role": {
           "type": "string",
           "description": "The role of the user, defining their permissions and experience.",
-          "enum": ["Owner", "Agent", "Mechanic"]
+          "enum": ["Owner", "Agent", "Mechanic", "Admin"]
         },
         "upiId": {
           "type": "string",
           "description": "The user's UPI ID for payments."
+        },
+        "bankAccountNumber": {
+            "type": "string",
+            "description": "The user's bank account number."
+        },
+        "bankIfscCode": {
+            "type": "string",
+            "description": "The user's bank IFSC code."
         },
         "createdAt": {
           "type": "string",
@@ -236,6 +244,12 @@
         "upiId": {
           "type": "string"
         },
+        "bankAccountNumber": {
+            "type": "string"
+        },
+        "bankIfscCode": {
+            "type": "string"
+        },
         "status": {
           "type": "string",
           "enum": ["requested", "paid", "rejected"]
@@ -255,7 +269,7 @@
           "type": "string"
         }
       },
-      "required": ["userId", "amount", "upiId", "status", "requestedAt"]
+      "required": ["userId", "amount", "status", "requestedAt"]
     }
   },
   "auth": {
@@ -288,14 +302,16 @@
         }
       },
       {
-        "path": "/users/{userId}/withdrawalRequests/{requestId}",
+        "path": "/withdrawalRequests/{requestId}",
         "definition": {
           "entityName": "WithdrawalRequest",
           "schema": { "$ref": "#/backend/entities/WithdrawalRequest" },
-          "description": "Stores withdrawal requests for a mechanic."
+          "description": "Stores withdrawal requests from all users in a single collection for admin processing."
         }
       }
     ],
-    "reasoning": "The Firestore data structure is designed around user-centric data ownership. Each user has a document in the top-level `users` collection. All data specific to that user, such as their car valuations, wallet, and withdrawal requests, is stored in subcollections within their user document. This allows for simple and secure access control rules."
+    "reasoning": "The Firestore data structure is designed around user-centric data ownership. Each user has a document in the top-level `users` collection. All data specific to that user, such as their car valuations and wallet, is stored in subcollections within their user document. This allows for simple and secure access control rules. Withdrawal requests are stored in a root collection to allow admins to query all requests at once."
   }
 }
+
+    

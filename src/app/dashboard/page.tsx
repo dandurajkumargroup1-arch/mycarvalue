@@ -5,7 +5,7 @@ import { Suspense, useEffect, useState, useMemo } from 'react';
 import { doc, collection, query, orderBy, limit, where, Timestamp } from 'firebase/firestore';
 import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
 import type { UserProfile } from '@/lib/firebase/user-profile-service';
-import { requestWithdrawal } from '@/lib/firebase/withdrawal-service';
+import { requestWithdrawal, type WithdrawalRequestPayload } from '@/lib/firebase/withdrawal-service';
 import { deleteValuation } from '@/lib/firebase/valuation-service';
 import { upsertUserProfile } from '@/lib/firebase/user-profile-service';
 import Link from 'next/link';
@@ -21,6 +21,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Wallet, ArrowDown, Ban, Check, Clock, IndianRupee, Info, AlertTriangle, Car, Trash2, Eye } from 'lucide-react';
@@ -44,7 +45,9 @@ interface WithdrawalRequest {
     id: string;
     userId: string;
     amount: number;
-    upiId: string;
+    upiId?: string;
+    bankAccountNumber?: string;
+    bankIfscCode?: string;
     status: 'requested' | 'paid' | 'rejected';
     requestedAt: Timestamp;
     processedAt?: Timestamp;
@@ -62,8 +65,24 @@ type ValuationDoc = CarValuationFormInput & {
 
 const WithdrawalSchema = z.object({
   amount: z.coerce.number().min(100, { message: "Minimum withdrawal is ₹100." }),
-  upiId: z.string().min(3, { message: "UPI ID is required." }),
+  paymentMethod: z.enum(['upi', 'bank']),
+  upiId: z.string().optional(),
+  bankAccountNumber: z.string().optional(),
+  bankIfscCode: z.string().optional(),
+}).superRefine((data, ctx) => {
+    if (data.paymentMethod === 'upi' && (!data.upiId || data.upiId.length < 3)) {
+        ctx.addIssue({ code: 'custom', message: 'A valid UPI ID is required.', path: ['upiId'] });
+    }
+    if (data.paymentMethod === 'bank') {
+        if (!data.bankAccountNumber || data.bankAccountNumber.length < 5) {
+            ctx.addIssue({ code: 'custom', message: 'A valid bank account number is required.', path: ['bankAccountNumber'] });
+        }
+        if (!data.bankIfscCode || data.bankIfscCode.length < 5) {
+            ctx.addIssue({ code: 'custom', message: 'A valid IFSC code is required.', path: ['bankIfscCode'] });
+        }
+    }
 });
+
 
 type WithdrawalFormInput = z.infer<typeof WithdrawalSchema>;
 
@@ -94,13 +113,18 @@ function WithdrawalDialog({ wallet, userProfile, isWithdrawalEnabled }: { wallet
         resolver: zodResolver(WithdrawalSchema),
         defaultValues: {
             amount: 100,
+            paymentMethod: 'upi',
             upiId: userProfile?.upiId || '',
+            bankAccountNumber: userProfile?.bankAccountNumber || '',
+            bankIfscCode: userProfile?.bankIfscCode || '',
         },
     });
     
     useEffect(() => {
-        if(userProfile?.upiId) {
-            form.setValue('upiId', userProfile.upiId);
+        if(userProfile) {
+            form.setValue('upiId', userProfile.upiId || '');
+            form.setValue('bankAccountNumber', userProfile.bankAccountNumber || '');
+            form.setValue('bankIfscCode', userProfile.bankIfscCode || '');
         }
     }, [userProfile, form]);
 
@@ -114,11 +138,21 @@ function WithdrawalDialog({ wallet, userProfile, isWithdrawalEnabled }: { wallet
 
         setIsSubmitting(true);
         try {
-            await requestWithdrawal(firestore, user, data.amount, data.upiId);
+            const payload: WithdrawalRequestPayload = {
+                amount: data.amount,
+                ...(data.paymentMethod === 'upi' ? { upiId: data.upiId } : {}),
+                ...(data.paymentMethod === 'bank' ? { bankAccountNumber: data.bankAccountNumber, bankIfscCode: data.bankIfscCode } : {}),
+            }
+            await requestWithdrawal(firestore, user, payload);
 
-            // Save UPI ID for next time
-            if (data.upiId !== userProfile.upiId) {
-                await upsertUserProfile(firestore, user, { upiId: data.upiId });
+            // Save payment details for next time
+            const profileUpdate: Partial<UserProfile> = {
+                upiId: data.upiId,
+                bankAccountNumber: data.bankAccountNumber,
+                bankIfscCode: data.bankIfscCode
+            }
+            if (Object.values(profileUpdate).some(v => v)) {
+                await upsertUserProfile(firestore, user, profileUpdate);
             }
             
             toast({
@@ -126,6 +160,7 @@ function WithdrawalDialog({ wallet, userProfile, isWithdrawalEnabled }: { wallet
                 description: "Your request has been submitted and will be processed within 2-3 working days.",
             });
             setOpen(false);
+            form.reset();
 
         } catch (error) {
             toast({
@@ -137,6 +172,8 @@ function WithdrawalDialog({ wallet, userProfile, isWithdrawalEnabled }: { wallet
             setIsSubmitting(false);
         }
     }
+    
+    const paymentMethod = form.watch('paymentMethod');
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
@@ -149,7 +186,7 @@ function WithdrawalDialog({ wallet, userProfile, isWithdrawalEnabled }: { wallet
                 <DialogHeader>
                     <DialogTitle>Request Withdrawal</DialogTitle>
                     <DialogDescription>
-                        Enter the amount you wish to withdraw. Payments are processed manually via UPI/Bank Transfer.
+                        Enter amount and payment details. Payments are processed manually.
                     </DialogDescription>
                 </DialogHeader>
                 <Form {...form}>
@@ -171,19 +208,71 @@ function WithdrawalDialog({ wallet, userProfile, isWithdrawalEnabled }: { wallet
                           </FormItem>
                         )}
                       />
-                       <FormField
+                     <FormField
                         control={form.control}
-                        name="upiId"
+                        name="paymentMethod"
                         render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>UPI ID or Bank Details</FormLabel>
+                          <FormItem className="space-y-3">
+                            <FormLabel>Payment Method</FormLabel>
                             <FormControl>
-                              <Input placeholder="your-upi@oksbi" {...field} />
+                                <Tabs defaultValue="upi" className="w-full" onValueChange={(value) => field.onChange(value as 'upi' | 'bank')}>
+                                    <TabsList className="grid w-full grid-cols-2">
+                                        <TabsTrigger value="upi">UPI</TabsTrigger>
+                                        <TabsTrigger value="bank">Bank Transfer</TabsTrigger>
+                                    </TabsList>
+                                </Tabs>
                             </FormControl>
-                            <FormMessage />
                           </FormItem>
                         )}
                       />
+
+                      {paymentMethod === 'upi' && (
+                           <FormField
+                            control={form.control}
+                            name="upiId"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>UPI ID</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="your-name@oksbi" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                      )}
+
+                      {paymentMethod === 'bank' && (
+                        <div className="space-y-4">
+                           <FormField
+                            control={form.control}
+                            name="bankAccountNumber"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Bank Account Number</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="Account Number" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                           <FormField
+                            control={form.control}
+                            name="bankIfscCode"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>IFSC Code</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="IFSC Code" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                      )}
+                      
                     <DialogFooter>
                         <DialogClose asChild>
                             <Button type="button" variant="secondary" disabled={isSubmitting}>Cancel</Button>
@@ -201,7 +290,6 @@ function WithdrawalDialog({ wallet, userProfile, isWithdrawalEnabled }: { wallet
 
 function MechanicDashboard({ user, userProfile }: { user: any, userProfile: UserProfile }) {
     const firestore = useFirestore();
-    const { toast } = useToast();
 
     // -- Data Fetching --
     const walletQuery = useMemoFirebase(() => {
@@ -209,11 +297,16 @@ function MechanicDashboard({ user, userProfile }: { user: any, userProfile: User
         return collection(firestore, 'users', user.uid, 'wallet');
     }, [firestore, user]);
     const { data: walletData, isLoading: isWalletLoading } = useCollection<Wallet>(walletQuery);
-    const wallet = walletData?.[0]; // Assume one wallet per user
+    const wallet = walletData?.[0];
 
     const withdrawalsQuery = useMemoFirebase(() => {
         if (!firestore || !user) return null;
-        return query(collection(firestore, 'users', user.uid, 'withdrawalRequests'), orderBy('requestedAt', 'desc'), limit(10));
+        return query(
+            collection(firestore, 'withdrawalRequests'), 
+            where('userId', '==', user.uid),
+            orderBy('requestedAt', 'desc'), 
+            limit(10)
+        );
     }, [firestore, user]);
     const { data: withdrawals, isLoading: areWithdrawalsLoading } = useCollection<WithdrawalRequest>(withdrawalsQuery);
     
@@ -238,7 +331,7 @@ function MechanicDashboard({ user, userProfile }: { user: any, userProfile: User
     const isWithdrawalEnabled = !isWalletLoading && !!wallet && wallet.balance >= minWithdrawalAmount && !lastPendingRequest && canWithdrawToday;
     const lastWithdrawalStatus = lastPendingRequest 
         ? `Requested on ${formatDate(lastPendingRequest.requestedAt)}` 
-        : `Paid on ${formatDate(wallet?.lastWithdrawalDate)}`;
+        : (wallet?.lastWithdrawalDate ? `Paid on ${formatDate(wallet.lastWithdrawalDate)}` : 'No recent withdrawals');
     
     const dailyEarnings = inspections.completed * earningsPerReport;
     const weeklyEarnings = dailyEarnings * 7; // This is a placeholder calculation
@@ -587,6 +680,12 @@ function DashboardPageComponent() {
   if (!user || !userProfile) {
       return null; // Redirect is handled by useEffect
   }
+  
+  // Admin users are redirected to the admin dashboard
+  if (userProfile.role === 'Admin') {
+      router.push('/admin');
+      return <DashboardSkeleton />;
+  }
 
   if (userProfile.role === 'Mechanic') {
       return <MechanicDashboard user={user} userProfile={userProfile} />;
@@ -616,3 +715,5 @@ export default function DashboardPage() {
         </Suspense>
     );
 }
+
+    

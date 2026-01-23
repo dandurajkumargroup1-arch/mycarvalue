@@ -2,15 +2,19 @@
 "use client";
 
 import Link from "next/link";
-import { Car, Menu, Sparkles, LogIn, LogOut, Calculator, Info, HelpCircle, Phone, UserPlus, LayoutDashboard } from "lucide-react";
+import { Car, Menu, Sparkles, LogIn, LogOut, Calculator, Info, HelpCircle, Phone, UserPlus, LayoutDashboard, Shield } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { signOut as firebaseSignOut } from "firebase/auth";
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import { doc } from 'firebase/firestore';
+
 
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
-import { useAuth, useUser } from "@/firebase";
+import { useAuth, useUser, useFirestore, useDoc, useMemoFirebase } from "@/firebase";
+import type { UserProfile } from "@/lib/firebase/user-profile-service";
+
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -30,23 +34,107 @@ const navLinks = [
   { href: "/contact", label: "Contact", icon: Phone },
 ];
 
-export default function Header() {
-  const pathname = usePathname();
+function AuthSection() {
   const auth = useAuth();
+  const firestore = useFirestore();
   const { user, isUserLoading } = useUser();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  const userProfileRef = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    return doc(firestore, 'users', user.uid);
+  }, [firestore, user]);
+
+  const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileRef);
 
   const handleSignOut = async () => {
     try {
       if (auth) {
         await firebaseSignOut(auth);
-        // Optional: Redirect to home page after sign out
-        // window.location.href = '/'; 
       }
     } catch (error) {
       console.error("Sign-out error", error);
     }
   };
+
+  if (isUserLoading || (user && isProfileLoading)) {
+    return (
+      <div className="flex items-center gap-2">
+          <Skeleton className="h-8 w-20 rounded-md" />
+          <Skeleton className="h-8 w-8 rounded-full" />
+      </div>
+    );
+  }
+
+  if (user && userProfile) {
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+            <Avatar className="h-8 w-8">
+              <AvatarImage src={user.photoURL ?? ""} alt={user.displayName ?? "User"} />
+              <AvatarFallback>
+                {userProfile.displayName?.charAt(0).toUpperCase() ?? user.email?.charAt(0).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent className="w-56" align="end" forceMount>
+          <DropdownMenuLabel className="font-normal">
+            <div className="flex flex-col space-y-1">
+              <p className="text-sm font-medium leading-none">{userProfile.displayName}</p>
+              <p className="text-xs leading-none text-muted-foreground">
+                {user.email}
+              </p>
+            </div>
+          </DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem asChild>
+            <Link href="/dashboard">
+              <LayoutDashboard className="mr-2 h-4 w-4" />
+              <span>Dashboard</span>
+            </Link>
+          </DropdownMenuItem>
+          {userProfile.role === 'Admin' && (
+            <DropdownMenuItem asChild>
+              <Link href="/admin">
+                <Shield className="mr-2 h-4 w-4" />
+                <span>Admin Panel</span>
+              </Link>
+            </DropdownMenuItem>
+          )}
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={handleSignOut}>
+            <LogOut className="mr-2 h-4 w-4" />
+            <span>Log out</span>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+  }
+
+  return (
+    <div className='hidden md:flex items-center gap-2'>
+        <Button asChild variant="ghost" size="sm">
+            <Link href="/login">
+                <LogIn className="mr-2 h-4 w-4" />
+                Login
+            </Link>
+        </Button>
+        <Button asChild size="sm">
+            <Link href="/register">
+                  <UserPlus className="mr-2 h-4 w-4" />
+                Register
+            </Link>
+        </Button>
+    </div>
+  );
+}
+
+
+export default function Header() {
+  const pathname = usePathname();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { user } = useUser();
 
   const renderNavLinks = (isMobile = false) =>
     navLinks.map((link) => (
@@ -81,62 +169,7 @@ export default function Header() {
           {renderNavLinks()}
         </nav>
         <div className="flex flex-1 items-center justify-end gap-2">
-          {isUserLoading ? (
-            <div className="flex items-center gap-2">
-                <Skeleton className="h-8 w-20 rounded-md" />
-                <Skeleton className="h-8 w-8 rounded-full" />
-            </div>
-          ) : user ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src={user.photoURL ?? ""} alt={user.displayName ?? "User"} />
-                    <AvatarFallback>
-                      {user.displayName?.charAt(0).toUpperCase() ?? user.email?.charAt(0).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-56" align="end" forceMount>
-                <DropdownMenuLabel className="font-normal">
-                  <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none">{user.displayName}</p>
-                    <p className="text-xs leading-none text-muted-foreground">
-                      {user.email}
-                    </p>
-                  </div>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link href="/dashboard">
-                    <LayoutDashboard className="mr-2 h-4 w-4" />
-                    <span>Dashboard</span>
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleSignOut}>
-                  <LogOut className="mr-2 h-4 w-4" />
-                  <span>Log out</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          ) : (
-            <div className='hidden md:flex items-center gap-2'>
-                <Button asChild variant="ghost" size="sm">
-                    <Link href="/login">
-                        <LogIn className="mr-2 h-4 w-4" />
-                        Login
-                    </Link>
-                </Button>
-                <Button asChild size="sm">
-                    <Link href="/register">
-                         <UserPlus className="mr-2 h-4 w-4" />
-                        Register
-                    </Link>
-                </Button>
-            </div>
-          )}
+          <AuthSection />
           <div className="flex items-center justify-end md:hidden">
             <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
               <SheetTrigger asChild>

@@ -21,12 +21,14 @@ export interface UserProfile {
   displayName: string | null;
   email: string | null;
   photoURL: string | null;
-  role: 'Owner' | 'Agent' | 'Mechanic';
+  role: 'Owner' | 'Agent' | 'Mechanic' | 'Admin';
   shopName?: string;
   location?: string;
   whatsappNumber?: string;
   vehicleNumber?: string;
   upiId?: string;
+  bankAccountNumber?: string;
+  bankIfscCode?: string;
   createdAt?: FieldValue;
   lastUpdatedAt?: FieldValue;
 }
@@ -53,7 +55,7 @@ export async function upsertUserProfile(
   // Firestore doesn't allow 'undefined' values, so we filter them out.
   const updateData: { [key: string]: any } = { ...data };
    Object.keys(updateData).forEach(key => {
-    if (updateData[key] === undefined) {
+    if (updateData[key] === undefined || updateData[key] === null || updateData[key] === '') {
       delete updateData[key];
     }
   });
@@ -96,3 +98,5 @@ export async function upsertUserProfile(
     throw error;
   }
 }
+
+    
