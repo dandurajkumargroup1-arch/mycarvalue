@@ -2,7 +2,7 @@
 "use client";
 
 import Link from "next/link";
-import { Car, Menu, Sparkles, LogIn, LogOut, Calculator, Info, HelpCircle, Phone, UserPlus } from "lucide-react";
+import { Car, Menu, Sparkles, LogIn, LogOut, Calculator, Info, HelpCircle, Phone, UserPlus, LayoutDashboard } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { signOut as firebaseSignOut } from "firebase/auth";
 import { useState } from "react";
@@ -108,6 +108,13 @@ export default function Header() {
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link href="/dashboard">
+                    <LayoutDashboard className="mr-2 h-4 w-4" />
+                    <span>Dashboard</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleSignOut}>
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Log out</span>
@@ -147,7 +154,28 @@ export default function Header() {
                     <Car className="h-6 w-6 text-primary" />
                     <span className="font-bold">mycarvalue<span className="text-primary">.in</span></span>
                   </Link>
-                  <nav className="flex flex-col space-y-2">{renderNavLinks(true)}</nav>
+                  <nav className="flex flex-col space-y-2">
+                    {user && (
+                      <Button
+                        asChild
+                        variant="ghost"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className={cn(
+                          "justify-start gap-2",
+                          pathname.startsWith('/dashboard')
+                            ? "bg-primary/10 font-semibold text-primary"
+                            : "",
+                          "w-full text-lg py-6"
+                        )}
+                      >
+                        <Link href="/dashboard">
+                          <LayoutDashboard className="h-4 w-4" />
+                          Dashboard
+                        </Link>
+                      </Button>
+                    )}
+                    {renderNavLinks(true)}
+                  </nav>
                 </div>
               </SheetContent>
             </Sheet>
@@ -157,3 +185,5 @@ export default function Header() {
     </header>
   );
 }
+
+    
