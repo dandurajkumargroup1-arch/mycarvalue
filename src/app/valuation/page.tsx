@@ -1,14 +1,19 @@
 
 'use client';
 
-import { Suspense } from 'react';
+import { Suspense, useState } from 'react';
 import { ValuationForm } from './valuation-form';
 import { Sparkles, LogIn } from 'lucide-react';
-import { useUser, useAuth } from '@/firebase';
+import { useUser, useAuth, useFirestore } from '@/firebase';
 import { Button } from '@/components/ui/button';
-import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { GoogleAuthProvider, signInWithPopup, type User } from 'firebase/auth';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { doc, getDoc } from 'firebase/firestore';
+import { useToast } from '@/hooks/use-toast';
+import { RoleSelectionDialog } from '@/components/RoleSelectionDialog';
+import { upsertUserProfile } from '@/lib/firebase/user-profile-service';
+
 
 // This increases the serverless function timeout for this page to 120 seconds.
 // It's necessary for the AI valuation to complete without timing out on Vercel.
@@ -17,17 +22,47 @@ export const maxDuration = 120;
 function ValuationPageComponent() {
   const { user, isUserLoading } = useUser();
   const auth = useAuth();
+  const firestore = useFirestore();
+  const { toast } = useToast();
+  const [showRoleDialog, setShowRoleDialog] = useState(false);
+  const [pendingUser, setPendingUser] = useState<User | null>(null);
 
   const handleGoogleSignIn = async () => {
+    if (!auth || !firestore) return;
     const provider = new GoogleAuthProvider();
     try {
-      if (auth) {
-        await signInWithPopup(auth, provider);
+      const result = await signInWithPopup(auth, provider);
+      const signedInUser = result.user;
+
+      const userDocRef = doc(firestore, 'users', signedInUser.uid);
+      const userDoc = await getDoc(userDocRef);
+
+      if (userDoc.exists()) {
+        await upsertUserProfile(firestore, signedInUser, {});
+        toast({
+          title: "Signed In",
+          description: `Welcome back, ${signedInUser.displayName}!`,
+        });
+      } else {
+        setPendingUser(signedInUser);
+        setShowRoleDialog(true);
       }
     } catch (error: any) {
       if (error.code !== 'auth/popup-closed-by-user' && error.code !== 'auth/cancelled-popup-request') {
         console.error("Google sign-in error", error);
       }
+    }
+  };
+
+  const handleRoleSelected = async (role: 'Owner' | 'Agent' | 'Mechanic') => {
+    if (pendingUser && firestore) {
+        await upsertUserProfile(firestore, pendingUser, { role });
+        toast({
+            title: "Welcome!",
+            description: `Your profile as a ${role} has been created.`,
+        });
+        setShowRoleDialog(false);
+        setPendingUser(null);
     }
   };
 
@@ -68,6 +103,11 @@ function ValuationPageComponent() {
 
   return (
     <>
+      <RoleSelectionDialog 
+        open={showRoleDialog} 
+        onOpenChange={setShowRoleDialog}
+        onRoleSelect={handleRoleSelected} 
+      />
       <div className="bg-background">
         <div className="container mx-auto max-w-3xl py-12 px-4 md:px-6">
           <div className="space-y-4 text-center">

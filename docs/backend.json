@@ -32,6 +32,11 @@
             "type": "string",
             "description": "The user's vehicle registration number."
         },
+        "role": {
+          "type": "string",
+          "description": "The role of the user, defining their permissions and experience.",
+          "enum": ["Owner", "Agent", "Mechanic"]
+        },
         "createdAt": {
           "type": "string",
           "format": "date-time",
@@ -43,7 +48,7 @@
           "description": "The timestamp when the user profile was last updated."
         }
       },
-      "required": ["id", "email"]
+      "required": ["id", "email", "role"]
     },
     "CarValuation": {
       "$schema": "http://json-schema.org/draft-07/schema#",

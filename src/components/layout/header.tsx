@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -7,8 +8,10 @@ import {
   GoogleAuthProvider,
   signInWithPopup,
   signOut as firebaseSignOut,
+  type User,
 } from "firebase/auth";
 import { useState } from "react";
+import { doc, getDoc } from 'firebase/firestore';
 
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -24,6 +27,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { upsertUserProfile } from "@/lib/firebase/user-profile-service";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
+import { RoleSelectionDialog } from "../RoleSelectionDialog";
 
 const navLinks = [
   { href: "/valuation", label: "Valuation", icon: Sparkles },
@@ -40,6 +44,8 @@ export default function Header() {
   const { user, isUserLoading } = useUser();
   const { toast } = useToast();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [showRoleDialog, setShowRoleDialog] = useState(false);
+  const [pendingUser, setPendingUser] = useState<User | null>(null);
 
   const handleGoogleSignIn = async () => {
     if (!auth || !firestore) {
@@ -55,12 +61,19 @@ export default function Header() {
       const result = await signInWithPopup(auth, provider);
       const signedInUser = result.user;
 
-      // After successful sign-in, create or update the user's profile in Firestore.
-      await upsertUserProfile(firestore, signedInUser);
-      toast({
-        title: "Signed In",
-        description: `Welcome, ${signedInUser.displayName}!`,
-      });
+      const userDocRef = doc(firestore, 'users', signedInUser.uid);
+      const userDoc = await getDoc(userDocRef);
+
+      if (userDoc.exists()) {
+        await upsertUserProfile(firestore, signedInUser, {});
+        toast({
+          title: "Signed In",
+          description: `Welcome back, ${signedInUser.displayName}!`,
+        });
+      } else {
+        setPendingUser(signedInUser);
+        setShowRoleDialog(true);
+      }
 
     } catch (error: any) {
       if (error.code !== 'auth/popup-closed-by-user' && error.code !== 'auth/cancelled-popup-request') {
@@ -71,6 +84,18 @@ export default function Header() {
           description: "Could not sign you in with Google. Please try again.",
         });
       }
+    }
+  };
+
+  const handleRoleSelected = async (role: 'Owner' | 'Agent' | 'Mechanic') => {
+    if (pendingUser && firestore) {
+      await upsertUserProfile(firestore, pendingUser, { role });
+      toast({
+        title: "Welcome!",
+        description: `Your profile as a ${role} has been created.`,
+      });
+      setShowRoleDialog(false);
+      setPendingUser(null);
     }
   };
 
@@ -108,6 +133,11 @@ export default function Header() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-secondary">
+      <RoleSelectionDialog 
+        open={showRoleDialog}
+        onOpenChange={setShowRoleDialog}
+        onRoleSelect={handleRoleSelected}
+      />
       <div className="container flex h-16 items-center">
         <Link href="/" className="mr-2 flex items-center space-x-2 md:mr-6">
           <Car className="h-6 w-6 text-primary" />
