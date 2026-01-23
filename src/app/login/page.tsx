@@ -59,7 +59,12 @@ export default function LoginPage() {
       const redirectTo = searchParams.get('redirect') || '/';
       router.push(redirectTo);
     } catch (error: any) {
-      console.error("Login Error:", error);
+      // For invalid credentials, we only show the toast, not a console error.
+      // For other, unexpected errors, we log them.
+      if (error.code !== 'auth/invalid-credential') {
+        console.error("Login Error:", error);
+      }
+
       toast({
         variant: "destructive",
         title: "Login Failed",
