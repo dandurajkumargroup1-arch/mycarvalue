@@ -39,7 +39,11 @@ interface WithdrawalRequest {
 }
 
 const formatCurrency = (value: number) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(value);
-const formatDate = (timestamp: Timestamp) => timestamp.toDate().toLocaleString('en-GB');
+// Make formatDate robust to handle optional timestamps
+const formatDate = (timestamp: Timestamp | null | undefined) => {
+    if (!timestamp) return 'N/A';
+    return timestamp.toDate().toLocaleString('en-GB');
+}
 
 // --- Dialog Components ---
 
@@ -168,7 +172,7 @@ function AdminDashboard() {
   const { toast } = useToast();
   
   // Fetch all users to create a name map
-  const usersQuery = useMemoFirebase(() => firestore ? collection(firestore, 'users') : null, [firestore]);
+  const usersQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'users'), orderBy('createdAt', 'desc')) : null, [firestore]);
   const { data: usersData, isLoading: isUsersLoading } = useCollection<UserProfile>(usersQuery);
   const userMap = useMemo(() => usersData?.reduce((acc, user) => ({ ...acc, [user.id]: user }), {} as Record<string, UserProfile>) || {}, [usersData]);
 
@@ -190,8 +194,7 @@ function AdminDashboard() {
 
   const recentUsers = useMemo(() => {
     return usersData
-        ?.filter(u => u.role === 'Mechanic' || u.role === 'Agent')
-        .sort((a, b) => (b.createdAt as any)?.toMillis() - (a.createdAt as any)?.toMillis())
+        ?.filter(u => u.role !== 'Admin') // Show all roles except Admin
         .slice(0, 5) || [];
   }, [usersData]);
 
@@ -202,80 +205,134 @@ function AdminDashboard() {
             <p className="text-muted-foreground">Manage withdrawals and view user activity.</p>
         </header>
 
-        <main className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-            <div className="lg:col-span-2">
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><Wallet/> Pending Withdrawal Requests</CardTitle>
-                        <CardDescription>Review and process manual payment requests from mechanics.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Mechanic</TableHead>
-                                    <TableHead>Amount</TableHead>
-                                    <TableHead>Payment Details</TableHead>
-                                    <TableHead>Requested At</TableHead>
-                                    <TableHead className="text-right">Actions</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {isLoading ? (
-                                    <TableRow><TableCell colSpan={5}><Skeleton className="h-8 w-full" /></TableCell></TableRow>
-                                ) : requests && requests.length > 0 ? (
-                                    requests.map(req => (
-                                        <TableRow key={req.id}>
-                                            <TableCell className="font-medium">{userMap[req.userId]?.displayName || 'Unknown User'}</TableCell>
-                                            <TableCell>{formatCurrency(req.amount)}</TableCell>
-                                            <TableCell className="text-xs">
-                                                {req.upiId && <p><strong>UPI:</strong> {req.upiId}</p>}
-                                                {req.bankAccountNumber && <p><strong>Acct:</strong> {req.bankAccountNumber}</p>}
-                                                {req.bankIfscCode && <p><strong>IFSC:</strong> {req.bankIfscCode}</p>}
-                                            </TableCell>
-                                            <TableCell>{formatDate(req.requestedAt)}</TableCell>
-                                            <TableCell className="text-right space-x-2">
-                                                <ApproveDialog request={req} onApproved={forceRefresh} />
-                                                <RejectDialog request={req} onRejected={forceRefresh} />
+        <main className="grid grid-cols-1 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div className="lg:col-span-2">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2"><Wallet/> Pending Withdrawal Requests</CardTitle>
+                            <CardDescription>Review and process manual payment requests from mechanics.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Mechanic</TableHead>
+                                        <TableHead>Amount</TableHead>
+                                        <TableHead>Payment Details</TableHead>
+                                        <TableHead>Requested At</TableHead>
+                                        <TableHead className="text-right">Actions</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {isRequestsLoading ? (
+                                        <TableRow><TableCell colSpan={5}><Skeleton className="h-8 w-full" /></TableCell></TableRow>
+                                    ) : requests && requests.length > 0 ? (
+                                        requests.map(req => (
+                                            <TableRow key={req.id}>
+                                                <TableCell className="font-medium">{userMap[req.userId]?.displayName || 'Unknown User'}</TableCell>
+                                                <TableCell>{formatCurrency(req.amount)}</TableCell>
+                                                <TableCell className="text-xs">
+                                                    {req.upiId && <p><strong>UPI:</strong> {req.upiId}</p>}
+                                                    {req.bankAccountNumber && <p><strong>Acct:</strong> {req.bankAccountNumber}</p>}
+                                                    {req.bankIfscCode && <p><strong>IFSC:</strong> {req.bankIfscCode}</p>}
+                                                </TableCell>
+                                                <TableCell>{formatDate(req.requestedAt)}</TableCell>
+                                                <TableCell className="text-right space-x-2">
+                                                    <ApproveDialog request={req} onApproved={forceRefresh} />
+                                                    <RejectDialog request={req} onRejected={forceRefresh} />
+                                                </TableCell>
+                                            </TableRow>
+                                        ))
+                                    ) : (
+                                        <TableRow>
+                                            <TableCell colSpan={5} className="h-24 text-center">
+                                                <CheckCircle className="mx-auto h-8 w-8 text-green-500 mb-2"/>
+                                                No pending requests. All caught up!
                                             </TableCell>
                                         </TableRow>
-                                    ))
-                                ) : (
-                                    <TableRow>
-                                        <TableCell colSpan={5} className="h-24 text-center">
-                                            <CheckCircle className="mx-auto h-8 w-8 text-green-500 mb-2"/>
-                                            No pending requests. All caught up!
-                                        </TableCell>
-                                    </TableRow>
-                                )}
-                            </TableBody>
-                        </Table>
-                    </CardContent>
-                </Card>
-            </div>
-            <div>
-                 <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><Users/> Recent Users</CardTitle>
-                        <CardDescription>Newest mechanics and agents.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        {isLoading ? <Skeleton className="h-40 w-full" /> : (
-                            <div className="space-y-4">
-                                {recentUsers.map(user => (
-                                    <div key={user.id} className="flex items-center justify-between">
-                                        <div>
-                                            <p className="font-medium">{user.displayName}</p>
-                                            <p className="text-sm text-muted-foreground">{user.shopName} - {user.location}</p>
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </CardContent>
+                    </Card>
+                </div>
+                <div>
+                     <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2"><Users/> Recent Users</CardTitle>
+                            <CardDescription>Newest Owners, Agents, and Mechanics.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            {isUsersLoading ? <Skeleton className="h-40 w-full" /> : (
+                                <div className="space-y-4">
+                                    {recentUsers.map(user => (
+                                        <div key={user.id} className="flex items-center justify-between">
+                                            <div>
+                                                <p className="font-medium">{user.displayName}</p>
+                                                <p className="text-sm text-muted-foreground">{user.shopName ? `${user.shopName} - ${user.location}`: user.email}</p>
+                                            </div>
+                                            <Badge variant={user.role === 'Mechanic' ? 'secondary' : user.role === 'Agent' ? 'outline' : 'default'}>{user.role}</Badge>
                                         </div>
-                                        <Badge variant={user.role === 'Mechanic' ? 'secondary' : 'outline'}>{user.role}</Badge>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </CardContent>
-                 </Card>
+                                    ))}
+                                </div>
+                            )}
+                        </CardContent>
+                     </Card>
+                </div>
             </div>
+            
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2"><Users/> All Users</CardTitle>
+                    <CardDescription>Browse and manage all registered users.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>User</TableHead>
+                                <TableHead>Role</TableHead>
+                                <TableHead>Shop / Location</TableHead>
+                                <TableHead>Joined</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {isUsersLoading ? (
+                                <TableRow><TableCell colSpan={4} className="h-24 text-center"><Skeleton className="h-8 w-full" /></TableCell></TableRow>
+                            ) : usersData && usersData.length > 0 ? (
+                                usersData.filter(u => u.role !== 'Admin').map(user => (
+                                    <TableRow key={user.id}>
+                                        <TableCell>
+                                            <div className="font-medium">{user.displayName}</div>
+                                            <div className="text-xs text-muted-foreground">{user.email}</div>
+                                        </TableCell>
+                                        <TableCell>
+                                            <Badge variant={user.role === 'Mechanic' ? 'secondary' : user.role === 'Agent' ? 'outline' : 'default'}>{user.role}</Badge>
+                                        </TableCell>
+                                        <TableCell>
+                                            {user.shopName ? (
+                                                <div>
+                                                    <div className="font-medium">{user.shopName}</div>
+                                                    <div className="text-xs text-muted-foreground">{user.location}</div>
+                                                </div>
+                                            ) : 'N/A'}
+                                        </TableCell>
+                                        <TableCell>{formatDate(user.createdAt)}</TableCell>
+                                    </TableRow>
+                                ))
+                            ) : (
+                                <TableRow>
+                                    <TableCell colSpan={4} className="h-24 text-center">
+                                        No users found.
+                                    </TableCell>
+                                </TableRow>
+                            )}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
+
         </main>
     </div>
   );
@@ -293,6 +350,7 @@ function AdminPageLoader() {
                 <div className="lg:col-span-2"><Skeleton className="h-64" /></div>
                 <div><Skeleton className="h-48" /></div>
             </div>
+            <Skeleton className="h-96 mt-8" />
         </div>
     );
 }
@@ -343,5 +401,3 @@ export default function AdminPage() {
         </Suspense>
     );
 }
-
-    
