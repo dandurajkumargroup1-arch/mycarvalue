@@ -1,18 +1,12 @@
 
 'use client';
 
-import { Suspense, useState } from 'react';
+import { Suspense, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { ValuationForm } from './valuation-form';
-import { Sparkles, LogIn } from 'lucide-react';
-import { useUser, useAuth, useFirestore } from '@/firebase';
-import { Button } from '@/components/ui/button';
-import { GoogleAuthProvider, signInWithPopup, type User } from 'firebase/auth';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Sparkles } from 'lucide-react';
+import { useUser } from '@/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
-import { doc, getDoc } from 'firebase/firestore';
-import { useToast } from '@/hooks/use-toast';
-import { RoleSelectionDialog } from '@/components/RoleSelectionDialog';
-import { upsertUserProfile } from '@/lib/firebase/user-profile-service';
 
 
 // This increases the serverless function timeout for this page to 120 seconds.
@@ -21,79 +15,29 @@ export const maxDuration = 120;
 
 function ValuationPageComponent() {
   const { user, isUserLoading } = useUser();
-  const auth = useAuth();
-  const firestore = useFirestore();
-  const { toast } = useToast();
-  const [showRoleDialog, setShowRoleDialog] = useState(false);
-  const [pendingUser, setPendingUser] = useState<User | null>(null);
+  const router = useRouter();
 
-  const handleGoogleSignIn = async () => {
-    if (!auth || !firestore) return;
-    const provider = new GoogleAuthProvider();
-    try {
-      const result = await signInWithPopup(auth, provider);
-      const signedInUser = result.user;
-
-      const userDocRef = doc(firestore, 'users', signedInUser.uid);
-      const userDoc = await getDoc(userDocRef);
-
-      if (userDoc.exists()) {
-        await upsertUserProfile(firestore, signedInUser, {});
-        toast({
-          title: "Signed In",
-          description: `Welcome back, ${signedInUser.displayName}!`,
-        });
-      } else {
-        setPendingUser(signedInUser);
-        setShowRoleDialog(true);
-      }
-    } catch (error: any) {
-      if (error.code !== 'auth/popup-closed-by-user' && error.code !== 'auth/cancelled-popup-request') {
-        console.error("Google sign-in error", error);
-      }
+  useEffect(() => {
+    // If auth state is resolved and there's no user, redirect to login.
+    // Pass the current path as a redirect parameter.
+    if (!isUserLoading && !user) {
+      router.push('/login?redirect=/valuation');
     }
-  };
+  }, [user, isUserLoading, router]);
 
-  const handleRoleSelected = async (role: 'Owner' | 'Agent' | 'Mechanic') => {
-    if (pendingUser && firestore) {
-        await upsertUserProfile(firestore, pendingUser, { role });
-        toast({
-            title: "Welcome!",
-            description: `Your profile as a ${role} has been created.`,
-        });
-        setShowRoleDialog(false);
-        setPendingUser(null);
-    }
-  };
 
   const renderContent = () => {
-    if (isUserLoading) {
+    // While loading or before redirecting, show a skeleton.
+    if (isUserLoading || !user) {
       return (
         <div className="mt-12">
           <Skeleton className="h-64 w-full" />
+           <p className="text-center mt-4 text-muted-foreground">Loading user details...</p>
         </div>
       );
     }
 
-    if (!user) {
-      return (
-        <Card className="mt-12 text-center shadow-lg">
-          <CardHeader>
-            <CardTitle>Sign In to Get Your Car Valuation</CardTitle>
-            <CardDescription>
-              Please sign in to continue.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button onClick={handleGoogleSignIn} size="lg">
-              <LogIn className="mr-2 h-4 w-4" />
-              Sign in with Google
-            </Button>
-          </CardContent>
-        </Card>
-      );
-    }
-
+    // If user is loaded, show the form.
     return (
       <div className="mt-12">
         <ValuationForm />
@@ -103,11 +47,6 @@ function ValuationPageComponent() {
 
   return (
     <>
-      <RoleSelectionDialog 
-        open={showRoleDialog} 
-        onOpenChange={setShowRoleDialog}
-        onRoleSelect={handleRoleSelected} 
-      />
       <div className="bg-background">
         <div className="container mx-auto max-w-3xl py-12 px-4 md:px-6">
           <div className="space-y-4 text-center">
