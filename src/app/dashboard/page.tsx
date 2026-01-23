@@ -297,7 +297,7 @@ function DashboardPageComponent() {
             <AlertTitle>Error</AlertTitle>
             <AlertDescription>
                 An invalid user role was detected. Please contact support.
-            </Aler tDescription>
+            </AlertDescription>
         </Alert>
     </div>
   );
@@ -310,5 +310,3 @@ export default function DashboardPage() {
         </Suspense>
     );
 }
-
-    
