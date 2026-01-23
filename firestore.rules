@@ -69,7 +69,7 @@ service cloud.firestore {
       // Check if user has 'Admin' role in their profile
       let isRoleAdmin = isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Admin';
       // Check for the permanent super-admin email
-      let isSuperAdmin = isSignedIn() && request.auth.token.email == 'rajmycarvalu@gmail.com';
+      let isSuperAdmin = isSignedIn() && request.auth.token.email == 'rajmycarvalue@gmail.com';
       
       return isRoleAdmin || isSuperAdmin;
     }
