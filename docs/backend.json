@@ -37,6 +37,10 @@
           "description": "The role of the user, defining their permissions and experience.",
           "enum": ["Owner", "Agent", "Mechanic"]
         },
+        "upiId": {
+          "type": "string",
+          "description": "The user's UPI ID for payments."
+        },
         "createdAt": {
           "type": "string",
           "format": "date-time",
@@ -184,6 +188,66 @@
         "imageQualityResult": { "type": "object" }
       },
       "required": ["id", "userId", "paymentId", "make", "model", "manufactureYear", "createdAt"]
+    },
+    "Wallet": {
+      "title": "Wallet",
+      "type": "object",
+      "description": "Represents a mechanic's wallet.",
+      "properties": {
+        "userId": {
+          "type": "string"
+        },
+        "balance": {
+          "type": "number"
+        },
+        "totalEarned": {
+          "type": "number"
+        },
+        "lastWithdrawalDate": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["userId", "balance", "totalEarned"]
+    },
+    "WithdrawalRequest": {
+      "title": "Withdrawal Request",
+      "type": "object",
+      "description": "Represents a mechanic's request to withdraw funds.",
+      "properties": {
+        "userId": {
+          "type": "string"
+        },
+        "amount": {
+          "type": "number"
+        },
+        "upiId": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["requested", "paid", "rejected"]
+        },
+        "rejectionReason": {
+          "type": "string"
+        },
+        "requestedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "processedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "transactionId": {
+          "type": "string"
+        }
+      },
+      "required": ["userId", "amount", "upiId", "status", "requestedAt"]
     }
   },
   "auth": {
@@ -206,8 +270,24 @@
           "schema": { "$ref": "#/backend/entities/CarValuation" },
           "description": "Stores individual car valuations for a user. A user can only access their own valuations."
         }
+      },
+      {
+        "path": "/users/{userId}/wallet/{walletId}",
+        "definition": {
+          "entityName": "Wallet",
+          "schema": { "$ref": "#/backend/entities/Wallet" },
+          "description": "Stores the wallet for a mechanic."
+        }
+      },
+      {
+        "path": "/users/{userId}/withdrawalRequests/{requestId}",
+        "definition": {
+          "entityName": "WithdrawalRequest",
+          "schema": { "$ref": "#/backend/entities/WithdrawalRequest" },
+          "description": "Stores withdrawal requests for a mechanic."
+        }
       }
     ],
-    "reasoning": "The Firestore data structure is designed around user-centric data ownership. Each user has a document in the top-level `users` collection. All data specific to that user, such as their car valuations, is stored in subcollections within their user document. This allows for simple and secure access control rules. Publicly accessible data, like feedback, is stored in a separate top-level collection."
+    "reasoning": "The Firestore data structure is designed around user-centric data ownership. Each user has a document in the top-level `users` collection. All data specific to that user, such as their car valuations, wallet, and withdrawal requests, is stored in subcollections within their user document. This allows for simple and secure access control rules."
   }
 }

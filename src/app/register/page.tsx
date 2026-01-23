@@ -8,6 +8,7 @@ import { z } from 'zod';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 
 import { useAuth, useFirestore } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
@@ -64,6 +65,17 @@ export default function RegisterPage() {
         displayName: data.displayName,
         role: data.role,
       });
+
+      if (data.role === 'Mechanic') {
+        const walletRef = doc(firestore, 'users', user.uid, 'wallet', 'main');
+        await setDoc(walletRef, {
+            userId: user.uid,
+            balance: 0,
+            totalEarned: 0,
+            lastWithdrawalDate: null,
+            updatedAt: serverTimestamp(),
+        });
+      }
 
       toast({
         title: "Registration Successful",

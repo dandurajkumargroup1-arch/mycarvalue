@@ -24,6 +24,7 @@ export interface UserProfile {
   role: 'Owner' | 'Agent' | 'Mechanic';
   whatsappNumber?: string;
   vehicleNumber?: string;
+  upiId?: string;
   createdAt?: FieldValue;
   lastUpdatedAt?: FieldValue;
 }

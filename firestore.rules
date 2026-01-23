@@ -142,6 +142,25 @@ service cloud.firestore {
             allow create: if isOwner(userId) && hasCorrectOwnerDataOnCreate(userId);
             allow update, delete: if false;
         }
+
+        /**
+         * @description Manages a mechanic's wallet.
+         * @path /users/{userId}/wallet/{walletId}
+         */
+        match /wallet/{walletId} {
+            allow read, update: if isOwner(userId);
+            allow create: if isOwner(userId) && hasCorrectOwnerDataOnCreate(userId);
+            allow delete: if false;
+        }
+
+        /**
+         * @description Manages a mechanic's withdrawal requests.
+         * @path /users/{userId}/withdrawalRequests/{requestId}
+         */
+        match /withdrawalRequests/{requestId} {
+            allow read, list, create: if isOwner(userId) && hasCorrectOwnerDataOnCreate(userId);
+            allow update, delete: if false; // Only admin can update status
+        }
     }
   }
 }
