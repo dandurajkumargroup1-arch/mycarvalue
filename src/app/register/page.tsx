@@ -26,7 +26,25 @@ const RegisterSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address." }),
   password: z.string().min(6, { message: "Password must be at least 6 characters." }),
   role: z.enum(['Owner', 'Agent', 'Mechanic'], { required_error: "Please select a role." }),
+  shopName: z.string().optional(),
+  location: z.string().optional(),
+}).superRefine((data, ctx) => {
+    if ((data.role === 'Agent' || data.role === 'Mechanic') && (!data.shopName || data.shopName.trim() === '')) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Shop name is required for this role.",
+            path: ['shopName'],
+        });
+    }
+    if ((data.role === 'Agent' || data.role === 'Mechanic') && (!data.location || data.location.trim() === '')) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Location is required for this role.",
+            path: ['location'],
+        });
+    }
 });
+
 
 type RegisterFormInput = z.infer<typeof RegisterSchema>;
 
@@ -43,8 +61,12 @@ export default function RegisterPage() {
       displayName: '',
       email: '',
       password: '',
+      shopName: '',
+      location: '',
     },
   });
+
+  const selectedRole = form.watch('role');
 
   const handleRegister = async (data: RegisterFormInput) => {
     if (!auth || !firestore) {
@@ -64,6 +86,8 @@ export default function RegisterPage() {
       await upsertUserProfile(firestore, user, {
         displayName: data.displayName,
         role: data.role,
+        shopName: data.shopName,
+        location: data.location,
       });
 
       if (data.role === 'Mechanic') {
@@ -169,6 +193,38 @@ export default function RegisterPage() {
                   </FormItem>
                 )}
               />
+
+              {(selectedRole === 'Agent' || selectedRole === 'Mechanic') && (
+                <>
+                  <FormField
+                    control={form.control}
+                    name="shopName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Shop Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Your shop or business name" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="location"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Location</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g., City, State" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </>
+              )}
+
               <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? 'Creating Account...' : 'Register'} <UserPlus className='ml-2'/>
               </Button>

@@ -32,6 +32,14 @@
             "type": "string",
             "description": "The user's vehicle registration number."
         },
+        "shopName": {
+            "type": "string",
+            "description": "The name of the mechanic's or agent's shop."
+        },
+        "location": {
+            "type": "string",
+            "description": "The location of the mechanic's or agent's shop."
+        },
         "role": {
           "type": "string",
           "description": "The role of the user, defining their permissions and experience.",

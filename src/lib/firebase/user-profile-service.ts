@@ -22,6 +22,8 @@ export interface UserProfile {
   email: string | null;
   photoURL: string | null;
   role: 'Owner' | 'Agent' | 'Mechanic';
+  shopName?: string;
+  location?: string;
   whatsappNumber?: string;
   vehicleNumber?: string;
   upiId?: string;
@@ -48,12 +50,21 @@ export async function upsertUserProfile(
 
   const userDocRef = doc(firestore, 'users', user.uid);
 
+  // Firestore doesn't allow 'undefined' values, so we filter them out.
+  const updateData: { [key: string]: any } = { ...data };
+   Object.keys(updateData).forEach(key => {
+    if (updateData[key] === undefined) {
+      delete updateData[key];
+    }
+  });
+
+
   const profileData: Partial<UserProfile> = {
     id: user.uid,
     displayName: user.displayName,
     email: user.email,
     photoURL: user.photoURL,
-    ...data,
+    ...updateData,
     lastUpdatedAt: serverTimestamp(),
   };
 
