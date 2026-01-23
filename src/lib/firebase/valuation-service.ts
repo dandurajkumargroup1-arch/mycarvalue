@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -8,6 +9,7 @@ import {
   type FieldValue,
   writeBatch,
   doc,
+  deleteDoc,
 } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
@@ -94,6 +96,39 @@ export async function saveValuation(
     
     errorEmitter.emit('permission-error', permissionError);
     // Re-throw the custom error so the UI can catch it.
+    throw permissionError;
+  }
+}
+
+/**
+ * Deletes a specific car valuation document for a user.
+ *
+ * @param firestore - The Firestore instance.
+ * @param user - The authenticated Firebase User object.
+ * @param valuationId - The ID of the car valuation document to delete.
+ */
+export async function deleteValuation(
+  firestore: Firestore,
+  user: User,
+  valuationId: string
+): Promise<void> {
+  if (!user || !user.uid) {
+    throw new Error('User is required to delete a valuation.');
+  }
+  
+  const docRef = doc(firestore, `users/${user.uid}/carValuations/${valuationId}`);
+  
+  try {
+    await deleteDoc(docRef);
+  } catch (error) {
+    console.error(`Error deleting valuation ${valuationId}:`, error);
+    
+    const permissionError = new FirestorePermissionError({
+      path: docRef.path,
+      operation: 'delete',
+    });
+    
+    errorEmitter.emit('permission-error', permissionError);
     throw permissionError;
   }
 }

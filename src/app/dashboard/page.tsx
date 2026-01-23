@@ -6,12 +6,16 @@ import { doc, collection, query, orderBy, limit, where, Timestamp } from 'fireba
 import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
 import type { UserProfile } from '@/lib/firebase/user-profile-service';
 import { requestWithdrawal } from '@/lib/firebase/withdrawal-service';
+import { deleteValuation } from '@/lib/firebase/valuation-service';
 import { upsertUserProfile } from '@/lib/firebase/user-profile-service';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from 'zod';
+import type { CarValuationFormInput } from '@/lib/schemas';
+import { ValuationResultDisplay } from '@/components/report/ValuationResultDisplay';
+
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,9 +23,10 @@ import { Progress } from '@/components/ui/progress';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Wallet, ArrowDown, Ban, Check, Clock, DollarSign, Info, AlertTriangle, Banknote } from 'lucide-react';
+import { Wallet, ArrowDown, Ban, Check, Clock, DollarSign, Info, AlertTriangle, Banknote, Car, Trash2, Eye } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -46,6 +51,14 @@ interface WithdrawalRequest {
     rejectionReason?: string;
     transactionId?: string;
 }
+
+// Represents a valuation document from Firestore, including its ID
+type ValuationDoc = CarValuationFormInput & { 
+    id: string;
+    createdAt: Timestamp;
+    valuationResult: any; 
+};
+
 
 const WithdrawalSchema = z.object({
   amount: z.coerce.number().min(100, { message: "Minimum withdrawal is ₹100." }),
@@ -388,6 +401,142 @@ function MechanicDashboard({ user, userProfile }: { user: any, userProfile: User
     );
 }
 
+function AgentOwnerDashboard({ user, userProfile }: { user: any, userProfile: UserProfile }) {
+    const firestore = useFirestore();
+    const { toast } = useToast();
+    
+    const [selectedValuation, setSelectedValuation] = useState<ValuationDoc | null>(null);
+    const [isViewReportOpen, setIsViewReportOpen] = useState(false);
+    const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
+
+    const valuationsQuery = useMemoFirebase(() => {
+        if (!firestore || !user) return null;
+        return query(collection(firestore, 'users', user.uid, 'carValuations'), orderBy('createdAt', 'desc'));
+    }, [firestore, user]);
+
+    const { data: valuations, isLoading } = useCollection<ValuationDoc>(valuationsQuery);
+
+    const formatDataForDisplay = (doc: ValuationDoc | null) => {
+        if (!doc) return null;
+        const { valuationResult, ...formData } = doc;
+        return { valuation: valuationResult, formData };
+    };
+    
+    const handleDelete = async () => {
+        if (!firestore || !user || !selectedValuation) {
+            toast({ variant: "destructive", title: "Error", description: "Could not delete the valuation." });
+            return;
+        }
+
+        try {
+            await deleteValuation(firestore, user, selectedValuation.id);
+            toast({ title: "Success", description: "Valuation report deleted." });
+        } catch (error) {
+            toast({ variant: "destructive", title: "Error", description: "Failed to delete the report." });
+        } finally {
+            setIsDeleteAlertOpen(false);
+            setSelectedValuation(null);
+        }
+    };
+
+
+    return (
+        <div className="container mx-auto py-8 px-4 md:px-6">
+            <header className="mb-8">
+                <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+                <p className="text-muted-foreground">Welcome back, {userProfile.displayName}! Here are your valuation reports.</p>
+            </header>
+            
+            <Card>
+                <CardHeader>
+                    <CardTitle>My Valuation Reports</CardTitle>
+                    <CardDescription>View, download, or delete your past reports.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead><Car className="inline-block mr-2"/>Car</TableHead>
+                                <TableHead>Date</TableHead>
+                                <TableHead className="text-right">Actions</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {isLoading && (
+                                <TableRow>
+                                    <TableCell colSpan={3} className="h-24 text-center">
+                                        <Skeleton className="w-full h-8" />
+                                    </TableCell>
+                                </TableRow>
+                            )}
+                            {!isLoading && valuations && valuations.length > 0 ? (
+                                valuations.map((valuation) => (
+                                    <TableRow key={valuation.id}>
+                                        <TableCell className="font-medium">{valuation.make} {valuation.model}</TableCell>
+                                        <TableCell>{formatDate(valuation.createdAt)}</TableCell>
+                                        <TableCell className="text-right space-x-2">
+                                            <Button variant="outline" size="sm" onClick={() => { setSelectedValuation(valuation); setIsViewReportOpen(true); }}>
+                                                <Eye className="mr-2 h-4 w-4"/> View / Download
+                                            </Button>
+                                            <Button variant="destructive" size="sm" onClick={() => { setSelectedValuation(valuation); setIsDeleteAlertOpen(true); }}>
+                                                <Trash2 className="mr-2 h-4 w-4"/> Delete
+                                            </Button>
+                                        </TableCell>
+                                    </TableRow>
+                                ))
+                            ) : (
+                                !isLoading && (
+                                    <TableRow>
+                                        <TableCell colSpan={3} className="h-24 text-center">
+                                            No valuation reports found.
+                                            <Button asChild variant="link"><Link href="/valuation">Create a new one</Link></Button>
+                                        </TableCell>
+                                    </TableRow>
+                                )
+                            )}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
+
+            {/* View Report Dialog */}
+            <Dialog open={isViewReportOpen} onOpenChange={setIsViewReportOpen}>
+                <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle>Valuation Report</DialogTitle>
+                        <DialogDescription>
+                            Report for {selectedValuation?.make} {selectedValuation?.model}. You can download this report as a PDF.
+                        </DialogDescription>
+                    </DialogHeader>
+                    {selectedValuation && (
+                        <ValuationResultDisplay 
+                            result={formatDataForDisplay(selectedValuation)!} 
+                            onNewValuation={() => setIsViewReportOpen(false)}
+                        />
+                    )}
+                </DialogContent>
+            </Dialog>
+
+            {/* Delete Confirmation Dialog */}
+            <AlertDialog open={isDeleteAlertOpen} onOpenChange={setIsDeleteAlertOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This action cannot be undone. This will permanently delete the valuation report for the {selectedValuation?.make} {selectedValuation?.model}.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+        </div>
+    );
+}
+
+
 function DashboardSkeleton() {
     return (
         <div className="container mx-auto py-8 px-4 md:px-6">
@@ -444,26 +593,7 @@ function DashboardPageComponent() {
   }
 
   if (userProfile.role === 'Owner' || userProfile.role === 'Agent') {
-      return (
-        <div className="container mx-auto flex min-h-[60vh] items-center justify-center py-12">
-            <Card className="w-full max-w-md text-center shadow-lg">
-                <CardHeader>
-                    <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 mb-4">
-                        <Info className="h-8 w-8 text-primary" />
-                    </div>
-                    <CardTitle>Welcome, {userProfile.displayName || 'User'}</CardTitle>
-                    <CardDescription>
-                        Your personal dashboard is under construction. For now, you can get a new car valuation.
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <Button asChild>
-                        <Link href="/valuation">Go to Valuation</Link>
-                    </Button>
-                </CardContent>
-            </Card>
-        </div>
-      );
+      return <AgentOwnerDashboard user={user} userProfile={userProfile} />;
   }
 
   return (
