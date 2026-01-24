@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from "react";
@@ -91,13 +90,18 @@ export const ValuationResultDisplay = ({ result, onNewValuation }: { result: { v
             windowHeight: scrollHeight,
         });
 
+        // The canvas now holds the full-height image of the report
+        const imgWidth = canvas.width;
+        const imgHeight = canvas.height;
+        
+        // Create a PDF with a custom page size that is as long as the content
         const pdf = new jsPDF({
             orientation: 'p',
             unit: 'px',
-            format: [canvas.width, canvas.height],
+            format: [imgWidth, imgHeight],
         });
 
-        pdf.addImage(canvas.toDataURL('image/png', 1.0), 'PNG', 0, 0, canvas.width, canvas.height);
+        pdf.addImage(canvas.toDataURL('image/png', 1.0), 'PNG', 0, 0, imgWidth, imgHeight);
         pdf.save(`mycarvalue-report-${clientData?.reportId || 'report'}.pdf`);
 
     } catch (err) {
@@ -191,10 +195,6 @@ export const ValuationResultDisplay = ({ result, onNewValuation }: { result: { v
             <section className="bg-slate-50 rounded-lg p-6 flex flex-col items-center gap-2 my-8 border border-slate-200">
                 <h3 className="text-sm font-semibold text-slate-700">Your Best Selling Price Estimate</h3>
                 <p className="text-5xl font-bold tracking-tight text-slate-900">{inr(valuation.bestPrice)}</p>
-                <div className="inline-flex items-center gap-2 rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-800 border border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800">
-                    <ShieldCheck className="h-4 w-4"/>
-                    AI-Verified Price Estimate
-                </div>
             </section>
             
             <section className="my-8">
