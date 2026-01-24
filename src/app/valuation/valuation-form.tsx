@@ -14,6 +14,7 @@ import { getValuationAction } from '@/lib/actions';
 import { carMakesAndModelsAndVariants, indianStates } from "@/lib/variants";
 import { useUser, useFirestore } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
+import { saveValuation } from "@/lib/firebase/valuation-service";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -315,8 +316,16 @@ export function ValuationForm() {
         const fullResult = { valuation: result.valuation, formData: data };
 
         localStorage.setItem('valuationResult', JSON.stringify(fullResult));
-        
         localStorage.setItem('paymentSuccess', 'true');
+        
+        await saveValuation(firestore, user, {
+            paymentId: `test-${Date.now()}`,
+            ...data,
+            valuationResult: result.valuation,
+            comparableListingsResult: null,
+            imageQualityResult: null,
+        });
+
         router.push('/result');
 
     } catch (error: any) {
@@ -327,7 +336,7 @@ export function ValuationForm() {
             title: "Valuation Failed",
             description: isQuotaError
                 ? "Our AI is currently busy. Please try again in 30 seconds."
-                : "An unexpected error occurred during valuation.",
+                : "An unexpected error occurred during valuation or saving.",
         });
     } finally {
         setLoading(false);
@@ -689,7 +698,7 @@ export function ValuationForm() {
                     {isLastSection ? (
                         <Button type="submit" className="w-full" size="lg" disabled={loading}>
                             <Sparkles className="mr-2 h-4 w-4" />
-                            {loading ? 'Analyzing...' : 'Get Valuation Report'}
+                            {loading ? 'Analyzing & Saving...' : 'Get Valuation & Save Report'}
                         </Button>
                     ) : (
                         <Button type="button" onClick={handleNextSection} className="w-full" size="lg">
