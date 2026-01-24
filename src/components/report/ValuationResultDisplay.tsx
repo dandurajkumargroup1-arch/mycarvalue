@@ -32,6 +32,24 @@ const ReportSection = ({ title, children }: { title: string, children: React.Rea
 
 
 export const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuation: any; formData: any; }, onNewValuation: () => void }) => {
+    
+  // Robustly check if the result and its nested properties are valid.
+  if (!result || !result.valuation || !result.formData) {
+      return (
+          <div className="bg-slate-100 p-2 md:p-8">
+              <Card className="max-w-4xl mx-auto text-center">
+                  <CardHeader>
+                      <CardTitle>Error Displaying Report</CardTitle>
+                      <CardDescription>The valuation data seems to be missing or corrupted. Please try creating a new valuation.</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                      <Button onClick={onNewValuation}>Start New Valuation</Button>
+                  </CardContent>
+              </Card>
+          </div>
+      );
+  }
+
   const { valuation, formData } = result;
   const [clientData, setClientData] = useState<{ reportId: string; generatedOn: string; } | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
@@ -249,9 +267,9 @@ export const ValuationResultDisplay = ({ result, onNewValuation }: { result: { v
                     <h2 className="text-base font-semibold text-slate-900 mb-3">Price Calculation Summary</h2>
                     <div className="space-y-2 text-sm">
                         <div className="flex justify-between"><span className="text-slate-600">Your Expected Price</span> <span className="font-medium text-slate-800">{inr(valuation.p0_expectedPrice)}</span></div>
-                        <div className="flex justify-between"><span className="text-slate-600">After Odometer Depreciation ({valuation.od_odometerDepreciationPercentage.toFixed(1)}%)</span> <span className="font-medium text-slate-800">{inr(valuation.p1_afterOdometer)}</span></div>
+                        <div className="flex justify-between"><span className="text-slate-600">After Odometer Depreciation ({(valuation.od_odometerDepreciationPercentage || 0).toFixed(1)}%)</span> <span className="font-medium text-slate-800">{inr(valuation.p1_afterOdometer)}</span></div>
                         <div className="flex justify-between"><span className="text-slate-600">After Condition Depreciation</span> <span className="font-medium text-slate-800">{inr(valuation.p9_afterAllSections)}</span></div>
-                        <div className="flex justify-between"><span className="text-slate-600">After Age Depreciation ({valuation.yd_yearDepreciationPercentage.toFixed(1)}%)</span> <span className="font-medium text-slate-800">{inr(valuation.p10_afterYear)}</span></div>
+                        <div className="flex justify-between"><span className="text-slate-600">After Age Depreciation ({(valuation.yd_yearDepreciationPercentage || 0).toFixed(1)}%)</span> <span className="font-medium text-slate-800">{inr(valuation.p10_afterYear)}</span></div>
                         {valuation.goodCarBonusApplied && <div className="flex justify-between text-emerald-600"><span className="font-medium">Good Car Bonus</span> <span className="font-medium">+ {inr(valuation.finalPrice - valuation.p10_afterYear)}</span></div>}
                         <div className="flex justify-between pt-2 border-t font-bold"><span className="text-slate-800">Final Assessed Value</span> <span className="text-slate-900">{inr(valuation.finalPrice)}</span></div>
                     </div>
@@ -262,7 +280,7 @@ export const ValuationResultDisplay = ({ result, onNewValuation }: { result: { v
                         {depreciationSections.map(sec => (
                             <div key={sec.label} className="flex justify-between">
                                 <span className="text-slate-600">{sec.label}</span>
-                                <span className="font-medium text-slate-800">{sec.value.toFixed(1)}%</span>
+                                <span className="font-medium text-slate-800">{(sec.value || 0).toFixed(1)}%</span>
                             </div>
                         ))}
                     </div>
