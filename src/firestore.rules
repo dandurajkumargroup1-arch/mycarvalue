@@ -90,7 +90,7 @@ service cloud.firestore {
         match /carValuations/{carValuationId} {
             allow read, list: if isOwner(userId);
             allow create: if isOwner(userId) && hasCorrectOwnerDataOnCreate(userId);
-            allow delete: if isOwner(userId);
+            allow delete: if isOwner(userId) || isAdmin(); // FIX: Allow admin to delete
             allow update: if false; // Valuations are immutable once created
         }
 
@@ -98,7 +98,7 @@ service cloud.firestore {
             allow read: if isOwner(userId) || isAdmin();
             allow update: if isOwner(userId) || isAdmin(); // Admin can update balance after withdrawal
             allow create: if isOwner(userId) && hasCorrectOwnerDataOnCreate(userId);
-            allow delete: if false;
+            allow delete: if isAdmin(); // FIX: Allow admin to delete
         }
     }
     
@@ -114,7 +114,7 @@ service cloud.firestore {
                         request.query.where.userId == request.auth.uid
                      );
         allow update: if isAdmin(); // Only admins can approve/reject requests
-        allow delete: if false;
+        allow delete: if isAdmin(); // FIX: Allow admin to delete
     }
   }
 }

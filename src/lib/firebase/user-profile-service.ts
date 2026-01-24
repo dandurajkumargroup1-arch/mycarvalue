@@ -9,6 +9,11 @@ import {
   type Firestore,
   type FieldValue,
   deleteDoc,
+  collection,
+  query,
+  where,
+  getDocs,
+  writeBatch,
 } from 'firebase/firestore';
 import type { User } from 'firebase/auth';
 import { errorEmitter } from '@/firebase/error-emitter';
@@ -64,7 +69,7 @@ export async function upsertUserProfile(
 
   const baseData: Partial<UserProfile> = {
     id: user.uid,
-    displayName: user.displayName, // Fallback from auth object
+    displayName: data?.displayName || user.displayName, // Prioritize form data over auth object
     email: user.email,
     photoURL: user.photoURL,
   };
@@ -108,9 +113,8 @@ export async function upsertUserProfile(
 
 
 /**
- * Deletes a user's profile document from the 'users' collection.
- * Note: This does NOT delete the user from Firebase Authentication, only their Firestore data.
- * Subcollections (like valuations, wallet) will become orphaned.
+ * Deletes a user's profile document AND all their associated data from Firestore.
+ * This performs a recursive delete by first removing documents from subcollections.
  *
  * @param firestore - The Firestore instance.
  * @param userId - The ID of the user to delete.
@@ -126,9 +130,36 @@ export async function deleteUser(
   const userDocRef = doc(firestore, 'users', userId);
 
   try {
-    await deleteDoc(userDocRef);
+    // A Firestore transaction or batch can contain up to 500 operations.
+    // This is sufficient for most user deletion cases. For users with extreme amounts
+    // of data, a more robust solution using batched deletions or a Cloud Function
+    // would be necessary.
+    const batch = writeBatch(firestore);
+
+    // 1. Find and delete all carValuations for the user
+    const valuationsRef = collection(userDocRef, 'carValuations');
+    const valuationsSnapshot = await getDocs(valuationsRef);
+    valuationsSnapshot.forEach(doc => batch.delete(doc.ref));
+
+    // 2. Find and delete the wallet subcollection for the user
+    const walletRef = collection(userDocRef, 'wallet');
+    const walletSnapshot = await getDocs(walletRef);
+    walletSnapshot.forEach(doc => batch.delete(doc.ref));
+    
+    // 3. Find and delete all withdrawalRequests by the user from the root collection
+    const withdrawalsRootRef = collection(firestore, 'withdrawalRequests');
+    const withdrawalsQuery = query(withdrawalsRootRef, where('userId', '==', userId));
+    const withdrawalsSnapshot = await getDocs(withdrawalsQuery);
+    withdrawalsSnapshot.forEach(doc => batch.delete(doc.ref));
+
+    // 4. Finally, delete the main user document
+    batch.delete(userDocRef);
+
+    // Commit all deletes in a single atomic operation
+    await batch.commit();
+
   } catch (error) {
-    console.error(`Error deleting user ${userId}:`, error);
+    console.error(`Error deleting user ${userId} and their data:`, error);
 
     const permissionError = new FirestorePermissionError({
       path: userDocRef.path,
