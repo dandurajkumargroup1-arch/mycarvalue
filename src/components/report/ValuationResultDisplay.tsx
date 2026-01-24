@@ -68,65 +68,99 @@ export const ValuationResultDisplay = ({ result, onNewValuation }: { result: { v
 
   const handleDownloadPdf = async () => {
     setIsDownloading(true);
-    const report = document.getElementById("report-content");
-    if (!report) {
+    const reportElement = document.getElementById("report-content");
+    if (!reportElement) {
         console.error("Report content element not found!");
         setIsDownloading(false);
         return;
     }
 
-    // Backup original styles
-    const originalWidth = report.style.width;
-    const originalClass = report.className;
+    // Set a class to apply print-friendly styles without affecting the screen
+    reportElement.classList.add("pdf-render-mode");
 
     try {
-        // Lock report to A4 width
-        report.style.width = "794px"; // A4 @ 96 DPI
-        report.classList.add("pdf-mode");
-
-        const canvas = await html2canvas(report, {
-            scale: 2,
-            backgroundColor: "#ffffff",
+        const canvas = await html2canvas(reportElement, {
+            scale: 2, // Higher scale for better quality
             useCORS: true,
-            windowWidth: 794,
-            scrollY: -window.scrollY
+            backgroundColor: "#ffffff", // Explicitly set background
+            // Let html2canvas determine size from the element itself
+            width: reportElement.scrollWidth,
+            height: reportElement.scrollHeight,
+            windowWidth: reportElement.scrollWidth,
+            windowHeight: reportElement.scrollHeight,
         });
 
-        const imgData = canvas.toDataURL("image/png");
-        const pdf = new jsPDF("p", "mm", "a4");
+        const pdf = new jsPDF({
+            orientation: 'p',
+            unit: 'mm',
+            format: 'a4',
+        });
+        
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+        
+        const canvasWidth = canvas.width;
+        const canvasHeight = canvas.height;
 
-        const pdfWidth = 210;   // A4 width in mm
-        const pdfHeight = 297;  // A4 height in mm
+        // Calculate the height of the PDF page in canvas pixels
+        const ratio = canvasWidth / pdfWidth;
+        const pageHeightInCanvasPixels = pdfHeight * ratio;
 
-        const imgWidth = canvas.width;
-        const imgHeight = canvas.height;
+        let position = 0;
+        let pageCount = 0;
 
-        // Scale by width only
-        const scale = pdfWidth / imgWidth;
-        const scaledHeight = imgHeight * scale;
+        // Loop as long as there is content left to print
+        while (position < canvasHeight) {
+            // Add a new page for the second page and onwards
+            if (pageCount > 0) {
+                pdf.addPage();
+            }
 
-        // Perfect vertical centering
-        const yPosition = scaledHeight < pdfHeight ? (pdfHeight - scaledHeight) / 2 : 0;
+            // Determine the height of the slice to capture for the current page
+            const sliceHeight = Math.min(pageHeightInCanvasPixels, canvasHeight - position);
+            
+            // Create a temporary canvas to hold the slice
+            const sliceCanvas = document.createElement('canvas');
+            sliceCanvas.width = canvasWidth;
+            sliceCanvas.height = sliceHeight;
+            const sliceContext = sliceCanvas.getContext('2d');
 
-        pdf.addImage(
-            imgData,
-            "PNG",
-            0,
-            yPosition,
-            pdfWidth,
-            scaledHeight,
-            undefined,
-            "FAST"
-        );
-
+            if (sliceContext) {
+                // Draw the portion of the original canvas onto the slice canvas
+                sliceContext.drawImage(
+                    canvas,
+                    0, // sourceX
+                    position, // sourceY
+                    canvasWidth, // sourceWidth
+                    sliceHeight, // sourceHeight
+                    0, // destX
+                    0, // destY
+                    canvasWidth, // destWidth
+                    sliceHeight  // destHeight
+                );
+            
+                // Convert the slice canvas to a data URL
+                const sliceImgData = sliceCanvas.toDataURL('image/png');
+    
+                // Calculate the height of the image slice in the PDF
+                const slicePdfHeight = (sliceHeight * pdfWidth) / canvasWidth;
+    
+                // Add the slice image to the PDF page
+                pdf.addImage(sliceImgData, 'PNG', 0, 0, pdfWidth, slicePdfHeight);
+            }
+            
+            // Move to the next position on the original canvas
+            position += pageHeightInCanvasPixels;
+            pageCount++;
+        }
+        
         pdf.save(`mycarvalue-report-${clientData?.reportId || 'report'}.pdf`);
 
     } catch (err) {
         console.error("Error generating PDF:", err);
     } finally {
-        // Restore original layout
-        report.style.width = originalWidth;
-        report.className = originalClass;
+        // Clean up by removing the temporary class
+        reportElement.classList.remove("pdf-render-mode");
         setIsDownloading(false);
     }
   };
@@ -187,28 +221,11 @@ export const ValuationResultDisplay = ({ result, onNewValuation }: { result: { v
   return (
      <>
      <style jsx global>{`
-      .pdf-mode {
+      .pdf-render-mode {
         background: white !important;
-        padding: 24px !important;
-      }
-      .pdf-mode .grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-        gap: 20px !important;
-      }
-      .pdf-mode .text-5xl {
-        font-size: 42px !important;
-        line-height: 1.1 !important;
-      }
-      .pdf-mode p {
-        margin: 4px 0 !important;
-        line-height: 1.4 !important;
-      }
-      .pdf-mode .shadow,
-      .pdf-mode .shadow-lg {
         box-shadow: none !important;
-      }
-      .pdf-mode .rounded-lg {
-        border-radius: 8px !important;
+        border: none !important;
+        color: #1e293b; /* slate-800 */
       }
      `}</style>
      <div className="bg-slate-100 p-2 md:p-8">
