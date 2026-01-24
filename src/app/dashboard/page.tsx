@@ -15,6 +15,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from 'zod';
 import type { CarValuationFormInput } from '@/lib/schemas';
 import { ValuationResultDisplay } from '@/components/report/ValuationResultDisplay';
+import { DateRange } from "react-day-picker";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 
 import { Button } from '@/components/ui/button';
@@ -24,13 +27,15 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Wallet, ArrowDown, Ban, Check, Clock, IndianRupee, Info, AlertTriangle, Car, Trash2, Eye } from 'lucide-react';
+import { Wallet, ArrowDown, Ban, Check, Clock, IndianRupee, Info, AlertTriangle, Car, Trash2, Eye, Calendar as CalendarIcon } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 
 
 interface Wallet {
@@ -524,6 +529,7 @@ function AgentOwnerDashboard({ user, userProfile }: { user: any, userProfile: Us
     const [selectedValuation, setSelectedValuation] = useState<ValuationDoc | null>(null);
     const [isViewReportOpen, setIsViewReportOpen] = useState(false);
     const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
+    const [valuationDateRange, setValuationDateRange] = useState<DateRange | undefined>();
 
     const valuationsQuery = useMemoFirebase(() => {
         if (!firestore || !user) return null;
@@ -531,6 +537,22 @@ function AgentOwnerDashboard({ user, userProfile }: { user: any, userProfile: Us
     }, [firestore, user]);
 
     const { data: valuations, isLoading } = useCollection<ValuationDoc>(valuationsQuery);
+
+    const filteredValuations = useMemo(() => {
+        if (!valuations) return [];
+        if (!valuationDateRange?.from) return valuations;
+    
+        const from = valuationDateRange.from;
+        const to = valuationDateRange.to ? new Date(valuationDateRange.to) : new Date(from);
+        to.setHours(23, 59, 59, 999);
+    
+        return valuations.filter(valuation => {
+          if (!valuation.createdAt) return false;
+          const valuationDate = valuation.createdAt.toDate();
+          return valuationDate >= from && valuationDate <= to;
+        });
+    }, [valuations, valuationDateRange]);
+
 
     const formatDataForDisplay = (doc: ValuationDoc | null) => {
         if (!doc) return null;
@@ -564,15 +586,54 @@ function AgentOwnerDashboard({ user, userProfile }: { user: any, userProfile: Us
             </header>
             
             <Card>
-                <CardHeader>
-                    <CardTitle>My Valuation Reports</CardTitle>
-                    <CardDescription>View, download, or delete your past reports.</CardDescription>
+                <CardHeader className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                    <div>
+                        <CardTitle>My Valuation Reports</CardTitle>
+                        <CardDescription>View, filter, and manage your past reports.</CardDescription>
+                    </div>
+                     <Popover>
+                        <PopoverTrigger asChild>
+                            <Button
+                                id="date"
+                                variant={"outline"}
+                                className={cn(
+                                    "w-full sm:w-auto sm:min-w-[260px] justify-start text-left font-normal",
+                                    !valuationDateRange && "text-muted-foreground"
+                                )}
+                            >
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {valuationDateRange?.from ? (
+                                    valuationDateRange.to ? (
+                                        <>
+                                            {format(valuationDateRange.from, "LLL dd, y")} -{" "}
+                                            {format(valuationDateRange.to, "LLL dd, y")}
+                                        </>
+                                    ) : (
+                                        format(valuationDateRange.from, "LLL dd, y")
+                                    )
+                                ) : (
+                                    <span>Pick a date range</span>
+                                )}
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="end">
+                            <Calendar
+                                initialFocus
+                                mode="range"
+                                defaultMonth={valuationDateRange?.from}
+                                selected={valuationDateRange}
+                                onSelect={setValuationDateRange}
+                                numberOfMonths={2}
+                            />
+                        </PopoverContent>
+                    </Popover>
                 </CardHeader>
                 <CardContent>
                     <Table>
                         <TableHeader>
                             <TableRow>
                                 <TableHead><Car className="inline-block mr-2"/>Car</TableHead>
+                                <TableHead>Vehicle Number</TableHead>
                                 <TableHead>Date</TableHead>
                                 <TableHead className="text-right">Actions</TableHead>
                             </TableRow>
@@ -580,15 +641,16 @@ function AgentOwnerDashboard({ user, userProfile }: { user: any, userProfile: Us
                         <TableBody>
                             {isLoading && (
                                 <TableRow>
-                                    <TableCell colSpan={3} className="h-24 text-center">
+                                    <TableCell colSpan={4} className="h-24 text-center">
                                         <Skeleton className="w-full h-8" />
                                     </TableCell>
                                 </TableRow>
                             )}
-                            {!isLoading && valuations && valuations.length > 0 ? (
-                                valuations.map((valuation) => (
+                            {!isLoading && filteredValuations && filteredValuations.length > 0 ? (
+                                filteredValuations.map((valuation) => (
                                     <TableRow key={valuation.id}>
                                         <TableCell className="font-medium">{valuation.make} {valuation.model}</TableCell>
+                                        <TableCell className="text-muted-foreground font-mono uppercase">{valuation.vehicleNumber || 'N/A'}</TableCell>
                                         <TableCell>{formatDate(valuation.createdAt)}</TableCell>
                                         <TableCell className="text-right space-x-2">
                                             <Button variant="outline" size="sm" onClick={() => { setSelectedValuation(valuation); setIsViewReportOpen(true); }}>
@@ -603,8 +665,8 @@ function AgentOwnerDashboard({ user, userProfile }: { user: any, userProfile: Us
                             ) : (
                                 !isLoading && (
                                     <TableRow>
-                                        <TableCell colSpan={3} className="h-24 text-center">
-                                            No valuation reports found.
+                                        <TableCell colSpan={4} className="h-24 text-center">
+                                            No valuation reports found for the selected period.
                                             <Button asChild variant="link"><Link href="/valuation">Create a new one</Link></Button>
                                         </TableCell>
                                     </TableRow>
