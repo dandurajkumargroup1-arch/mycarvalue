@@ -11,6 +11,9 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from 'zod';
 import { useToast } from "@/hooks/use-toast";
+import { DateRange } from "react-day-picker";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -21,7 +24,9 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from '@/components/ui/skeleton';
-import { AlertTriangle, CheckCircle, Shield, Users, Wallet, XCircle } from 'lucide-react';
+import { AlertTriangle, CheckCircle, Shield, Users, Wallet, XCircle, Calendar as CalendarIcon } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 
 
 interface WithdrawalRequest {
@@ -170,26 +175,32 @@ function RejectDialog({ request, onRejected }: { request: WithdrawalRequest, onR
 function AdminDashboard() {
   const firestore = useFirestore();
   const { toast } = useToast();
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
   
   // Fetch all users to create a name map
-  const usersQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'users'), orderBy('createdAt', 'desc')) : null, [firestore]);
+  const usersQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+
+    let q = query(collection(firestore, 'users'), orderBy('createdAt', 'desc'));
+
+    if (dateRange?.from) {
+      const from = dateRange.from;
+      const to = dateRange.to ? new Date(dateRange.to) : new Date(from);
+      to.setHours(23, 59, 59, 999);
+      q = query(collection(firestore, 'users'), where('createdAt', '>=', from), where('createdAt', '<=', to), orderBy('createdAt', 'desc'));
+    }
+
+    return q;
+  }, [firestore, dateRange]);
   const { data: usersData, isLoading: isUsersLoading } = useCollection<UserProfile>(usersQuery);
   const userMap = useMemo(() => usersData?.reduce((acc, user) => ({ ...acc, [user.id]: user }), {} as Record<string, UserProfile>) || {}, [usersData]);
 
   // Fetch pending withdrawal requests
   const requestsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    // SIMPLIFIED QUERY: Removed orderBy to reduce complexity for Firestore Security Rules evaluation.
-    return query(collection(firestore, 'withdrawalRequests'), where('status', '==', 'requested'));
+    return query(collection(firestore, 'withdrawalRequests'), where('status', '==', 'requested'), orderBy('requestedAt', 'desc'));
   }, [firestore]);
-  const { data: requestsData, isLoading: isRequestsLoading, error: requestsError } = useCollection<WithdrawalRequest>(requestsQuery);
-
-  // Client-side sorting to compensate for removing orderBy from the query.
-  const requests = useMemo(() => {
-    if (!requestsData) return null;
-    // Sort by most recent first
-    return [...requestsData].sort((a, b) => b.requestedAt.toMillis() - a.requestedAt.toMillis());
-  }, [requestsData]);
+  const { data: requests, isLoading: isRequestsLoading, error: requestsError } = useCollection<WithdrawalRequest>(requestsQuery);
 
 
   const [refreshKey, setRefreshKey] = useState(0);
@@ -293,8 +304,48 @@ function AdminDashboard() {
             
             <Card>
                 <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><Users/> All Users</CardTitle>
-                    <CardDescription>Browse and manage all registered users.</CardDescription>
+                  <div className="flex flex-wrap items-center justify-between gap-4">
+                    <div>
+                        <CardTitle className="flex items-center gap-2"><Users/> All Users</CardTitle>
+                        <CardDescription>Browse and manage all registered users, optionally filtered by date.</CardDescription>
+                    </div>
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <Button
+                                id="date"
+                                variant={"outline"}
+                                className={cn(
+                                    "w-auto min-w-[260px] justify-start text-left font-normal",
+                                    !dateRange && "text-muted-foreground"
+                                )}
+                            >
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {dateRange?.from ? (
+                                    dateRange.to ? (
+                                        <>
+                                            {format(dateRange.from, "LLL dd, y")} -{" "}
+                                            {format(dateRange.to, "LLL dd, y")}
+                                        </>
+                                    ) : (
+                                        format(dateRange.from, "LLL dd, y")
+                                    )
+                                ) : (
+                                    <span>Pick a date range</span>
+                                )}
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="end">
+                            <Calendar
+                                initialFocus
+                                mode="range"
+                                defaultMonth={dateRange?.from}
+                                selected={dateRange}
+                                onSelect={setDateRange}
+                                numberOfMonths={2}
+                            />
+                        </PopoverContent>
+                    </Popover>
+                  </div>
                 </CardHeader>
                 <CardContent>
                     <Table>
