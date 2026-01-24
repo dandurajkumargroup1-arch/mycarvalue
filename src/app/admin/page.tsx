@@ -14,6 +14,8 @@ import { useToast } from "@/hooks/use-toast";
 import { DateRange } from "react-day-picker";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import Papa from 'papaparse';
+
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -24,9 +26,10 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from '@/components/ui/skeleton';
-import { AlertTriangle, CheckCircle, Shield, Users, Wallet, XCircle, Calendar as CalendarIcon } from 'lucide-react';
+import { AlertTriangle, CheckCircle, Shield, Users, Wallet, XCircle, Calendar as CalendarIcon, Download } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 
 interface WithdrawalRequest {
@@ -175,25 +178,34 @@ function RejectDialog({ request, onRejected }: { request: WithdrawalRequest, onR
 function AdminDashboard() {
   const firestore = useFirestore();
   const { toast } = useToast();
-  const [dateRange, setDateRange] = useState<DateRange | undefined>();
+  const [usersDateRange, setUsersDateRange] = useState<DateRange | undefined>();
+  const [withdrawalDateRange, setWithdrawalDateRange] = useState<DateRange | undefined>();
   
   // Fetch all users to create a name map
   const usersQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-
     let q = query(collection(firestore, 'users'), orderBy('createdAt', 'desc'));
-
-    if (dateRange?.from) {
-      const from = dateRange.from;
-      const to = dateRange.to ? new Date(dateRange.to) : new Date(from);
-      to.setHours(23, 59, 59, 999);
-      q = query(collection(firestore, 'users'), where('createdAt', '>=', from), where('createdAt', '<=', to), orderBy('createdAt', 'desc'));
-    }
-
     return q;
-  }, [firestore, dateRange]);
-  const { data: usersData, isLoading: isUsersLoading } = useCollection<UserProfile>(usersQuery);
-  const userMap = useMemo(() => usersData?.reduce((acc, user) => ({ ...acc, [user.id]: user }), {} as Record<string, UserProfile>) || {}, [usersData]);
+  }, [firestore]);
+
+  const { data: allUsersData, isLoading: isUsersLoading } = useCollection<UserProfile>(usersQuery);
+
+  const filteredUsers = useMemo(() => {
+    if (!allUsersData) return [];
+    if (!usersDateRange?.from) return allUsersData;
+
+    const from = usersDateRange.from;
+    const to = usersDateRange.to ? new Date(usersDateRange.to) : new Date(from);
+    to.setHours(23, 59, 59, 999);
+
+    return allUsersData.filter(user => {
+      if (!user.createdAt) return false;
+      const userDate = user.createdAt.toDate();
+      return userDate >= from && userDate <= to;
+    });
+  }, [allUsersData, usersDateRange]);
+
+  const userMap = useMemo(() => allUsersData?.reduce((acc, user) => ({ ...acc, [user.id]: user }), {} as Record<string, UserProfile>) || {}, [allUsersData]);
 
   // Fetch ALL withdrawal requests and filter/sort on the client
   const allRequestsQuery = useMemoFirebase(() => {
@@ -202,12 +214,31 @@ function AdminDashboard() {
   }, [firestore]);
   const { data: allRequestsData, isLoading: isRequestsLoading, error: requestsError } = useCollection<WithdrawalRequest>(allRequestsQuery);
 
-  const requests = useMemo(() => {
+  const pendingRequests = useMemo(() => {
       if (!allRequestsData) return null;
       return allRequestsData
           .filter(req => req.status === 'requested')
           .sort((a, b) => b.requestedAt.toMillis() - a.requestedAt.toMillis());
   }, [allRequestsData]);
+
+  const withdrawalHistory = useMemo(() => {
+    if (!allRequestsData) return [];
+    let history = allRequestsData.filter(req => req.status === 'paid' || req.status === 'rejected');
+    
+    if (withdrawalDateRange?.from) {
+      const from = withdrawalDateRange.from;
+      const to = withdrawalDateRange.to ? new Date(withdrawalDateRange.to) : new Date(from);
+      to.setHours(23, 59, 59, 999);
+
+      history = history.filter(req => {
+        if (!req.processedAt) return false;
+        const reqDate = req.processedAt.toDate();
+        return reqDate >= from && reqDate <= to;
+      });
+    }
+
+    return history.sort((a, b) => b.processedAt!.toMillis() - a.processedAt!.toMillis());
+  }, [allRequestsData, withdrawalDateRange]);
 
 
   const [refreshKey, setRefreshKey] = useState(0);
@@ -217,13 +248,47 @@ function AdminDashboard() {
       toast({variant: 'destructive', title: 'Error', description: 'Could not load withdrawal requests. Check security rules.'});
   }
 
+  const handleDownloadCsv = () => {
+    if (!withdrawalHistory || withdrawalHistory.length === 0) {
+        toast({ title: "No Data", description: "There is no historical data to download for the selected range." });
+        return;
+    }
+
+    const dataToExport = withdrawalHistory.map(req => ({
+        "Request ID": req.id,
+        "Mechanic Name": userMap[req.userId]?.displayName || 'N/A',
+        "Mechanic Email": userMap[req.userId]?.email || 'N/A',
+        "Amount (INR)": req.amount,
+        "Status": req.status,
+        "Requested At": formatDate(req.requestedAt),
+        "Processed At": formatDate(req.processedAt),
+        "Payment Method": req.upiId ? 'UPI' : 'Bank Transfer',
+        "UPI ID": req.upiId || 'N/A',
+        "Bank Account": req.bankAccountNumber || 'N/A',
+        "IFSC Code": req.bankIfscCode || 'N/A',
+        "Transaction ID": req.transactionId || 'N/A',
+        "Rejection Reason": req.rejectionReason || 'N/A',
+    }));
+
+    const csv = Papa.unparse(dataToExport);
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `withdrawal-history-${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+
   const isLoading = isUsersLoading || isRequestsLoading;
 
   const recentUsers = useMemo(() => {
-    return usersData
+    return allUsersData
         ?.filter(u => u.role !== 'Admin') // Show all roles except Admin
         .slice(0, 5) || [];
-  }, [usersData]);
+  }, [allUsersData]);
 
   return (
     <div className="container mx-auto py-8 px-4 md:px-6 bg-background">
@@ -236,52 +301,140 @@ function AdminDashboard() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-2">
                     <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2"><Wallet/> Pending Withdrawal Requests</CardTitle>
-                            <CardDescription>Review and process manual payment requests from mechanics.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>Mechanic</TableHead>
-                                        <TableHead>Amount</TableHead>
-                                        <TableHead>Payment Details</TableHead>
-                                        <TableHead>Requested At</TableHead>
-                                        <TableHead className="text-right">Actions</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {isRequestsLoading ? (
-                                        <TableRow><TableCell colSpan={5}><Skeleton className="h-8 w-full" /></TableCell></TableRow>
-                                    ) : requests && requests.length > 0 ? (
-                                        requests.map(req => (
-                                            <TableRow key={req.id}>
-                                                <TableCell className="font-medium">{userMap[req.userId]?.displayName || 'Unknown User'}</TableCell>
-                                                <TableCell>{formatCurrency(req.amount)}</TableCell>
-                                                <TableCell className="text-xs">
-                                                    {req.upiId && <p><strong>UPI:</strong> {req.upiId}</p>}
-                                                    {req.bankAccountNumber && <p><strong>Acct:</strong> {req.bankAccountNumber}</p>}
-                                                    {req.bankIfscCode && <p><strong>IFSC:</strong> {req.bankIfscCode}</p>}
-                                                </TableCell>
-                                                <TableCell>{formatDate(req.requestedAt)}</TableCell>
-                                                <TableCell className="text-right space-x-2">
-                                                    <ApproveDialog request={req} onApproved={forceRefresh} />
-                                                    <RejectDialog request={req} onRejected={forceRefresh} />
-                                                </TableCell>
+                        <Tabs defaultValue="pending">
+                            <CardHeader>
+                                <div className="flex items-center justify-between">
+                                    <CardTitle className="flex items-center gap-2"><Wallet/> Withdrawal Requests</CardTitle>
+                                    <TabsList>
+                                        <TabsTrigger value="pending">Pending</TabsTrigger>
+                                        <TabsTrigger value="history">History</TabsTrigger>
+                                    </TabsList>
+                                </div>
+                                <CardDescription>Review pending requests or browse historical withdrawals.</CardDescription>
+                            </CardHeader>
+                            <TabsContent value="pending">
+                                <CardContent>
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead>Mechanic</TableHead>
+                                                <TableHead>Amount</TableHead>
+                                                <TableHead>Payment Details</TableHead>
+                                                <TableHead>Requested At</TableHead>
+                                                <TableHead className="text-right">Actions</TableHead>
                                             </TableRow>
-                                        ))
-                                    ) : (
-                                        <TableRow>
-                                            <TableCell colSpan={5} className="h-24 text-center">
-                                                <CheckCircle className="mx-auto h-8 w-8 text-green-500 mb-2"/>
-                                                No pending requests. All caught up!
-                                            </TableCell>
-                                        </TableRow>
-                                    )}
-                                </TableBody>
-                            </Table>
-                        </CardContent>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {isRequestsLoading ? (
+                                                <TableRow><TableCell colSpan={5}><Skeleton className="h-8 w-full" /></TableCell></TableRow>
+                                            ) : pendingRequests && pendingRequests.length > 0 ? (
+                                                pendingRequests.map(req => (
+                                                    <TableRow key={req.id}>
+                                                        <TableCell className="font-medium">{userMap[req.userId]?.displayName || 'Unknown User'}</TableCell>
+                                                        <TableCell>{formatCurrency(req.amount)}</TableCell>
+                                                        <TableCell className="text-xs">
+                                                            {req.upiId && <p><strong>UPI:</strong> {req.upiId}</p>}
+                                                            {req.bankAccountNumber && <p><strong>Acct:</strong> {req.bankAccountNumber}</p>}
+                                                            {req.bankIfscCode && <p><strong>IFSC:</strong> {req.bankIfscCode}</p>}
+                                                        </TableCell>
+                                                        <TableCell>{formatDate(req.requestedAt)}</TableCell>
+                                                        <TableCell className="text-right space-x-2">
+                                                            <ApproveDialog request={req} onApproved={forceRefresh} />
+                                                            <RejectDialog request={req} onRejected={forceRefresh} />
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ))
+                                            ) : (
+                                                <TableRow>
+                                                    <TableCell colSpan={5} className="h-24 text-center">
+                                                        <CheckCircle className="mx-auto h-8 w-8 text-green-500 mb-2"/>
+                                                        No pending requests. All caught up!
+                                                    </TableCell>
+                                                </TableRow>
+                                            )}
+                                        </TableBody>
+                                    </Table>
+                                </CardContent>
+                            </TabsContent>
+                            <TabsContent value="history">
+                                <div className="px-6 pb-4 flex flex-wrap items-center justify-between gap-4">
+                                     <Popover>
+                                        <PopoverTrigger asChild>
+                                            <Button
+                                                id="withdrawal-date"
+                                                variant={"outline"}
+                                                className={cn(
+                                                    "w-auto min-w-[260px] justify-start text-left font-normal",
+                                                    !withdrawalDateRange && "text-muted-foreground"
+                                                )}
+                                            >
+                                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                                {withdrawalDateRange?.from ? (
+                                                    withdrawalDateRange.to ? (
+                                                        <>
+                                                            {format(withdrawalDateRange.from, "LLL dd, y")} -{" "}
+                                                            {format(withdrawalDateRange.to, "LLL dd, y")}
+                                                        </>
+                                                    ) : (
+                                                        format(withdrawalDateRange.from, "LLL dd, y")
+                                                    )
+                                                ) : (
+                                                    <span>Pick a date range</span>
+                                                )}
+                                            </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-auto p-0" align="start">
+                                            <Calendar
+                                                initialFocus
+                                                mode="range"
+                                                defaultMonth={withdrawalDateRange?.from}
+                                                selected={withdrawalDateRange}
+                                                onSelect={setWithdrawalDateRange}
+                                                numberOfMonths={2}
+                                            />
+                                        </PopoverContent>
+                                    </Popover>
+                                    <Button onClick={handleDownloadCsv} variant="outline" size="sm">
+                                        <Download className="mr-2 h-4 w-4"/>
+                                        Download CSV
+                                    </Button>
+                                </div>
+                                <CardContent>
+                                     <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead>Mechanic</TableHead>
+                                                <TableHead>Amount</TableHead>
+                                                <TableHead>Processed At</TableHead>
+                                                <TableHead>Status</TableHead>
+                                                <TableHead>Txn ID</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                             {isRequestsLoading ? (
+                                                <TableRow><TableCell colSpan={5}><Skeleton className="h-8 w-full" /></TableCell></TableRow>
+                                            ) : withdrawalHistory && withdrawalHistory.length > 0 ? (
+                                                withdrawalHistory.map(req => (
+                                                    <TableRow key={req.id}>
+                                                        <TableCell className="font-medium">{userMap[req.userId]?.displayName || 'Unknown User'}</TableCell>
+                                                        <TableCell>{formatCurrency(req.amount)}</TableCell>
+                                                        <TableCell>{formatDate(req.processedAt)}</TableCell>
+                                                        <TableCell><Badge variant={req.status === 'paid' ? 'default' : 'destructive'}>{req.status}</Badge></TableCell>
+                                                        <TableCell className="text-xs font-mono">{req.transactionId || 'N/A'}</TableCell>
+                                                    </TableRow>
+                                                ))
+                                            ) : (
+                                                 <TableRow>
+                                                    <TableCell colSpan={5} className="h-24 text-center">
+                                                        No historical records found for the selected period.
+                                                    </TableCell>
+                                                </TableRow>
+                                            )}
+                                        </TableBody>
+                                     </Table>
+                                </CardContent>
+                            </TabsContent>
+                        </Tabs>
                     </Card>
                 </div>
                 <div>
@@ -323,18 +476,18 @@ function AdminDashboard() {
                                 variant={"outline"}
                                 className={cn(
                                     "w-auto min-w-[260px] justify-start text-left font-normal",
-                                    !dateRange && "text-muted-foreground"
+                                    !usersDateRange && "text-muted-foreground"
                                 )}
                             >
                                 <CalendarIcon className="mr-2 h-4 w-4" />
-                                {dateRange?.from ? (
-                                    dateRange.to ? (
+                                {usersDateRange?.from ? (
+                                    usersDateRange.to ? (
                                         <>
-                                            {format(dateRange.from, "LLL dd, y")} -{" "}
-                                            {format(dateRange.to, "LLL dd, y")}
+                                            {format(usersDateRange.from, "LLL dd, y")} -{" "}
+                                            {format(usersDateRange.to, "LLL dd, y")}
                                         </>
                                     ) : (
-                                        format(dateRange.from, "LLL dd, y")
+                                        format(usersDateRange.from, "LLL dd, y")
                                     )
                                 ) : (
                                     <span>Pick a date range</span>
@@ -345,9 +498,9 @@ function AdminDashboard() {
                             <Calendar
                                 initialFocus
                                 mode="range"
-                                defaultMonth={dateRange?.from}
-                                selected={dateRange}
-                                onSelect={setDateRange}
+                                defaultMonth={usersDateRange?.from}
+                                selected={usersDateRange}
+                                onSelect={setUsersDateRange}
                                 numberOfMonths={2}
                             />
                         </PopoverContent>
@@ -367,8 +520,8 @@ function AdminDashboard() {
                         <TableBody>
                             {isUsersLoading ? (
                                 <TableRow><TableCell colSpan={4} className="h-24 text-center"><Skeleton className="h-8 w-full" /></TableCell></TableRow>
-                            ) : usersData && usersData.length > 0 ? (
-                                usersData.filter(u => u.role !== 'Admin').map(user => (
+                            ) : filteredUsers && filteredUsers.length > 0 ? (
+                                filteredUsers.filter(u => u.role !== 'Admin').map(user => (
                                     <TableRow key={user.id}>
                                         <TableCell>
                                             <div className="font-medium">{user.displayName}</div>
