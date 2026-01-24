@@ -46,7 +46,7 @@ export interface UserProfile {
 export async function upsertUserProfile(
   firestore: Firestore, 
   user: User,
-  data?: Partial<Omit<UserProfile, 'id' | 'email' | 'displayName' | 'photoURL'>>
+  data?: Partial<Omit<UserProfile, 'id' | 'email' | 'photoURL'>>
 ): Promise<void> {
   if (!user) return;
 
@@ -61,11 +61,17 @@ export async function upsertUserProfile(
   });
 
 
-  const profileData: Partial<UserProfile> = {
+  const baseData: Partial<UserProfile> = {
     id: user.uid,
-    displayName: user.displayName,
+    displayName: user.displayName, // Fallback from auth object
     email: user.email,
     photoURL: user.photoURL,
+  };
+
+  // Combine base auth data with provided data.
+  // The spread of `updateData` will correctly overwrite `displayName` from `baseData` if it was provided from the form.
+  const profileData: Partial<UserProfile> = {
+    ...baseData,
     ...updateData,
     lastUpdatedAt: serverTimestamp(),
   };
@@ -98,5 +104,3 @@ export async function upsertUserProfile(
     throw error;
   }
 }
-
-    
