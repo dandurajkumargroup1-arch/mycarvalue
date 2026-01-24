@@ -661,55 +661,67 @@ function DashboardPageComponent() {
   const router = useRouter();
 
   useEffect(() => {
-      if (!isUserLoading && !user) {
-          router.push('/login?redirect=/dashboard');
-      }
+    if (!isUserLoading && !user) {
+      router.push('/login?redirect=/dashboard');
+    }
   }, [user, isUserLoading, router]);
 
   const userProfileRef = useMemoFirebase(() => {
-      if (!firestore || !user) return null;
-      return doc(firestore, 'users', user.uid);
+    if (!firestore || !user) return null;
+    return doc(firestore, 'users', user.uid);
   }, [firestore, user]);
 
   const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileRef);
 
-  if (isUserLoading || !user || isProfileLoading) {
-      return <DashboardSkeleton />;
-  }
+  useEffect(() => {
+    // This effect handles redirecting admin users.
+    // It runs after the component renders and when its dependencies change.
+    if (!isUserLoading && user) {
+      const isHardcodedAdmin = user.email === 'rajmycarvalue@gmail.com';
+      // The check for role happens only after the profile is loaded.
+      const isRoleAdmin = !isProfileLoading && userProfile?.role === 'Admin';
+      
+      if (isHardcodedAdmin || isRoleAdmin) {
+        router.push('/admin');
+      }
+    }
+  }, [user, isUserLoading, userProfile, isProfileLoading, router]);
 
-  // Admin users (by role or hardcoded email) are redirected to the admin dashboard.
-  // This check is robust because `userProfile?.role` safely handles a null profile.
-  if (userProfile?.role === 'Admin' || user.email === 'rajmycarvalue@gmail.com') {
-      router.push('/admin');
-      return <DashboardSkeleton />;
+  if (isUserLoading || !user || isProfileLoading) {
+    return <DashboardSkeleton />;
   }
   
+  // Admin users are being redirected by the useEffect. In the meantime, show a skeleton.
+  if (userProfile?.role === 'Admin' || user.email === 'rajmycarvalue@gmail.com') {
+    return <DashboardSkeleton />;
+  }
+
   // If we reach here, the user is not an admin.
   // Now we can safely assume they need a profile to see their specific dashboard.
   if (!userProfile) {
-      // This can happen briefly if the user profile is still loading
-      // or if the profile document doesn't exist yet for a new user.
-      // Showing the skeleton is a safe default.
-      return <DashboardSkeleton />;
+    // This can happen briefly if the user profile is still loading
+    // or if the profile document doesn't exist yet for a new user.
+    // Showing the skeleton is a safe default.
+    return <DashboardSkeleton />;
   }
 
   if (userProfile.role === 'Mechanic') {
-      return <MechanicDashboard user={user} userProfile={userProfile} />;
+    return <MechanicDashboard user={user} userProfile={userProfile} />;
   }
 
   if (userProfile.role === 'Owner' || userProfile.role === 'Agent') {
-      return <AgentOwnerDashboard user={user} userProfile={userProfile} />;
+    return <AgentOwnerDashboard user={user} userProfile={userProfile} />;
   }
 
   return (
     <div className="container mx-auto py-12 text-center">
-        <Alert variant="destructive">
-            <AlertTriangle className="h-4 w-4" />
-            <AlertTitle>Error</AlertTitle>
-            <AlertDescription>
-                An invalid user role was detected. Please contact support.
-            </AlertDescription>
-        </Alert>
+      <Alert variant="destructive">
+        <AlertTriangle className="h-4 w-4" />
+        <AlertTitle>Error</AlertTitle>
+        <AlertDescription>
+          An invalid user role was detected. Please contact support.
+        </AlertDescription>
+      </Alert>
     </div>
   );
 }
