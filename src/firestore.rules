@@ -4,30 +4,17 @@
  * @author Firebase Creator
  *
  * @description
- * This ruleset enforces a strict user-ownership security model. All application
- * data, such as car listings and valuations, is nested within the user's own
- * document tree. This design ensures that users can only access and manage their
- * own information, providing strong data privacy and isolation by default.
+ * This ruleset enforces a strict user-ownership security model, with a global
+ * override for administrators. A user with the 'Admin' role or the super-admin
+ * email has full read/write access to all data for management purposes. All
+ * other users are restricted to their own data tree.
  *
  * @philosophy
- * Core Philosophy: A user-centric, path-based ownership model. The authenticated
- * user's UID is the primary key for all authorization checks. If a user's UID
- * matches the `{userId}` parameter in the document path, they are granted access;
- * otherwise, access is denied. Admins are an exception and have wider read/write access.
- *
- * Data Structure: The data is organized hierarchically under a top-level `/users`
- * collection. Each user has a document at `/users/{userId}`, which acts as a
- * root for their private subcollections. Withdrawal requests are in a root collection
- * for admin visibility.
- *
- * Key Security Decisions:
- * - User Isolation: Users are strictly prohibited from viewing or listing other
- *   users' profiles or data, unless the requester is an admin.
- * - Path-Based Security: Authorization is determined primarily by the document
- *   path, which is fast, scalable, and easy to reason about.
- * - Admin Privileges: A user with the 'Admin' role or a hardcoded super-admin email
- *   has read access to all user data and write access to specific collections like 
- *   `withdrawalRequests` for management purposes.
+ * Core Philosophy: A two-tiered permission model.
+ * 1. Admin Override: A top-level wildcard rule grants complete access to admins.
+ * 2. User Isolation: A user-centric, path-based ownership model for non-admins.
+ *    If a non-admin's UID matches the `{userId}` in the path, they are granted
+ *    access; otherwise, access is denied.
  */
 rules_version = '2';
 service cloud.firestore {
@@ -45,24 +32,16 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    function isExistingOwner(userId) {
-      return isOwner(userId) && resource != null;
-    }
-
     function userProfileHasCorrectIdOnCreate(userId) {
       return request.resource.data.id == userId;
     }
-
+    
     function userIdIsImmutableOnUpdate() {
-      return request.resource.data.id == resource.data.id;
+        return request.resource.data.id == resource.data.id;
     }
 
     function hasCorrectOwnerDataOnCreate(userId) {
       return request.resource.data.userId == userId;
-    }
-
-    function ownerFieldIsImmutable() {
-      return request.resource.data.userId == resource.data.userId;
     }
     
     function isAdmin() {
@@ -74,49 +53,54 @@ service cloud.firestore {
       return isRoleAdmin || isSuperAdmin;
     }
 
+    // ------------------------------------------------------------------------
+    // Global Admin Rule - This is the key fix
+    // ------------------------------------------------------------------------
+    
+    // Admins have full read/write access to all data for management.
+    // This rule is checked first. If true, access is granted.
+    match /{document=**} {
+      allow read, write: if isAdmin();
+    }
+
 
     // ------------------------------------------------------------------------
-    // Collection Rules
+    // Non-Admin User Rules
     // ------------------------------------------------------------------------
 
     match /users/{userId} {
-      allow get: if isOwner(userId) || isAdmin();
-      allow list: if isAdmin();
+      // Non-admins can only get their own profile.
+      allow get: if isOwner(userId);
+      // New users can create their own profile.
       allow create: if isOwner(userId) && userProfileHasCorrectIdOnCreate(userId);
-      // Admins can update any user profile. Owners can update their own.
-      allow update: if (isOwner(userId) || isAdmin()) && userIdIsImmutableOnUpdate();
-      allow delete: if isOwner(userId) || isAdmin();
+      // Non-admins can only update their own profile.
+      allow update: if isOwner(userId) && userIdIsImmutableOnUpdate();
+      // Non-admins can only delete their own profile.
+      allow delete: if isOwner(userId);
 
         match /carValuations/{carValuationId} {
-            // Admins can read/list any valuation. Owners can only access their own.
-            allow read, list: if isOwner(userId) || isAdmin();
+            // A non-admin user can only access their own valuations.
+            allow get, list, delete: if isOwner(userId);
             allow create: if isOwner(userId) && hasCorrectOwnerDataOnCreate(userId);
-            allow delete: if isOwner(userId) || isAdmin();
             allow update: if false; // Valuations are immutable once created
         }
 
         match /wallet/{walletId} {
-            // Admins must be able to list wallet documents to delete them.
-            allow read, list: if isOwner(userId) || isAdmin();
-            allow update: if isOwner(userId) || isAdmin(); // Admin can update balance after withdrawal
-            allow create: if isOwner(userId) && hasCorrectOwnerDataOnCreate(userId);
-            allow delete: if isOwner(userId) || isAdmin();
+            // A non-admin user can only access their own wallet.
+            allow get, list, create, delete, update: if isOwner(userId);
         }
     }
     
     match /withdrawalRequests/{requestId} {
+        // A user can create their own request.
         allow create: if isOwner(request.resource.data.userId);
-        // User can read their own requests. Admin can read all.
-        allow read: if isOwner(resource.data.userId) || isAdmin();
-        // The list rule is CRITICAL. Admins can list all requests.
-        // Non-admin users can ONLY list documents where their UID is in the 'userId' field.
-        allow list: if isAdmin() || (
-                        isSignedIn() &&
-                        request.query.where.keys().hasAny(['userId']) &&
-                        request.query.where.userId == request.auth.uid
-                     );
-        // Only admins can approve/reject/delete requests
-        allow update, delete: if isAdmin();
+        // A user can get their own request.
+        allow get: if isOwner(resource.data.userId);
+        // A user can only list their own requests.
+        allow list: if isSignedIn() && request.query.where.userId == request.auth.uid;
+        
+        // Update/delete is handled by the global admin rule.
+        allow update, delete: if false; 
     }
   }
 }
