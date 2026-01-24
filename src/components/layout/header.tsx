@@ -66,7 +66,7 @@ function AuthSection() {
   }
 
   if (user) {
-    const isAdmin = userProfile?.role === 'Admin' || user.email === 'rajmycarvalue@gmail.com';
+    const isAdmin = userProfile?.role === 'Admin' || user?.email === 'rajmycarvalue@gmail.com';
     const displayName = userProfile?.displayName || user.email;
 
     return (
