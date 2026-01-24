@@ -304,12 +304,18 @@ function MechanicDashboard({ user, userProfile }: { user: any, userProfile: User
         return query(
             collection(firestore, 'withdrawalRequests'), 
             where('userId', '==', user.uid),
-            orderBy('requestedAt', 'desc'), 
+            // orderBy('requestedAt', 'desc'),  // Temporarily removed for security rule compatibility
             limit(10)
         );
     }, [firestore, user]);
-    const { data: withdrawals, isLoading: areWithdrawalsLoading } = useCollection<WithdrawalRequest>(withdrawalsQuery);
+    const { data: withdrawalsData, isLoading: areWithdrawalsLoading } = useCollection<WithdrawalRequest>(withdrawalsQuery);
     
+    // Client-side sorting
+    const withdrawals = useMemo(() => {
+        if (!withdrawalsData) return null;
+        return [...withdrawalsData].sort((a, b) => b.requestedAt.toMillis() - a.requestedAt.toMillis());
+    }, [withdrawalsData]);
+
     // -- Hardcoded Data & Business Logic --
     // TODO: Fetch this from a backend configuration in a real app
     const inspections = { completed: 2, total: 5 };
