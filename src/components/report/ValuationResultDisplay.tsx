@@ -82,13 +82,15 @@ export const ValuationResultDisplay = ({ result, onNewValuation }: { result: { v
             scale: 2, // Higher scale for better quality
             useCORS: true,
             backgroundColor: "#ffffff",
+            width: reportElement.scrollWidth,
+            height: reportElement.scrollHeight,
         });
 
         const imgData = canvas.toDataURL('image/png');
         const pdf = new jsPDF({
             orientation: 'p',
             unit: 'px',
-            format: [canvas.width, canvas.height]
+            format: [canvas.width, canvas.height],
         });
 
         pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
@@ -187,7 +189,7 @@ export const ValuationResultDisplay = ({ result, onNewValuation }: { result: { v
                 <p className="text-5xl font-bold tracking-tight my-2 text-slate-900">{inr(valuation.bestPrice)}</p>
                 <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary border border-primary/20">
                     <ShieldCheck className="h-4 w-4"/>
-                    Valuation Verified by mycarvalue.in
+                    AI-Verified Price Estimate
                 </div>
             </section>
             
