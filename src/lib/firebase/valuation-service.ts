@@ -51,10 +51,11 @@ export async function saveValuation(
   const valuationCollectionRef = collection(firestore, `users/${userId}/carValuations`);
   const userDocRef = doc(firestore, `users/${userId}`);
 
-  // Firestore doesn't allow 'undefined' values. We need to clean the object.
+  // Firestore doesn't allow 'undefined', null, or empty string values. We clean the object.
   const cleanedData: { [key: string]: any } = { ...valuationData };
   Object.keys(cleanedData).forEach(key => {
-    if (cleanedData[key] === undefined) {
+    const value = cleanedData[key];
+    if (value === undefined || value === null || value === '') {
       delete cleanedData[key];
     }
   });
@@ -65,12 +66,21 @@ export async function saveValuation(
     createdAt: serverTimestamp(),
   };
   
-  const userProfileUpdate = {
+  const userProfileUpdate: { [key: string]: any } = {
       displayName: valuationData.displayName || user.displayName,
       whatsappNumber: valuationData.whatsappNumber,
       vehicleNumber: valuationData.vehicleNumber,
       lastUpdatedAt: serverTimestamp(),
   };
+
+  // Clean the user profile update object as well
+  Object.keys(userProfileUpdate).forEach(key => {
+    const value = userProfileUpdate[key];
+    if (value === undefined || value === null || value === '') {
+        delete userProfileUpdate[key];
+    }
+  });
+
 
   // Create a batch to perform multiple writes as a single atomic unit.
   const batch = writeBatch(firestore);
