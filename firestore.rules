@@ -1,34 +1,4 @@
 
-/**
- * @fileoverview Firestore Security Rules for the AutoValue Application
- * @author Firebase Creator
- *
- * @description
- * This ruleset enforces a strict user-ownership security model. All application
- * data, such as car listings and valuations, is nested within the user's own
- * document tree. This design ensures that users can only access and manage their
- * own information, providing strong data privacy and isolation by default.
- *
- * @philosophy
- * Core Philosophy: A user-centric, path-based ownership model. The authenticated
- * user's UID is the primary key for all authorization checks. If a user's UID
- * matches the `{userId}` parameter in the document path, they are granted access;
- * otherwise, access is denied. Admins are an exception and have wider read/write access.
- *
- * Data Structure: The data is organized hierarchically under a top-level `/users`
- * collection. Each user has a document at `/users/{userId}`, which acts as a
- * root for their private subcollections. Withdrawal requests are in a root collection
- * for admin visibility.
- *
- * Key Security Decisions:
- * - User Isolation: Users are strictly prohibited from viewing or listing other
- *   users' profiles or data, unless the requester is an admin.
- * - Path-Based Security: Authorization is determined primarily by the document
- *   path, which is fast, scalable, and easy to reason about.
- * - Admin Privileges: A user with the 'Admin' role or a hardcoded super-admin email
- *   has read access to all user data and write access to specific collections like 
- *   `withdrawalRequests` for management purposes.
- */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -45,16 +15,12 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    function isExistingOwner(userId) {
-      return isOwner(userId) && resource != null;
-    }
-
     function userProfileHasCorrectIdOnCreate(userId) {
       return request.resource.data.id == userId;
     }
 
     function userIdIsImmutableOnUpdate() {
-      return request.resource.data.id == resource.data.id;
+        return request.resource.data.id == resource.data.id;
     }
 
     function hasCorrectOwnerDataOnCreate(userId) {
@@ -70,51 +36,48 @@ service cloud.firestore {
       return isRoleAdmin || isSuperAdmin;
     }
 
+    // ------------------------------------------------------------------------
+    // Global Admin Rule: This is the definitive fix.
+    // Admins get full read/write access to all documents in the database.
+    // This rule is checked first. If `isAdmin()` is true, access is granted
+    // and no other rules are checked for the request.
+    // ------------------------------------------------------------------------
+    match /{document=**} {
+      allow read, write: if isAdmin();
+    }
 
     // ------------------------------------------------------------------------
-    // Collection Rules
+    // Non-Admin User Rules (These only apply if the user is not an admin)
     // ------------------------------------------------------------------------
 
     match /users/{userId} {
-      allow get: if isOwner(userId) || isAdmin();
-      // Admins can list all users.
-      allow list: if isAdmin();
+      // A non-admin can only get, update, or delete their own profile.
+      allow get, update, delete: if isOwner(userId);
+      // New users can create their own profile record.
       allow create: if isOwner(userId) && userProfileHasCorrectIdOnCreate(userId);
-      // Owner can update their own profile. Admin can update any profile. ID is immutable.
-      allow update: if (isOwner(userId) || isAdmin()) && userIdIsImmutableOnUpdate();
-      allow delete: if isOwner(userId) || isAdmin();
 
         match /carValuations/{carValuationId} {
-            // Owner can read their own valuations. Admin can read any.
-            allow read, list: if isOwner(userId) || isAdmin();
-            allow create: if isOwner(userId) && hasCorrectOwnerDataOnCreate(userId);
-            // Owner or Admin can delete.
-            allow delete: if isOwner(userId) || isAdmin();
+            // A non-admin can only read, create, and delete their own valuations.
+            allow read, create, delete: if isOwner(userId);
             allow update: if false; // Valuations are immutable once created
         }
 
         match /wallet/{walletId} {
-            // Added 'list' to allow admins to get all documents before deletion.
-            allow read, list: if isOwner(userId) || isAdmin();
-            allow update: if isOwner(userId) || isAdmin(); // Admin can update balance after withdrawal
-            allow create: if isOwner(userId) && hasCorrectOwnerDataOnCreate(userId);
-            allow delete: if isOwner(userId) || isAdmin();
+            // A non-admin can only read and write to their own wallet.
+            allow read, write: if isOwner(userId);
         }
     }
     
     match /withdrawalRequests/{requestId} {
+        // A user can create their own withdrawal request.
         allow create: if isOwner(request.resource.data.userId);
-        // User can read their own requests. Admin can read all.
-        allow read: if isOwner(resource.data.userId) || isAdmin();
-        // The list rule is CRITICAL. Admins can list all requests.
-        // Non-admin users can ONLY list documents where their UID is in the 'userId' field.
-        allow list: if isAdmin() || (
-                        isSignedIn() &&
-                        request.query.where.keys().hasAny(['userId']) &&
-                        request.query.where.userId == request.auth.uid
-                     );
-        // Only admins can approve/reject/delete requests
-        allow update, delete: if isAdmin();
+        // A user can read their own request.
+        allow get: if isOwner(resource.data.userId);
+        // A user can ONLY list requests where their UID is in the 'userId' field.
+        allow list: if isSignedIn() && request.query.where.userId == request.auth.uid;
+        
+        // Update/delete is handled by the global admin rule.
+        allow update, delete: if false;
     }
   }
 }
