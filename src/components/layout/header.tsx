@@ -53,6 +53,7 @@ function AuthSection({
     try {
       if (auth) {
         await firebaseSignOut(auth);
+        window.location.href = '/';
       }
     } catch (error) {
       console.error("Sign-out error", error);
@@ -68,7 +69,7 @@ function AuthSection({
     );
   }
 
-  if (user && userProfile) {
+  if (user) {
     const displayName = userProfile?.displayName || user.email;
 
     return (
@@ -150,11 +151,23 @@ export default function Header() {
   }, [firestore, user]);
   const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileRef);
 
-  // Derive admin status once
-  const isAdmin = useMemo(() => 
-    !isUserLoading && !isProfileLoading && user && (userProfile?.role === 'Admin' || user?.email === 'rajmycarvalue@gmail.com'),
-    [user, isUserLoading, userProfile, isProfileLoading]
-  );
+  // Derive admin status with robust logic that doesn't get blocked by profile loading
+  const isAdmin = useMemo(() => {
+    // Cannot be admin if auth is loading or no user
+    if (isUserLoading || !user) {
+        return false;
+    }
+    // Hardcoded email check is immediate and doesn't need profile
+    if (user.email === 'rajmycarvalue@gmail.com') {
+        return true;
+    }
+    // For other users, we must wait for profile to check role
+    if (isProfileLoading) {
+        return false;
+    }
+    // Finally, check role from loaded profile
+    return userProfile?.role === 'Admin';
+  }, [user, isUserLoading, userProfile, isProfileLoading]);
 
 
   const renderNavLinks = (isMobile = false) =>

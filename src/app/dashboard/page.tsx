@@ -677,16 +677,19 @@ function DashboardPageComponent() {
       return <DashboardSkeleton />;
   }
 
+  // Admin users (by role or hardcoded email) are redirected to the admin dashboard.
+  // This check is robust because `userProfile?.role` safely handles a null profile.
+  if (userProfile?.role === 'Admin' || user.email === 'rajmycarvalue@gmail.com') {
+      router.push('/admin');
+      return <DashboardSkeleton />;
+  }
+  
+  // If we reach here, the user is not an admin.
+  // Now we can safely assume they need a profile to see their specific dashboard.
   if (!userProfile) {
       // This can happen briefly if the user profile is still loading
       // or if the profile document doesn't exist yet for a new user.
       // Showing the skeleton is a safe default.
-      return <DashboardSkeleton />;
-  }
-  
-  // Admin users are redirected to the admin dashboard
-  if (userProfile.role === 'Admin' || user.email === 'rajmycarvalue@gmail.com') {
-      router.push('/admin');
       return <DashboardSkeleton />;
   }
 

@@ -381,27 +381,39 @@ function AdminPageComponent() {
     }
   }, [user, isUserLoading, router]);
 
-  if (isUserLoading || !user || isProfileLoading) {
+  // Wait for auth to resolve first
+  if (isUserLoading || !user) {
     return <AdminPageLoader />;
   }
-
-  const isAdmin = userProfile?.role === 'Admin' || user?.email === 'rajmycarvalue@gmail.com';
-
-  if (!isAdmin) {
-    return (
-      <div className="container mx-auto flex items-center justify-center py-20">
-        <Alert variant="destructive" className="max-w-lg">
-            <AlertTriangle className="h-4 w-4" />
-            <AlertTitle>Access Denied</AlertTitle>
-            <AlertDescription>
-                You do not have permission to view this page. This area is for administrators only.
-            </AlertDescription>
-        </Alert>
-      </div>
-    );
+  
+  // Determine admin status with robust logic
+  const isHardcodedAdmin = user.email === 'rajmycarvalue@gmail.com';
+  // We can only check role-based admin after profile is loaded
+  const isRoleAdmin = !isProfileLoading && userProfile?.role === 'Admin';
+  
+  // If it's the hardcoded admin, we don't need to wait for the profile.
+  // If it's not the hardcoded admin, we MUST wait for the profile to load.
+  if (!isHardcodedAdmin && isProfileLoading) {
+      return <AdminPageLoader />;
   }
 
-  return <AdminDashboard />;
+  // Now we can make the final decision to grant access
+  if (isHardcodedAdmin || isRoleAdmin) {
+    return <AdminDashboard />;
+  }
+
+  // If we reach here, the user is not an admin.
+  return (
+    <div className="container mx-auto flex items-center justify-center py-20">
+      <Alert variant="destructive" className="max-w-lg">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Access Denied</AlertTitle>
+          <AlertDescription>
+              You do not have permission to view this page. This area is for administrators only.
+          </AlertDescription>
+      </Alert>
+    </div>
+  );
 }
 
 export default function AdminPage() {
