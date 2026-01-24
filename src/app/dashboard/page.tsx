@@ -309,19 +309,33 @@ function MechanicDashboard({ user, userProfile }: { user: any, userProfile: User
     }, [firestore, user]);
     const { data: withdrawalsData, isLoading: areWithdrawalsLoading } = useCollection<WithdrawalRequest>(withdrawalsQuery);
     
-    // Client-side sorting
+    // Fetch valuations to count today's completions
+    const valuationsQuery = useMemoFirebase(() => {
+        if (!firestore || !user) return null;
+        return query(collection(firestore, 'users', user.uid, 'carValuations'), orderBy('createdAt', 'desc'));
+    }, [firestore, user]);
+    const { data: valuations, isLoading: areValuationsLoading } = useCollection<ValuationDoc>(valuationsQuery);
+
+    
+    // Client-side sorting for withdrawals
     const withdrawals = useMemo(() => {
         if (!withdrawalsData) return null;
         return [...withdrawalsData].sort((a, b) => b.requestedAt.toMillis() - a.requestedAt.toMillis());
     }, [withdrawalsData]);
 
-    // -- Hardcoded Data & Business Logic --
-    // TODO: Fetch this from a backend configuration in a real app
-    const inspections = { completed: 2, total: 5 };
+    // -- Dynamic & Business Logic --
+    const completedToday = useMemo(() => {
+        if (!valuations) return 0;
+        const today = new Date();
+        today.setHours(0, 0, 0, 0); // Start of today
+        return valuations.filter(v => v.createdAt && v.createdAt.toDate() >= today).length;
+    }, [valuations]);
+
+    const dailyLimit = 5; 
     const earningsPerReport = 15;
     const minWithdrawalAmount = 100;
     
-    const remainingInspections = inspections.total - inspections.completed;
+    const remainingInspections = dailyLimit - completedToday;
     const isLimitReached = remainingInspections <= 0;
 
     const lastPendingRequest = useMemo(() => withdrawals?.find(w => w.status === 'requested'), [withdrawals]);
@@ -338,10 +352,10 @@ function MechanicDashboard({ user, userProfile }: { user: any, userProfile: User
         ? `Requested on ${formatDate(lastPendingRequest.requestedAt)}` 
         : (wallet?.lastWithdrawalDate ? `Paid on ${formatDate(wallet.lastWithdrawalDate)}` : 'No recent withdrawals');
     
-    const dailyEarnings = inspections.completed * earningsPerReport;
+    const dailyEarnings = completedToday * earningsPerReport;
     const weeklyEarnings = dailyEarnings * 7; // This is a placeholder calculation
 
-    const isLoading = isWalletLoading || areWithdrawalsLoading;
+    const isLoading = isWalletLoading || areWithdrawalsLoading || areValuationsLoading;
     if(isLoading) return <DashboardSkeleton />;
 
     return (
@@ -361,7 +375,7 @@ function MechanicDashboard({ user, userProfile }: { user: any, userProfile: User
                                 <Check className="h-4 w-4 text-muted-foreground" />
                             </CardHeader>
                             <CardContent>
-                                <div className="text-2xl font-bold">{inspections.completed}</div>
+                                <div className="text-2xl font-bold">{completedToday}</div>
                             </CardContent>
                         </Card>
                         <Card>
@@ -398,13 +412,13 @@ function MechanicDashboard({ user, userProfile }: { user: any, userProfile: User
                         <CardHeader>
                             <CardTitle>Daily Inspection Limit</CardTitle>
                             <CardDescription>
-                                You can complete up to {inspections.total} inspections per day.
+                                You can complete up to {dailyLimit} inspections per day.
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <Progress value={(inspections.completed / inspections.total) * 100} className="mb-2" />
+                            <Progress value={(completedToday / dailyLimit) * 100} className="mb-2" />
                             <p className="text-sm text-muted-foreground">
-                                {inspections.completed} of {inspections.total} inspections completed.
+                                {completedToday} of {dailyLimit} inspections completed.
                             </p>
                             {isLimitReached ? (
                                 <Button className="mt-4 w-full md:w-auto" disabled>

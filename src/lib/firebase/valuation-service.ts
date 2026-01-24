@@ -10,6 +10,8 @@ import {
   writeBatch,
   doc,
   deleteDoc,
+  getDoc,
+  increment,
 } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
@@ -32,7 +34,7 @@ export interface ValuationData extends CarValuationFormInput {
 
 /**
  * Saves a completed car valuation and updates the user's profile in a single batch.
- * This function is non-blocking and handles errors via the global error emitter.
+ * If the user is a mechanic, it also updates their wallet balance.
  *
  * @param firestore - The Firestore instance.
  * @param user - The authenticated Firebase User object.
@@ -48,8 +50,9 @@ export async function saveValuation(
   }
   
   const userId = user.uid;
-  const valuationCollectionRef = collection(firestore, `users/${userId}/carValuations`);
   const userDocRef = doc(firestore, `users/${userId}`);
+  const valuationCollectionRef = collection(firestore, `users/${userId}/carValuations`);
+  const walletRef = doc(firestore, `users/${userId}/wallet/main`);
 
   // Firestore doesn't allow 'undefined', null, or empty string values. We clean the object.
   const cleanedData: { [key: string]: any } = { ...valuationData };
@@ -81,17 +84,30 @@ export async function saveValuation(
     }
   });
 
-
   // Create a batch to perform multiple writes as a single atomic unit.
   const batch = writeBatch(firestore);
 
   // 1. Add the new valuation document to the carValuations subcollection
-  const newValuationDocRef = doc(valuationCollectionRef); // Create a reference for a new document
+  const newValuationDocRef = doc(valuationCollectionRef); 
   batch.set(newValuationDocRef, valuationRecord);
   
   // 2. Update the user's main profile document with contact details
   batch.set(userDocRef, userProfileUpdate, { merge: true });
 
+  // 3. Check user's role. If they are a Mechanic, credit their wallet.
+  try {
+    const userDoc = await getDoc(userDocRef);
+    if (userDoc.exists() && userDoc.data().role === 'Mechanic') {
+        const earningsPerReport = 15; // This value should match the one displayed in the dashboard
+        batch.update(walletRef, {
+            balance: increment(earningsPerReport),
+            totalEarned: increment(earningsPerReport),
+            updatedAt: serverTimestamp(),
+        });
+    }
+  } catch (error) {
+     console.warn("Could not fetch user profile to check role for wallet update. Wallet was not credited.", error);
+  }
 
   try {
     await batch.commit();
