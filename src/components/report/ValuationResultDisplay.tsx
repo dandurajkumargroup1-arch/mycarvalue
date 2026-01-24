@@ -78,31 +78,20 @@ export const ValuationResultDisplay = ({ result, onNewValuation }: { result: { v
     reportElement.classList.add("pdf-render-mode");
 
     try {
-        // Use html2canvas to capture the entire element
         const canvas = await html2canvas(reportElement, {
             scale: 2, // Higher scale for better quality
             useCORS: true,
             backgroundColor: "#ffffff",
-            // Ensure it captures the full scroll height, not just the visible part
-            windowWidth: reportElement.scrollWidth,
-            windowHeight: reportElement.scrollHeight,
         });
 
         const imgData = canvas.toDataURL('image/png');
-        const canvasWidth = canvas.width;
-        const canvasHeight = canvas.height;
-
-        // Create a PDF with a single custom page size that matches the canvas dimensions
-        // We use 'px' as units to have a 1:1 mapping with the canvas dimensions
         const pdf = new jsPDF({
             orientation: 'p',
             unit: 'px',
-            format: [canvasWidth, canvasHeight]
+            format: [canvas.width, canvas.height]
         });
 
-        // Add the captured image to the PDF, covering the entire custom page
-        pdf.addImage(imgData, 'PNG', 0, 0, canvasWidth, canvasHeight);
-        
+        pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
         pdf.save(`mycarvalue-report-${clientData?.reportId || 'report'}.pdf`);
 
     } catch (err) {
@@ -207,18 +196,18 @@ export const ValuationResultDisplay = ({ result, onNewValuation }: { result: { v
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
                     <Card className="p-4 bg-slate-50">
                         <TrendingUp className="mx-auto h-7 w-7 text-slate-600 mb-2"/>
-                        <CardTitle className="text-lg">Market Value</CardTitle>
-                        <CardDescription className="text-xl font-bold text-slate-800">{inr(valuation.marketValueMin)} - {inr(valuation.marketValueMax)}</CardDescription>
+                        <CardTitle className="text-sm font-medium text-slate-600">Market Range</CardTitle>
+                        <CardDescription className="text-2xl font-bold text-slate-800 mt-1">{inr(valuation.marketValueMin)} - {inr(valuation.marketValueMax)}</CardDescription>
                     </Card>
                     <Card className="p-4 bg-slate-50 border-primary/50">
                         <Target className="mx-auto h-7 w-7 text-primary mb-2"/>
-                        <CardTitle className="text-lg">Expected Final Deal</CardTitle>
-                        <CardDescription className="text-xl font-bold text-primary">{inr(valuation.expectedFinalDeal)}</CardDescription>
+                        <CardTitle className="text-sm font-medium text-primary">Fair Deal Price</CardTitle>
+                        <CardDescription className="text-2xl font-bold text-primary mt-1">{inr(valuation.expectedFinalDeal)}</CardDescription>
                     </Card>
                     <Card className="p-4 bg-slate-50">
                         <Tag className="mx-auto h-7 w-7 text-slate-600 mb-2"/>
-                        <CardTitle className="text-lg">Ideal Listing Price</CardTitle>
-                        <CardDescription className="text-xl font-bold text-slate-800">{inr(valuation.idealListingPrice)}</CardDescription>
+                        <CardTitle className="text-sm font-medium text-slate-600">Listing Price (For Ads)</CardTitle>
+                        <CardDescription className="text-2xl font-bold text-slate-800 mt-1">{inr(valuation.idealListingPrice)}</CardDescription>
                     </Card>
                 </div>
                  <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-center">
