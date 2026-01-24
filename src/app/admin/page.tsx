@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Suspense, useEffect, useState, useMemo } from 'react';
@@ -185,7 +186,9 @@ function AdminDashboard() {
   // Fetch all users to create a name map
   const usersQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    let q = query(collection(firestore, 'users'), orderBy('createdAt', 'desc'));
+    // Removed orderBy to prevent query failure if the composite index is missing.
+    // Sorting will be handled on the client.
+    let q = query(collection(firestore, 'users'));
     return q;
   }, [firestore]);
 
@@ -194,7 +197,14 @@ function AdminDashboard() {
   const filteredUsers = useMemo(() => {
     if (!allUsersData) return [];
     
-    let filteredData = allUsersData;
+    // Sort all users by creation date descending (newest first)
+    const sortedData = [...allUsersData].sort((a, b) => {
+        const timeA = a.createdAt?.toMillis() ?? 0;
+        const timeB = b.createdAt?.toMillis() ?? 0;
+        return timeB - timeA;
+    });
+
+    let filteredData = sortedData;
 
     // Filter by role first
     if (roleFilter !== 'All') {
@@ -249,7 +259,7 @@ function AdminDashboard() {
       });
     }
 
-    return history.sort((a, b) => b.processedAt!.toMillis() - a.processedAt!.toMillis());
+    return history.sort((a, b) => (b.processedAt?.toMillis() ?? 0) - (a.processedAt?.toMillis() ?? 0));
   }, [allRequestsData, withdrawalDateRange]);
 
 
@@ -297,9 +307,11 @@ function AdminDashboard() {
   const isLoading = isUsersLoading || isRequestsLoading;
 
   const recentUsers = useMemo(() => {
-    return allUsersData
-        ?.filter(u => u.role !== 'Admin') // Show all roles except Admin
-        .slice(0, 5) || [];
+    if (!allUsersData) return [];
+    return [...allUsersData]
+        .sort((a, b) => (b.createdAt?.toMillis() ?? 0) - (a.createdAt?.toMillis() ?? 0))
+        .filter(u => u.role !== 'Admin') // Show all roles except Admin
+        .slice(0, 5);
   }, [allUsersData]);
 
   return (
