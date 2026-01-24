@@ -673,16 +673,19 @@ function DashboardPageComponent() {
 
   const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileRef);
 
-  if (isUserLoading || isProfileLoading) {
+  if (isUserLoading || !user || isProfileLoading) {
       return <DashboardSkeleton />;
   }
 
-  if (!user || !userProfile) {
-      return null; // Redirect is handled by useEffect
+  if (!userProfile) {
+      // This can happen briefly if the user profile is still loading
+      // or if the profile document doesn't exist yet for a new user.
+      // Showing the skeleton is a safe default.
+      return <DashboardSkeleton />;
   }
   
   // Admin users are redirected to the admin dashboard
-  if (userProfile.role === 'Admin') {
+  if (userProfile.role === 'Admin' || user.email === 'rajmycarvalue@gmail.com') {
       router.push('/admin');
       return <DashboardSkeleton />;
   }
@@ -715,5 +718,3 @@ export default function DashboardPage() {
         </Suspense>
     );
 }
-
-    
