@@ -81,16 +81,17 @@ service cloud.firestore {
 
     match /users/{userId} {
       allow get: if isOwner(userId) || isAdmin();
-      // Admins (both role-based and super-admin) can list all users.
       allow list: if isAdmin();
       allow create: if isOwner(userId) && userProfileHasCorrectIdOnCreate(userId);
-      allow update: if isOwner(userId) && userIdIsImmutableOnUpdate();
+      // Admins can update any user profile. Owners can update their own.
+      allow update: if (isOwner(userId) || isAdmin()) && userIdIsImmutableOnUpdate();
       allow delete: if isOwner(userId) || isAdmin();
 
         match /carValuations/{carValuationId} {
-            allow read, list: if isOwner(userId);
+            // Admins can read/list any valuation. Owners can only access their own.
+            allow read, list: if isOwner(userId) || isAdmin();
             allow create: if isOwner(userId) && hasCorrectOwnerDataOnCreate(userId);
-            allow delete: if isOwner(userId) || isAdmin(); // FIX: Allow admin to delete
+            allow delete: if isOwner(userId) || isAdmin();
             allow update: if false; // Valuations are immutable once created
         }
 
@@ -98,7 +99,7 @@ service cloud.firestore {
             allow read: if isOwner(userId) || isAdmin();
             allow update: if isOwner(userId) || isAdmin(); // Admin can update balance after withdrawal
             allow create: if isOwner(userId) && hasCorrectOwnerDataOnCreate(userId);
-            allow delete: if isAdmin(); // FIX: Allow admin to delete
+            allow delete: if isAdmin();
         }
     }
     
@@ -113,8 +114,8 @@ service cloud.firestore {
                         request.query.where.keys().hasAny(['userId']) &&
                         request.query.where.userId == request.auth.uid
                      );
-        allow update: if isAdmin(); // Only admins can approve/reject requests
-        allow delete: if isAdmin(); // FIX: Allow admin to delete
+        // Only admins can approve/reject/delete requests
+        allow update, delete: if isAdmin();
     }
   }
 }
