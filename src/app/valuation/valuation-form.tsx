@@ -12,7 +12,7 @@ import { doc } from 'firebase/firestore';
 import type { UserProfile } from "@/lib/firebase/user-profile-service";
 import { z } from 'zod';
 
-import { CarValuationSchema, type CarValuationFormInput } from '@/lib/schemas';
+import { CarValuationObjectSchema, type CarValuationFormInput } from '@/lib/schemas';
 import { getValuationAction } from '@/lib/actions';
 import { carMakesAndModelsAndVariants, indianStates } from "@/lib/variants";
 import { useUser, useFirestore, useDoc, useMemoFirebase } from "@/firebase";
@@ -195,15 +195,26 @@ export function ValuationForm() {
   const { data: userProfile } = useDoc<UserProfile>(userProfileRef);
 
   const validationSchema = useMemo(() => {
+    let baseSchema = CarValuationObjectSchema;
+
     if (userProfile?.role === 'Mechanic') {
-      return CarValuationSchema.extend({
-        vehicleNumber: z.string()
-            .min(1, "Vehicle number is required for mechanics.")
-            .transform(val => val.toUpperCase().replace(/[\s-]/g, ''))
-            .refine(val => /^[A-Z]{2}[0-9]{1,2}[A-Z]{0,3}[0-9]{1,4}$/.test(val), "Please enter a valid vehicle number format (e.g., AP09BU1234).")
-      });
+        baseSchema = baseSchema.extend({
+            vehicleNumber: z.string()
+                .min(1, "Vehicle number is required for mechanics.")
+                .transform(val => val.toUpperCase().replace(/[\s-]/g, ''))
+                .refine(val => /^[A-Z]{2}[0-9]{1,2}[A-Z]{0,3}[0-9]{1,4}$/.test(val), "Please enter a valid vehicle number format (e.g., AP09BU1234).")
+        });
     }
-    return CarValuationSchema;
+
+    return baseSchema.superRefine((data, ctx) => {
+        if (data.variant === 'Other' && (!data.otherVariant || data.otherVariant.trim() === '')) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: "Variant name is required when 'Other' is selected",
+                path: ['otherVariant'],
+            });
+        }
+    });
   }, [userProfile]);
 
   const form = useForm<CarValuationFormInput>({

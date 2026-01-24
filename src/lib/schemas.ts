@@ -160,7 +160,7 @@ export type CarValuationDataForAI = z.infer<typeof CarValuationDataForAISchema>;
 
 
 // Zod schema for car valuation input, matching the form structure
-export const CarValuationSchema = ContactDetailsSchema
+export const CarValuationObjectSchema = ContactDetailsSchema
     .merge(BasicInfoSchema)
     .merge(EngineMechanicalSchema)
     .merge(FluidsSchema)
@@ -171,15 +171,16 @@ export const CarValuationSchema = ContactDetailsSchema
     .merge(SafetySchema)
     .merge(DocumentsSchema)
     .merge(UsageSchema)
-    .merge(AdditionalSchema)
-    .superRefine((data, ctx) => {
-        if (data.variant === 'Other' && (!data.otherVariant || data.otherVariant.trim() === '')) {
-            ctx.addIssue({
-                code: z.ZodIssueCode.custom,
-                message: "Variant name is required when 'Other' is selected",
-                path: ['otherVariant'],
-            });
-        }
-    });
+    .merge(AdditionalSchema);
+
+export const CarValuationSchema = CarValuationObjectSchema.superRefine((data, ctx) => {
+    if (data.variant === 'Other' && (!data.otherVariant || data.otherVariant.trim() === '')) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Variant name is required when 'Other' is selected",
+            path: ['otherVariant'],
+        });
+    }
+});
 
 export type CarValuationFormInput = z.infer<typeof CarValuationSchema>;
