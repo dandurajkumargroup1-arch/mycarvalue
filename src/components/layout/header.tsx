@@ -1,11 +1,10 @@
-
 "use client";
 
 import Link from "next/link";
 import { Car, Menu, Sparkles, LogIn, LogOut, Calculator, Info, HelpCircle, Phone, UserPlus, LayoutDashboard, Shield } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { signOut as firebaseSignOut } from "firebase/auth";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { doc } from 'firebase/firestore';
 import type { User } from 'firebase/auth';
 
@@ -141,6 +140,11 @@ function AuthSection({
 export default function Header() {
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
   
   // Centralize user and profile data fetching here
   const { user, isUserLoading } = useUser();
@@ -211,65 +215,69 @@ export default function Header() {
             isAdmin={isAdmin}
           />
           <div className="flex items-center justify-end md:hidden">
-            <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="icon">
-                  <Menu className="h-6 w-6" />
-                  <span className="sr-only">Toggle Menu</span>
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="right">
-                <SheetHeader>
-                  <SheetTitle className="sr-only">Mobile Menu</SheetTitle>
-                </SheetHeader>
-                <div className="p-4">
-                  <Link href="/" onClick={() => setIsMobileMenuOpen(false)} className="mb-8 flex items-center space-x-2">
-                    <Car className="h-6 w-6 text-primary" />
-                    <span className="font-bold">mycarvalue<span className="text-primary">.in</span></span>
-                  </Link>
-                  <nav className="flex flex-col space-y-2">
-                     {user && (
-                        isAdmin ? (
-                          <Button
-                            asChild
-                            variant="ghost"
-                            onClick={() => setIsMobileMenuOpen(false)}
-                            className={cn("justify-start gap-2 w-full text-lg py-6", pathname.startsWith('/admin') && "bg-primary/10 font-semibold text-primary")}
-                          >
-                            <Link href="/admin"><Shield className="h-4 w-4" />Admin Panel</Link>
-                          </Button>
-                        ) : (
-                           <Button
-                            asChild
-                            variant="ghost"
-                            onClick={() => setIsMobileMenuOpen(false)}
-                            className={cn("justify-start gap-2 w-full text-lg py-6", pathname.startsWith('/dashboard') && "bg-primary/10 font-semibold text-primary")}
-                          >
-                            <Link href="/dashboard"><LayoutDashboard className="h-4 w-4" />Dashboard</Link>
-                          </Button>
-                        )
-                     )}
-                    {!user && (
-                        <div className="flex flex-col space-y-2">
-                            <Button asChild variant="ghost" size="sm" className="w-full text-lg py-6 justify-start">
-                                <Link href="/login" onClick={() => setIsMobileMenuOpen(false)}>
-                                    <LogIn className="mr-2 h-4 w-4" />
-                                    Login
-                                </Link>
+            {isClient ? (
+              <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+                <SheetTrigger asChild>
+                  <Button variant="ghost" size="icon">
+                    <Menu className="h-6 w-6" />
+                    <span className="sr-only">Toggle Menu</span>
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="right">
+                  <SheetHeader>
+                    <SheetTitle className="sr-only">Mobile Menu</SheetTitle>
+                  </SheetHeader>
+                  <div className="p-4">
+                    <Link href="/" onClick={() => setIsMobileMenuOpen(false)} className="mb-8 flex items-center space-x-2">
+                      <Car className="h-6 w-6 text-primary" />
+                      <span className="font-bold">mycarvalue<span className="text-primary">.in</span></span>
+                    </Link>
+                    <nav className="flex flex-col space-y-2">
+                       {user && (
+                          isAdmin ? (
+                            <Button
+                              asChild
+                              variant="ghost"
+                              onClick={() => setIsMobileMenuOpen(false)}
+                              className={cn("justify-start gap-2 w-full text-lg py-6", pathname.startsWith('/admin') && "bg-primary/10 font-semibold text-primary")}
+                            >
+                              <Link href="/admin"><Shield className="h-4 w-4" />Admin Panel</Link>
                             </Button>
-                            <Button asChild size="sm" className="w-full text-lg py-6 justify-start">
-                                <Link href="/register" onClick={() => setIsMobileMenuOpen(false)}>
-                                    <UserPlus className="mr-2 h-4 w-4" />
-                                    Register
-                                </Link>
+                          ) : (
+                             <Button
+                              asChild
+                              variant="ghost"
+                              onClick={() => setIsMobileMenuOpen(false)}
+                              className={cn("justify-start gap-2 w-full text-lg py-6", pathname.startsWith('/dashboard') && "bg-primary/10 font-semibold text-primary")}
+                            >
+                              <Link href="/dashboard"><LayoutDashboard className="h-4 w-4" />Dashboard</Link>
                             </Button>
-                        </div>
-                     )}
-                    {renderNavLinks(true)}
-                  </nav>
-                </div>
-              </SheetContent>
-            </Sheet>
+                          )
+                       )}
+                      {!user && (
+                          <div className="flex flex-col space-y-2">
+                              <Button asChild variant="ghost" size="sm" className="w-full text-lg py-6 justify-start">
+                                  <Link href="/login" onClick={() => setIsMobileMenuOpen(false)}>
+                                      <LogIn className="mr-2 h-4 w-4" />
+                                      Login
+                                  </Link>
+                              </Button>
+                              <Button asChild size="sm" className="w-full text-lg py-6 justify-start">
+                                  <Link href="/register" onClick={() => setIsMobileMenuOpen(false)}>
+                                      <UserPlus className="mr-2 h-4 w-4" />
+                                      Register
+                                  </Link>
+                              </Button>
+                          </div>
+                       )}
+                      {renderNavLinks(true)}
+                    </nav>
+                  </div>
+                </SheetContent>
+              </Sheet>
+            ) : (
+               <Skeleton className="h-10 w-10" />
+            )}
           </div>
         </div>
       </div>
