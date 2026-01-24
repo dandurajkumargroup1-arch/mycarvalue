@@ -29,6 +29,7 @@ import { AlertTriangle, CheckCircle, Shield, Users, Wallet, XCircle, Calendar as
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 
 interface WithdrawalRequest {
@@ -179,6 +180,7 @@ function AdminDashboard() {
   const { toast } = useToast();
   const [usersDateRange, setUsersDateRange] = useState<DateRange | undefined>();
   const [withdrawalDateRange, setWithdrawalDateRange] = useState<DateRange | undefined>();
+  const [roleFilter, setRoleFilter] = useState<string>('All');
   
   // Fetch all users to create a name map
   const usersQuery = useMemoFirebase(() => {
@@ -191,18 +193,29 @@ function AdminDashboard() {
 
   const filteredUsers = useMemo(() => {
     if (!allUsersData) return [];
-    if (!usersDateRange?.from) return allUsersData;
+    
+    let filteredData = allUsersData;
 
-    const from = usersDateRange.from;
-    const to = usersDateRange.to ? new Date(usersDateRange.to) : new Date(from);
-    to.setHours(23, 59, 59, 999);
+    // Filter by role first
+    if (roleFilter !== 'All') {
+      filteredData = filteredData.filter(user => user.role === roleFilter);
+    }
+    
+    // Then filter by date
+    if (usersDateRange?.from) {
+      const from = usersDateRange.from;
+      const to = usersDateRange.to ? new Date(usersDateRange.to) : new Date(from);
+      to.setHours(23, 59, 59, 999);
 
-    return allUsersData.filter(user => {
-      if (!user.createdAt) return false;
-      const userDate = user.createdAt.toDate();
-      return userDate >= from && userDate <= to;
-    });
-  }, [allUsersData, usersDateRange]);
+      filteredData = filteredData.filter(user => {
+        if (!user.createdAt) return false;
+        const userDate = user.createdAt.toDate();
+        return userDate >= from && userDate <= to;
+      });
+    }
+
+    return filteredData;
+  }, [allUsersData, usersDateRange, roleFilter]);
 
   const userMap = useMemo(() => allUsersData?.reduce((acc, user) => ({ ...acc, [user.id]: user }), {} as Record<string, UserProfile>) || {}, [allUsersData]);
 
@@ -466,44 +479,57 @@ function AdminDashboard() {
                   <div className="flex flex-wrap items-center justify-between gap-4">
                     <div>
                         <CardTitle className="flex items-center gap-2"><Users/> All Users</CardTitle>
-                        <CardDescription>Browse and manage all registered users, optionally filtered by date.</CardDescription>
+                        <CardDescription>Browse and manage all registered users, filtered by role or date.</CardDescription>
                     </div>
-                    <Popover>
-                        <PopoverTrigger asChild>
-                            <Button
-                                id="date"
-                                variant={"outline"}
-                                className={cn(
-                                    "w-auto min-w-[260px] justify-start text-left font-normal",
-                                    !usersDateRange && "text-muted-foreground"
-                                )}
-                            >
-                                <CalendarIcon className="mr-2 h-4 w-4" />
-                                {usersDateRange?.from ? (
-                                    usersDateRange.to ? (
-                                        <>
-                                            {format(usersDateRange.from, "LLL dd, y")} -{" "}
-                                            {format(usersDateRange.to, "LLL dd, y")}
-                                        </>
+                    <div className="flex flex-wrap items-center gap-2">
+                        <Select value={roleFilter} onValueChange={setRoleFilter}>
+                            <SelectTrigger className="w-auto min-w-[180px]">
+                                <SelectValue placeholder="Filter by role" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="All">All Roles</SelectItem>
+                                <SelectItem value="Owner">Owner</SelectItem>
+                                <SelectItem value="Agent">Agent</SelectItem>
+                                <SelectItem value="Mechanic">Mechanic</SelectItem>
+                            </SelectContent>
+                        </Select>
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <Button
+                                    id="date"
+                                    variant={"outline"}
+                                    className={cn(
+                                        "w-auto min-w-[260px] justify-start text-left font-normal",
+                                        !usersDateRange && "text-muted-foreground"
+                                    )}
+                                >
+                                    <CalendarIcon className="mr-2 h-4 w-4" />
+                                    {usersDateRange?.from ? (
+                                        usersDateRange.to ? (
+                                            <>
+                                                {format(usersDateRange.from, "LLL dd, y")} -{" "}
+                                                {format(usersDateRange.to, "LLL dd, y")}
+                                            </>
+                                        ) : (
+                                            format(usersDateRange.from, "LLL dd, y")
+                                        )
                                     ) : (
-                                        format(usersDateRange.from, "LLL dd, y")
-                                    )
-                                ) : (
-                                    <span>Pick a date range</span>
-                                )}
-                            </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="end">
-                            <Calendar
-                                initialFocus
-                                mode="range"
-                                defaultMonth={usersDateRange?.from}
-                                selected={usersDateRange}
-                                onSelect={setUsersDateRange}
-                                numberOfMonths={2}
-                            />
-                        </PopoverContent>
-                    </Popover>
+                                        <span>Pick a date range</span>
+                                    )}
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="end">
+                                <Calendar
+                                    initialFocus
+                                    mode="range"
+                                    defaultMonth={usersDateRange?.from}
+                                    selected={usersDateRange}
+                                    onSelect={setUsersDateRange}
+                                    numberOfMonths={2}
+                                />
+                            </PopoverContent>
+                        </Popover>
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent>
