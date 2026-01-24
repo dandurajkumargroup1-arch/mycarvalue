@@ -1,0 +1,120 @@
+
+/**
+ * @fileoverview Firestore Security Rules for the AutoValue Application
+ * @author Firebase Creator
+ *
+ * @description
+ * This ruleset enforces a strict user-ownership security model. All application
+ * data, such as car listings and valuations, is nested within the user's own
+ * document tree. This design ensures that users can only access and manage their
+ * own information, providing strong data privacy and isolation by default.
+ *
+ * @philosophy
+ * Core Philosophy: A user-centric, path-based ownership model. The authenticated
+ * user's UID is the primary key for all authorization checks. If a user's UID
+ * matches the `{userId}` parameter in the document path, they are granted access;
+ * otherwise, access is denied. Admins are an exception and have wider read/write access.
+ *
+ * Data Structure: The data is organized hierarchically under a top-level `/users`
+ * collection. Each user has a document at `/users/{userId}`, which acts as a
+ * root for their private subcollections. Withdrawal requests are in a root collection
+ * for admin visibility.
+ *
+ * Key Security Decisions:
+ * - User Isolation: Users are strictly prohibited from viewing or listing other
+ *   users' profiles or data, unless the requester is an admin.
+ * - Path-Based Security: Authorization is determined primarily by the document
+ *   path, which is fast, scalable, and easy to reason about.
+ * - Admin Privileges: A user with the 'Admin' role or a hardcoded super-admin email
+ *   has read access to all user data and write access to specific collections like 
+ *   `withdrawalRequests` for management purposes.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ------------------------------------------------------------------------
+    // Helper Functions
+    // ------------------------------------------------------------------------
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isExistingOwner(userId) {
+      return isOwner(userId) && resource != null;
+    }
+
+    function userProfileHasCorrectIdOnCreate(userId) {
+      return request.resource.data.id == userId;
+    }
+
+    function userIdIsImmutableOnUpdate() {
+      return request.resource.data.id == resource.data.id;
+    }
+
+    function hasCorrectOwnerDataOnCreate(userId) {
+      return request.resource.data.userId == userId;
+    }
+
+    function ownerFieldIsImmutable() {
+      return request.resource.data.userId == resource.data.userId;
+    }
+    
+    function isAdmin() {
+      // Check if user has 'Admin' role in their profile
+      let isRoleAdmin = isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Admin';
+      // Check for the permanent super-admin email
+      let isSuperAdmin = isSignedIn() && request.auth.token.email == 'rajmycarvalue@gmail.com';
+      
+      return isRoleAdmin || isSuperAdmin;
+    }
+
+
+    // ------------------------------------------------------------------------
+    // Collection Rules
+    // ------------------------------------------------------------------------
+
+    match /users/{userId} {
+      allow get: if isOwner(userId) || isAdmin();
+      // Only the permanent super-admin can list all users. This simplifies the rule to avoid complex `get` calls in list queries.
+      allow list: if request.auth.token.email == 'rajmycarvalue@gmail.com';
+      allow create: if isOwner(userId) && userProfileHasCorrectIdOnCreate(userId);
+      allow update: if isOwner(userId) && userIdIsImmutableOnUpdate();
+      allow delete: if isOwner(userId);
+
+        match /carValuations/{carValuationId} {
+            allow read, list: if isOwner(userId);
+            allow create: if isOwner(userId) && hasCorrectOwnerDataOnCreate(userId);
+            allow delete: if isOwner(userId);
+            allow update: if false; // Valuations are immutable once created
+        }
+
+        match /wallet/{walletId} {
+            allow read: if isOwner(userId) || isAdmin();
+            allow update: if isOwner(userId) || isAdmin(); // Admin can update balance after withdrawal
+            allow create: if isOwner(userId) && hasCorrectOwnerDataOnCreate(userId);
+            allow delete: if false;
+        }
+    }
+    
+    match /withdrawalRequests/{requestId} {
+        allow create: if isOwner(request.resource.data.userId);
+        // User can read their own requests. Admin can read all.
+        allow read: if isOwner(resource.data.userId) || isAdmin();
+        // The list rule is CRITICAL. Admins can list all requests.
+        // Non-admin users can ONLY list documents where their UID is in the 'userId' field.
+        allow list: if request.auth.token.email == 'rajmycarvalue@gmail.com' || (
+                        isSignedIn() &&
+                        request.query.where.keys().hasAny(['userId']) &&
+                        request.query.where.userId == request.auth.uid
+                     );
+        allow update: if isAdmin(); // Only admins can approve/reject requests
+        allow delete: if false;
+    }
+  }
+}
