@@ -78,42 +78,30 @@ export const ValuationResultDisplay = ({ result, onNewValuation }: { result: { v
     reportElement.classList.add("pdf-render-mode");
 
     try {
-        // Options to help html2canvas capture the full content, not just the visible part
+        // Use html2canvas to capture the entire element
         const canvas = await html2canvas(reportElement, {
-            scale: 2,
+            scale: 2, // Higher scale for better quality
             useCORS: true,
             backgroundColor: "#ffffff",
+            // Ensure it captures the full scroll height, not just the visible part
             windowWidth: reportElement.scrollWidth,
             windowHeight: reportElement.scrollHeight,
         });
 
         const imgData = canvas.toDataURL('image/png');
-        const pdf = new jsPDF('p', 'mm', 'a4');
-        
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = pdf.internal.pageSize.getHeight();
-
         const canvasWidth = canvas.width;
         const canvasHeight = canvas.height;
 
-        // Calculate the height of the image in the PDF while maintaining aspect ratio
-        const ratio = canvasWidth / pdfWidth;
-        const totalImageHeightInPdf = canvasHeight / ratio;
-        
-        let heightLeft = totalImageHeightInPdf;
-        let position = 0;
+        // Create a PDF with a single custom page size that matches the canvas dimensions
+        // We use 'px' as units to have a 1:1 mapping with the canvas dimensions
+        const pdf = new jsPDF({
+            orientation: 'p',
+            unit: 'px',
+            format: [canvasWidth, canvasHeight]
+        });
 
-        // Add the first page
-        pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, totalImageHeightInPdf);
-        heightLeft -= pdfHeight;
-
-        // Add subsequent pages if the content overflows
-        while (heightLeft > 0) {
-            position -= pdfHeight; // Move the image "up" on the next page
-            pdf.addPage();
-            pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, totalImageHeightInPdf);
-            heightLeft -= pdfHeight;
-        }
+        // Add the captured image to the PDF, covering the entire custom page
+        pdf.addImage(imgData, 'PNG', 0, 0, canvasWidth, canvasHeight);
         
         pdf.save(`mycarvalue-report-${clientData?.reportId || 'report'}.pdf`);
 
