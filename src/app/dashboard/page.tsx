@@ -304,7 +304,6 @@ function MechanicDashboard({ user, userProfile }: { user: any, userProfile: User
         return query(
             collection(firestore, 'withdrawalRequests'), 
             where('userId', '==', user.uid),
-            // orderBy('requestedAt', 'desc'),  // Temporarily removed for security rule compatibility
             limit(10)
         );
     }, [firestore, user]);
@@ -407,9 +406,17 @@ function MechanicDashboard({ user, userProfile }: { user: any, userProfile: User
                             <p className="text-sm text-muted-foreground">
                                 {inspections.completed} of {inspections.total} inspections completed.
                             </p>
-                            <Button className="mt-4 w-full md:w-auto" disabled={isLimitReached}>
-                                {isLimitReached ? <><Ban className="mr-2"/> Limit Reached</> : 'Accept New Inspection'}
-                            </Button>
+                            {isLimitReached ? (
+                                <Button className="mt-4 w-full md:w-auto" disabled>
+                                    <Ban className="mr-2"/> Limit Reached
+                                </Button>
+                            ) : (
+                                <Button asChild className="mt-4 w-full md:w-auto">
+                                    <Link href="/valuation">
+                                        <Car className="mr-2"/> Create New Valuation
+                                    </Link>
+                                </Button>
+                            )}
                         </CardContent>
                     </Card>
 
@@ -666,18 +673,18 @@ function DashboardPageComponent() {
   const firestore = useFirestore();
   const router = useRouter();
 
-  useEffect(() => {
-    if (!isUserLoading && !user) {
-      router.push('/login?redirect=/dashboard');
-    }
-  }, [user, isUserLoading, router]);
-
   const userProfileRef = useMemoFirebase(() => {
     if (!firestore || !user) return null;
     return doc(firestore, 'users', user.uid);
   }, [firestore, user]);
 
   const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileRef);
+
+  useEffect(() => {
+    if (!isUserLoading && !user) {
+      router.push('/login?redirect=/dashboard');
+    }
+  }, [user, isUserLoading, router]);
 
   useEffect(() => {
     // This effect handles redirecting admin users.
