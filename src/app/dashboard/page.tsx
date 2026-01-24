@@ -335,7 +335,7 @@ function MechanicDashboard({ user, userProfile }: { user: any, userProfile: User
         return valuations.filter(v => v.createdAt && v.createdAt.toDate() >= today).length;
     }, [valuations]);
 
-    const dailyLimit = 999; 
+    const dailyLimit = 10; 
     const earningsPerReport = 15;
     const minWithdrawalAmount = 1;
     
