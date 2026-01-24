@@ -187,7 +187,8 @@ function AdminDashboard() {
   // Client-side sorting to compensate for removing orderBy from the query.
   const requests = useMemo(() => {
     if (!requestsData) return null;
-    return [...requestsData].sort((a, b) => a.requestedAt.toMillis() - b.requestedAt.toMillis());
+    // Sort by most recent first
+    return [...requestsData].sort((a, b) => b.requestedAt.toMillis() - a.requestedAt.toMillis());
   }, [requestsData]);
 
 
