@@ -329,7 +329,7 @@ function AdminDashboard() {
                                     <Table>
                                         <TableHeader>
                                             <TableRow>
-                                                <TableHead>Mechanic</TableHead>
+                                                <TableHead>User / Shop</TableHead>
                                                 <TableHead>Amount</TableHead>
                                                 <TableHead>Payment Details</TableHead>
                                                 <TableHead>Requested At</TableHead>
@@ -342,7 +342,14 @@ function AdminDashboard() {
                                             ) : pendingRequests && pendingRequests.length > 0 ? (
                                                 pendingRequests.map(req => (
                                                     <TableRow key={req.id}>
-                                                        <TableCell className="font-medium">{userMap[req.userId]?.displayName || 'Unknown User'}</TableCell>
+                                                        <TableCell>
+                                                            <div className="font-medium">{userMap[req.userId]?.displayName || 'Unknown User'}</div>
+                                                            {(userMap[req.userId]?.shopName || userMap[req.userId]?.location) && (
+                                                                <div className="text-xs text-muted-foreground">
+                                                                    {[userMap[req.userId]?.shopName, userMap[req.userId]?.location].filter(Boolean).join(' - ')}
+                                                                </div>
+                                                            )}
+                                                        </TableCell>
                                                         <TableCell>{formatCurrency(req.amount)}</TableCell>
                                                         <TableCell className="text-xs">
                                                             {req.upiId && <p><strong>UPI:</strong> {req.upiId}</p>}
