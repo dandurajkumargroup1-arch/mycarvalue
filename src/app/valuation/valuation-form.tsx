@@ -316,8 +316,8 @@ export function ValuationForm() {
 
         localStorage.setItem('valuationResult', JSON.stringify(fullResult));
         
-        // Always show payment screen for all users.
-        setShowPayment(true);
+        localStorage.setItem('paymentSuccess', 'true');
+        router.push('/result');
 
     } catch (error: any) {
         console.error("Valuation Action Error:", error);
@@ -689,7 +689,7 @@ export function ValuationForm() {
                     {isLastSection ? (
                         <Button type="submit" className="w-full" size="lg" disabled={loading}>
                             <Sparkles className="mr-2 h-4 w-4" />
-                            {loading ? 'Analyzing...' : 'Proceed to Pay'}
+                            {loading ? 'Analyzing...' : 'Get Valuation Report'}
                         </Button>
                     ) : (
                         <Button type="button" onClick={handleNextSection} className="w-full" size="lg">
