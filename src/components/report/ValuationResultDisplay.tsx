@@ -78,27 +78,30 @@ export const ValuationResultDisplay = ({ result, onNewValuation }: { result: { v
     reportElement.classList.add("pdf-render-mode");
 
     try {
-        // Capture the entire element as a single, high-resolution canvas
+        // Options to help html2canvas capture the full content, not just the visible part
         const canvas = await html2canvas(reportElement, {
             scale: 2,
             useCORS: true,
             backgroundColor: "#ffffff",
+            windowWidth: reportElement.scrollWidth,
+            windowHeight: reportElement.scrollHeight,
         });
 
         const imgData = canvas.toDataURL('image/png');
         const pdf = new jsPDF('p', 'mm', 'a4');
+        
         const pdfWidth = pdf.internal.pageSize.getWidth();
         const pdfHeight = pdf.internal.pageSize.getHeight();
-        
+
         const canvasWidth = canvas.width;
         const canvasHeight = canvas.height;
-        
-        // Calculate the height of the image in the PDF, maintaining aspect ratio
+
+        // Calculate the height of the image in the PDF while maintaining aspect ratio
         const ratio = canvasWidth / pdfWidth;
         const totalImageHeightInPdf = canvasHeight / ratio;
         
-        let position = 0;
         let heightLeft = totalImageHeightInPdf;
+        let position = 0;
 
         // Add the first page
         pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, totalImageHeightInPdf);
