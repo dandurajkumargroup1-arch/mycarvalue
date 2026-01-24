@@ -6,6 +6,7 @@ import { doc, collection, query, orderBy, where, Timestamp } from 'firebase/fire
 import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
 import type { UserProfile } from '@/lib/firebase/user-profile-service';
 import { approveWithdrawal, rejectWithdrawal } from '@/lib/firebase/withdrawal-service';
+import { deleteUser } from '@/lib/firebase/user-profile-service';
 import { useRouter } from 'next/navigation';
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -23,10 +24,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from '@/components/ui/skeleton';
-import { AlertTriangle, CheckCircle, Shield, Users, Wallet, XCircle, Calendar as CalendarIcon, Download } from 'lucide-react';
+import { AlertTriangle, CheckCircle, Shield, Users, Wallet, XCircle, Calendar as CalendarIcon, Download, Trash2 } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -302,6 +304,20 @@ function AdminDashboard() {
     link.click();
     document.body.removeChild(link);
   };
+  
+  const handleDeleteUser = async (userId: string) => {
+    if (!firestore) {
+        toast({ variant: "destructive", title: "Error", description: "Database service not available." });
+        return;
+    }
+    try {
+        await deleteUser(firestore, userId);
+        toast({ title: "User Deleted", description: "The user profile has been successfully deleted." });
+    } catch (error) {
+        console.error("Delete user error:", error);
+        toast({ variant: "destructive", title: "Deletion Failed", description: "Could not delete the user." });
+    }
+  };
 
 
   const isLoading = isUsersLoading || isRequestsLoading;
@@ -559,11 +575,12 @@ function AdminDashboard() {
                                 <TableHead>Role</TableHead>
                                 <TableHead>Shop / Location</TableHead>
                                 <TableHead>Joined</TableHead>
+                                <TableHead className="text-right">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {isUsersLoading ? (
-                                <TableRow><TableCell colSpan={4} className="h-24 text-center"><Skeleton className="h-8 w-full" /></TableCell></TableRow>
+                                <TableRow><TableCell colSpan={5} className="h-24 text-center"><Skeleton className="h-8 w-full" /></TableCell></TableRow>
                             ) : filteredUsers && filteredUsers.length > 0 ? (
                                 filteredUsers.filter(u => u.role !== 'Admin').map(user => (
                                     <TableRow key={user.id}>
@@ -583,11 +600,33 @@ function AdminDashboard() {
                                             ) : 'N/A'}
                                         </TableCell>
                                         <TableCell>{formatDate(user.createdAt)}</TableCell>
+                                        <TableCell className="text-right">
+                                            <AlertDialog>
+                                                <AlertDialogTrigger asChild>
+                                                    <Button variant="destructive" size="icon">
+                                                        <Trash2 className="h-4 w-4" />
+                                                        <span className="sr-only">Delete User</span>
+                                                    </Button>
+                                                </AlertDialogTrigger>
+                                                <AlertDialogContent>
+                                                    <AlertDialogHeader>
+                                                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                                        <AlertDialogDescription>
+                                                            This will permanently delete the user '{user.displayName}' and their Firestore data. This action cannot be undone.
+                                                        </AlertDialogDescription>
+                                                    </AlertDialogHeader>
+                                                    <AlertDialogFooter>
+                                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                        <AlertDialogAction onClick={() => handleDeleteUser(user.id)} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
+                                                    </AlertDialogFooter>
+                                                </AlertDialogContent>
+                                            </AlertDialog>
+                                        </TableCell>
                                     </TableRow>
                                 ))
                             ) : (
                                 <TableRow>
-                                    <TableCell colSpan={4} className="h-24 text-center">
+                                    <TableCell colSpan={5} className="h-24 text-center">
                                         No users found.
                                     </TableCell>
                                 </TableRow>

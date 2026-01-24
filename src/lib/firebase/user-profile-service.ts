@@ -8,6 +8,7 @@ import {
   serverTimestamp,
   type Firestore,
   type FieldValue,
+  deleteDoc,
 } from 'firebase/firestore';
 import type { User } from 'firebase/auth';
 import { errorEmitter } from '@/firebase/error-emitter';
@@ -102,5 +103,39 @@ export async function upsertUserProfile(
     errorEmitter.emit('permission-error', permissionError);
     
     throw error;
+  }
+}
+
+
+/**
+ * Deletes a user's profile document from the 'users' collection.
+ * Note: This does NOT delete the user from Firebase Authentication, only their Firestore data.
+ * Subcollections (like valuations, wallet) will become orphaned.
+ *
+ * @param firestore - The Firestore instance.
+ * @param userId - The ID of the user to delete.
+ */
+export async function deleteUser(
+  firestore: Firestore,
+  userId: string
+): Promise<void> {
+  if (!userId) {
+    throw new Error('User ID is required to delete a user.');
+  }
+
+  const userDocRef = doc(firestore, 'users', userId);
+
+  try {
+    await deleteDoc(userDocRef);
+  } catch (error) {
+    console.error(`Error deleting user ${userId}:`, error);
+
+    const permissionError = new FirestorePermissionError({
+      path: userDocRef.path,
+      operation: 'delete',
+    });
+
+    errorEmitter.emit('permission-error', permissionError);
+    throw permissionError;
   }
 }
