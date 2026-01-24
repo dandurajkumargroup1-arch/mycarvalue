@@ -8,11 +8,14 @@ import Script from "next/script";
 import { useRouter } from "next/navigation";
 import type { User } from 'firebase/auth';
 import type { Firestore } from 'firebase/firestore';
+import { doc } from 'firebase/firestore';
+import type { UserProfile } from "@/lib/firebase/user-profile-service";
+import { z } from 'zod';
 
 import { CarValuationSchema, type CarValuationFormInput } from '@/lib/schemas';
 import { getValuationAction } from '@/lib/actions';
 import { carMakesAndModelsAndVariants, indianStates } from "@/lib/variants";
-import { useUser, useFirestore } from "@/firebase";
+import { useUser, useFirestore, useDoc, useMemoFirebase } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { saveValuation } from "@/lib/firebase/valuation-service";
 
@@ -185,8 +188,26 @@ export function ValuationForm() {
   const { toast } = useToast();
   const router = useRouter();
 
+  const userProfileRef = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    return doc(firestore, 'users', user.uid);
+  }, [firestore, user]);
+  const { data: userProfile } = useDoc<UserProfile>(userProfileRef);
+
+  const validationSchema = useMemo(() => {
+    if (userProfile?.role === 'Mechanic') {
+      return CarValuationSchema.extend({
+        vehicleNumber: z.string()
+            .min(1, "Vehicle number is required for mechanics.")
+            .transform(val => val.toUpperCase().replace(/[\s-]/g, ''))
+            .refine(val => /^[A-Z]{2}[0-9]{1,2}[A-Z]{0,3}[0-9]{1,4}$/.test(val), "Please enter a valid vehicle number format (e.g., AP09BU1234).")
+      });
+    }
+    return CarValuationSchema;
+  }, [userProfile]);
+
   const form = useForm<CarValuationFormInput>({
-    resolver: zodResolver(CarValuationSchema),
+    resolver: zodResolver(validationSchema),
     defaultValues: {
         displayName: "",
         whatsappNumber: "",
@@ -491,7 +512,7 @@ export function ValuationForm() {
                       <div className="space-y-4 grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormField control={form.control} name="displayName" render={({ field }) => ( <FormItem> <FormLabel>Name</FormLabel> <FormControl><Input placeholder="Your full name" {...field} value={field.value ?? ''} /></FormControl> <FormMessage /> </FormItem> )} />
                         <FormField control={form.control} name="whatsappNumber" render={({ field }) => ( <FormItem> <FormLabel>WhatsApp Number</FormLabel> <FormControl><Input type="tel" placeholder="e.g., 9876543210" {...field} value={field.value ?? ''} /></FormControl> <FormMessage /> </FormItem> )} />
-                        <FormField control={form.control} name="vehicleNumber" render={({ field }) => ( <FormItem> <FormLabel>Vehicle Number (Optional)</FormLabel> <FormControl><Input placeholder="e.g., AP09BUXXXX" {...field} value={field.value ?? ''} /></FormControl> <FormMessage /> </FormItem> )} />
+                        <FormField control={form.control} name="vehicleNumber" render={({ field }) => ( <FormItem> <FormLabel>Vehicle Number {userProfile?.role !== 'Mechanic' && '(Optional)'}</FormLabel> <FormControl><Input placeholder="e.g., AP09BUXXXX" {...field} value={field.value ?? ''} /></FormControl> <FormMessage /> </FormItem> )} />
                       </div>
                     </TabsContent>
 
