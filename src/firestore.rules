@@ -81,8 +81,8 @@ service cloud.firestore {
 
     match /users/{userId} {
       allow get: if isOwner(userId) || isAdmin();
-      // Only the permanent super-admin can list all users. This simplifies the rule to avoid complex `get` calls in list queries.
-      allow list: if request.auth.token.email == 'rajmycarvalue@gmail.com';
+      // Admins (both role-based and super-admin) can list all users.
+      allow list: if isAdmin();
       allow create: if isOwner(userId) && userProfileHasCorrectIdOnCreate(userId);
       allow update: if isOwner(userId) && userIdIsImmutableOnUpdate();
       allow delete: if isOwner(userId);
@@ -108,7 +108,7 @@ service cloud.firestore {
         allow read: if isOwner(resource.data.userId) || isAdmin();
         // The list rule is CRITICAL. Admins can list all requests.
         // Non-admin users can ONLY list documents where their UID is in the 'userId' field.
-        allow list: if request.auth.token.email == 'rajmycarvalue@gmail.com' || (
+        allow list: if isAdmin() || (
                         isSignedIn() &&
                         request.query.where.keys().hasAny(['userId']) &&
                         request.query.where.userId == request.auth.uid
