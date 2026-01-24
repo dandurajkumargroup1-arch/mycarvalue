@@ -179,9 +179,17 @@ function AdminDashboard() {
   // Fetch pending withdrawal requests
   const requestsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    return query(collection(firestore, 'withdrawalRequests'), where('status', '==', 'requested'), orderBy('requestedAt', 'asc'));
+    // SIMPLIFIED QUERY: Removed orderBy to reduce complexity for Firestore Security Rules evaluation.
+    return query(collection(firestore, 'withdrawalRequests'), where('status', '==', 'requested'));
   }, [firestore]);
-  const { data: requests, isLoading: isRequestsLoading, error: requestsError } = useCollection<WithdrawalRequest>(requestsQuery);
+  const { data: requestsData, isLoading: isRequestsLoading, error: requestsError } = useCollection<WithdrawalRequest>(requestsQuery);
+
+  // Client-side sorting to compensate for removing orderBy from the query.
+  const requests = useMemo(() => {
+    if (!requestsData) return null;
+    return [...requestsData].sort((a, b) => a.requestedAt.toMillis() - b.requestedAt.toMillis());
+  }, [requestsData]);
+
 
   const [refreshKey, setRefreshKey] = useState(0);
   const forceRefresh = () => setRefreshKey(k => k + 1);
