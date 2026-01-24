@@ -65,15 +65,18 @@ function AuthSection() {
     );
   }
 
-  if (user && userProfile) {
+  if (user) {
+    const isAdmin = userProfile?.role === 'Admin' || user.email === 'rajmycarvalue@gmail.com';
+    const displayName = userProfile?.displayName || user.email;
+
     return (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" className="relative h-8 w-8 rounded-full">
             <Avatar className="h-8 w-8">
-              <AvatarImage src={user.photoURL ?? ""} alt={user.displayName ?? "User"} />
+              <AvatarImage src={user.photoURL ?? ""} alt={displayName ?? "User"} />
               <AvatarFallback>
-                {userProfile.displayName?.charAt(0).toUpperCase() ?? user.email?.charAt(0).toUpperCase()}
+                {displayName?.charAt(0).toUpperCase()}
               </AvatarFallback>
             </Avatar>
           </Button>
@@ -81,7 +84,7 @@ function AuthSection() {
         <DropdownMenuContent className="w-56" align="end" forceMount>
           <DropdownMenuLabel className="font-normal">
             <div className="flex flex-col space-y-1">
-              <p className="text-sm font-medium leading-none">{userProfile.displayName}</p>
+              <p className="text-sm font-medium leading-none">{displayName}</p>
               <p className="text-xs leading-none text-muted-foreground">
                 {user.email}
               </p>
@@ -94,7 +97,7 @@ function AuthSection() {
               <span>Dashboard</span>
             </Link>
           </DropdownMenuItem>
-          {userProfile.role === 'Admin' && (
+          {isAdmin && (
             <DropdownMenuItem asChild>
               <Link href="/admin">
                 <Shield className="mr-2 h-4 w-4" />
@@ -218,5 +221,3 @@ export default function Header() {
     </header>
   );
 }
-
-    

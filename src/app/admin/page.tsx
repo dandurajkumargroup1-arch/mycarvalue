@@ -377,7 +377,9 @@ function AdminPageComponent() {
     return <AdminPageLoader />;
   }
 
-  if (userProfile?.role !== 'Admin') {
+  const isAdmin = userProfile?.role === 'Admin' || user?.email === 'rajmycarvalue@gmail.com';
+
+  if (!isAdmin) {
     return (
       <div className="container mx-auto flex items-center justify-center py-20">
         <Alert variant="destructive" className="max-w-lg">
