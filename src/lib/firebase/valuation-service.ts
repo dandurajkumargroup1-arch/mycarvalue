@@ -87,9 +87,12 @@ export async function saveValuation(
 
   try {
     await runTransaction(firestore, async (transaction) => {
-      // Get user doc to check role
+      // --- ALL READS MUST GO FIRST ---
       const userDoc = await transaction.get(userDocRef);
+      const isMechanic = userDoc.exists() && userDoc.data().role === 'Mechanic';
+      const walletDoc = isMechanic ? await transaction.get(walletRef) : null;
 
+      // --- ALL WRITES GO AFTER READS ---
       // 1. Set the new valuation document
       const newValuationDocRef = doc(valuationCollectionRef);
       transaction.set(newValuationDocRef, valuationRecord);
@@ -98,11 +101,10 @@ export async function saveValuation(
       transaction.set(userDocRef, userProfileUpdate, { merge: true });
 
       // 3. If user is a mechanic, handle wallet creation or update
-      if (userDoc.exists() && userDoc.data().role === 'Mechanic') {
+      if (isMechanic) {
           const earningsPerReport = 15;
-          const walletDoc = await transaction.get(walletRef);
 
-          if (walletDoc.exists()) {
+          if (walletDoc && walletDoc.exists()) {
               // Wallet exists, so we update it with increment
               transaction.update(walletRef, {
                   balance: increment(earningsPerReport),
@@ -131,7 +133,7 @@ export async function saveValuation(
     });
     
     errorEmitter.emit('permission-error', permissionError);
-    throw permissionError;
+    throw error;
   }
 }
 
