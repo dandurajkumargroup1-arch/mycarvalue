@@ -82,18 +82,21 @@ export const ValuationResultDisplay = ({ result, onNewValuation }: { result: { v
             scale: 2, // Higher scale for better quality
             useCORS: true,
             backgroundColor: "#ffffff",
+            // Explicitly set width and height based on the element's scroll size
             width: reportElement.scrollWidth,
             height: reportElement.scrollHeight,
+            windowWidth: reportElement.scrollWidth,
+            windowHeight: reportElement.scrollHeight
         });
 
-        const imgData = canvas.toDataURL('image/png');
         const pdf = new jsPDF({
             orientation: 'p',
             unit: 'px',
+            // Create a custom page size that is as long as the content
             format: [canvas.width, canvas.height],
         });
 
-        pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+        pdf.addImage(canvas.toDataURL('image/png', 1.0), 'PNG', 0, 0, canvas.width, canvas.height);
         pdf.save(`mycarvalue-report-${clientData?.reportId || 'report'}.pdf`);
 
     } catch (err) {
@@ -184,7 +187,7 @@ export const ValuationResultDisplay = ({ result, onNewValuation }: { result: { v
                 </div>
             </header>
 
-            <section className="bg-slate-50 rounded-lg p-6 text-center my-8 border border-primary/50">
+            <section className="bg-slate-50 rounded-lg p-6 text-center my-8 border border-slate-200">
                 <h3 className="text-sm font-semibold text-slate-700">Your Best Selling Price Estimate</h3>
                 <p className="text-5xl font-bold tracking-tight my-2 text-slate-900">{inr(valuation.bestPrice)}</p>
                 <div className="inline-flex items-center gap-2 rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-800 border border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800">
@@ -201,10 +204,10 @@ export const ValuationResultDisplay = ({ result, onNewValuation }: { result: { v
                         <CardTitle className="text-sm font-medium text-slate-600">Market Range</CardTitle>
                         <CardDescription className="text-2xl font-bold text-slate-800 mt-1">{inr(valuation.marketValueMin)} - {inr(valuation.marketValueMax)}</CardDescription>
                     </Card>
-                    <Card className="p-4 bg-slate-50 border-primary/50">
-                        <Target className="mx-auto h-7 w-7 text-primary mb-2"/>
-                        <CardTitle className="text-sm font-medium text-primary">Fair Deal Price</CardTitle>
-                        <CardDescription className="text-2xl font-bold text-primary mt-1">{inr(valuation.expectedFinalDeal)}</CardDescription>
+                    <Card className="p-4 bg-slate-50 border-destructive/50">
+                        <Target className="mx-auto h-7 w-7 text-destructive mb-2"/>
+                        <CardTitle className="text-sm font-medium text-destructive">Fair Deal Price</CardTitle>
+                        <CardDescription className="text-2xl font-bold text-destructive mt-1">{inr(valuation.expectedFinalDeal)}</CardDescription>
                     </Card>
                     <Card className="p-4 bg-slate-50">
                         <Tag className="mx-auto h-7 w-7 text-slate-600 mb-2"/>
