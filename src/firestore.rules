@@ -96,10 +96,11 @@ service cloud.firestore {
         }
 
         match /wallet/{walletId} {
-            allow read: if isOwner(userId) || isAdmin();
+            // Admins must be able to list wallet documents to delete them.
+            allow read, list: if isOwner(userId) || isAdmin();
             allow update: if isOwner(userId) || isAdmin(); // Admin can update balance after withdrawal
             allow create: if isOwner(userId) && hasCorrectOwnerDataOnCreate(userId);
-            allow delete: if isAdmin();
+            allow delete: if isOwner(userId) || isAdmin();
         }
     }
     
