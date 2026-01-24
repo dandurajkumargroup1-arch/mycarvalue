@@ -507,7 +507,7 @@ function MechanicDashboard({ user, userProfile }: { user: any, userProfile: User
                             <p className="text-xs text-muted-foreground mt-1 text-center">
                                 Last withdrawal status: {lastWithdrawalStatus}.
                             </p>
-                             {!!lastPendingRequest && <p className="text-xs text-amber-600 mt-2 text-center">You have a pending withdrawal request.</p>}
+                             {!!lastPendingRequest && <p className="text-xs text-green-600 mt-2 text-center">Your request is being processed. It will be credited to your account within 24-48 hours.</p>}
                         </CardContent>
                     </Card>
                     
