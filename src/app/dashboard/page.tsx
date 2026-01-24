@@ -64,7 +64,7 @@ type ValuationDoc = CarValuationFormInput & {
 
 
 const WithdrawalSchema = z.object({
-  amount: z.coerce.number().min(100, { message: "Minimum withdrawal is ₹100." }),
+  amount: z.coerce.number().min(1, { message: "Minimum withdrawal is ₹1." }),
   paymentMethod: z.enum(['upi', 'bank']),
   upiId: z.string().optional(),
   bankAccountNumber: z.string().optional(),
@@ -112,7 +112,7 @@ function WithdrawalDialog({ wallet, userProfile, isWithdrawalEnabled }: { wallet
     const form = useForm<WithdrawalFormInput>({
         resolver: zodResolver(WithdrawalSchema),
         defaultValues: {
-            amount: 100,
+            amount: 1,
             paymentMethod: 'upi',
             upiId: userProfile?.upiId || '',
             bankAccountNumber: userProfile?.bankAccountNumber || '',
@@ -202,7 +202,7 @@ function WithdrawalDialog({ wallet, userProfile, isWithdrawalEnabled }: { wallet
                           <FormItem>
                             <FormLabel>Amount</FormLabel>
                             <FormControl>
-                              <Input type="number" placeholder="100" {...field} />
+                              <Input type="number" placeholder="1" {...field} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -301,10 +301,10 @@ function MechanicDashboard({ user, userProfile }: { user: any, userProfile: User
 
     const withdrawalsQuery = useMemoFirebase(() => {
         if (!firestore || !user) return null;
+        // SIMPLIFIED QUERY: Removed orderBy to align with security rules.
         return query(
             collection(firestore, 'withdrawalRequests'), 
             where('userId', '==', user.uid),
-            limit(10)
         );
     }, [firestore, user]);
     const { data: withdrawalsData, isLoading: areWithdrawalsLoading } = useCollection<WithdrawalRequest>(withdrawalsQuery);
@@ -317,7 +317,7 @@ function MechanicDashboard({ user, userProfile }: { user: any, userProfile: User
     const { data: valuations, isLoading: areValuationsLoading } = useCollection<ValuationDoc>(valuationsQuery);
 
     
-    // Client-side sorting for withdrawals
+    // Client-side sorting for withdrawals to compensate for simplified query
     const withdrawals = useMemo(() => {
         if (!withdrawalsData) return null;
         return [...withdrawalsData].sort((a, b) => b.requestedAt.toMillis() - a.requestedAt.toMillis());
@@ -331,23 +331,16 @@ function MechanicDashboard({ user, userProfile }: { user: any, userProfile: User
         return valuations.filter(v => v.createdAt && v.createdAt.toDate() >= today).length;
     }, [valuations]);
 
-    const dailyLimit = 5; 
+    const dailyLimit = 999; 
     const earningsPerReport = 15;
-    const minWithdrawalAmount = 100;
+    const minWithdrawalAmount = 1;
     
     const remainingInspections = dailyLimit - completedToday;
     const isLimitReached = remainingInspections <= 0;
 
     const lastPendingRequest = useMemo(() => withdrawals?.find(w => w.status === 'requested'), [withdrawals]);
-    const lastWithdrawalDate = wallet?.lastWithdrawalDate;
-    const canWithdrawToday = useMemo(() => {
-        if (!lastWithdrawalDate) return true; // No previous withdrawal
-        const sevenDaysAgo = new Date();
-        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-        return lastWithdrawalDate.toDate() < sevenDaysAgo;
-    }, [lastWithdrawalDate]);
     
-    const isWithdrawalEnabled = !isWalletLoading && !!wallet && wallet.balance >= minWithdrawalAmount && !lastPendingRequest && canWithdrawToday;
+    const isWithdrawalEnabled = !isWalletLoading && !!wallet && wallet.balance >= minWithdrawalAmount && !lastPendingRequest;
     const lastWithdrawalStatus = lastPendingRequest 
         ? `Requested on ${formatDate(lastPendingRequest.requestedAt)}` 
         : (wallet?.lastWithdrawalDate ? `Paid on ${formatDate(wallet.lastWithdrawalDate)}` : 'No recent withdrawals');
@@ -510,7 +503,6 @@ function MechanicDashboard({ user, userProfile }: { user: any, userProfile: User
                             <p className="text-xs text-muted-foreground mt-1 text-center">
                                 Last withdrawal status: {lastWithdrawalStatus}.
                             </p>
-                             {!canWithdrawToday && <p className="text-xs text-amber-600 mt-2 text-center">You can make another withdrawal request in {7 - new Date().getDay()} days.</p>}
                              {!!lastPendingRequest && <p className="text-xs text-amber-600 mt-2 text-center">You have a pending withdrawal request.</p>}
                         </CardContent>
                     </Card>
@@ -704,11 +696,13 @@ function DashboardPageComponent() {
     // This effect handles redirecting admin users.
     // It runs after the component renders and when its dependencies change.
     if (!isUserLoading && user) {
-      const isHardcodedAdmin = user.email === 'rajmycarvalue@gmail.com';
-      // The check for role happens only after the profile is loaded.
-      const isRoleAdmin = !isProfileLoading && userProfile?.role === 'Admin';
-      
-      if (isHardcodedAdmin || isRoleAdmin) {
+      // Immediate check for hardcoded admin email
+      if (user.email === 'rajmycarvalue@gmail.com') {
+        router.push('/admin');
+        return; // Early exit for the primary admin
+      }
+      // If not the hardcoded admin, check the role after the profile has loaded
+      if (!isProfileLoading && userProfile?.role === 'Admin') {
         router.push('/admin');
       }
     }
@@ -719,10 +713,11 @@ function DashboardPageComponent() {
   }
   
   // Admin users are being redirected by the useEffect. In the meantime, show a skeleton.
+  // This check is robust because `userProfile?.role` safely handles a null profile.
   if (userProfile?.role === 'Admin' || user.email === 'rajmycarvalue@gmail.com') {
-    return <DashboardSkeleton />;
+      return <DashboardSkeleton />;
   }
-
+  
   // If we reach here, the user is not an admin.
   // Now we can safely assume they need a profile to see their specific dashboard.
   if (!userProfile) {
