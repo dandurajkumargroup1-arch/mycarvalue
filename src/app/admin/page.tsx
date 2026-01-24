@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Suspense, useEffect, useState, useMemo } from 'react';
@@ -325,7 +324,7 @@ function AdminDashboard() {
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
-                                            {isRequestsLoading ? (
+                                            {(isRequestsLoading || isUsersLoading) ? (
                                                 <TableRow><TableCell colSpan={5}><Skeleton className="h-8 w-full" /></TableCell></TableRow>
                                             ) : pendingRequests && pendingRequests.length > 0 ? (
                                                 pendingRequests.map(req => (
@@ -411,7 +410,7 @@ function AdminDashboard() {
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
-                                             {isRequestsLoading ? (
+                                             {(isRequestsLoading || isUsersLoading) ? (
                                                 <TableRow><TableCell colSpan={5}><Skeleton className="h-8 w-full" /></TableCell></TableRow>
                                             ) : withdrawalHistory && withdrawalHistory.length > 0 ? (
                                                 withdrawalHistory.map(req => (
