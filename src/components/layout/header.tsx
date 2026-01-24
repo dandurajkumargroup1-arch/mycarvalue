@@ -7,7 +7,7 @@ import { usePathname } from "next/navigation";
 import { signOut as firebaseSignOut } from "firebase/auth";
 import { useState, useMemo } from "react";
 import { doc } from 'firebase/firestore';
-
+import type { User } from 'firebase/auth';
 
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -34,18 +34,21 @@ const navLinks = [
   { href: "/contact", label: "Contact", icon: Phone },
 ];
 
-function AuthSection() {
+function AuthSection({
+  user,
+  userProfile,
+  isUserLoading,
+  isProfileLoading,
+  isAdmin
+}: {
+  user: User | null;
+  userProfile: UserProfile | null;
+  isUserLoading: boolean;
+  isProfileLoading: boolean;
+  isAdmin: boolean;
+}) {
   const auth = useAuth();
-  const firestore = useFirestore();
-  const { user, isUserLoading } = useUser();
-
-  const userProfileRef = useMemoFirebase(() => {
-    if (!firestore || !user) return null;
-    return doc(firestore, 'users', user.uid);
-  }, [firestore, user]);
-
-  const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileRef);
-
+  
   const handleSignOut = async () => {
     try {
       if (auth) {
@@ -65,8 +68,7 @@ function AuthSection() {
     );
   }
 
-  if (user) {
-    const isAdmin = userProfile?.role === 'Admin' || user?.email === 'rajmycarvalue@gmail.com';
+  if (user && userProfile) {
     const displayName = userProfile?.displayName || user.email;
 
     return (
@@ -91,17 +93,18 @@ function AuthSection() {
             </div>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <DropdownMenuItem asChild>
-            <Link href="/dashboard">
-              <LayoutDashboard className="mr-2 h-4 w-4" />
-              <span>Dashboard</span>
-            </Link>
-          </DropdownMenuItem>
-          {isAdmin && (
-            <DropdownMenuItem asChild>
+          {isAdmin ? (
+             <DropdownMenuItem asChild>
               <Link href="/admin">
                 <Shield className="mr-2 h-4 w-4" />
                 <span>Admin Panel</span>
+              </Link>
+            </DropdownMenuItem>
+          ) : (
+            <DropdownMenuItem asChild>
+              <Link href="/dashboard">
+                <LayoutDashboard className="mr-2 h-4 w-4" />
+                <span>Dashboard</span>
               </Link>
             </DropdownMenuItem>
           )}
@@ -137,7 +140,22 @@ function AuthSection() {
 export default function Header() {
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const { user } = useUser();
+  
+  // Centralize user and profile data fetching here
+  const { user, isUserLoading } = useUser();
+  const firestore = useFirestore();
+  const userProfileRef = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    return doc(firestore, 'users', user.uid);
+  }, [firestore, user]);
+  const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileRef);
+
+  // Derive admin status once
+  const isAdmin = useMemo(() => 
+    !isUserLoading && !isProfileLoading && user && (userProfile?.role === 'Admin' || user?.email === 'rajmycarvalue@gmail.com'),
+    [user, isUserLoading, userProfile, isProfileLoading]
+  );
+
 
   const renderNavLinks = (isMobile = false) =>
     navLinks.map((link) => (
@@ -172,7 +190,13 @@ export default function Header() {
           {renderNavLinks()}
         </nav>
         <div className="flex flex-1 items-center justify-end gap-2">
-          <AuthSection />
+          <AuthSection 
+            user={user}
+            userProfile={userProfile as UserProfile | null}
+            isUserLoading={isUserLoading}
+            isProfileLoading={isProfileLoading}
+            isAdmin={isAdmin}
+          />
           <div className="flex items-center justify-end md:hidden">
             <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
               <SheetTrigger asChild>
@@ -191,25 +215,43 @@ export default function Header() {
                     <span className="font-bold">mycarvalue<span className="text-primary">.in</span></span>
                   </Link>
                   <nav className="flex flex-col space-y-2">
-                    {user && (
-                      <Button
-                        asChild
-                        variant="ghost"
-                        onClick={() => setIsMobileMenuOpen(false)}
-                        className={cn(
-                          "justify-start gap-2",
-                          pathname.startsWith('/dashboard')
-                            ? "bg-primary/10 font-semibold text-primary"
-                            : "",
-                          "w-full text-lg py-6"
-                        )}
-                      >
-                        <Link href="/dashboard">
-                          <LayoutDashboard className="h-4 w-4" />
-                          Dashboard
-                        </Link>
-                      </Button>
-                    )}
+                     {user && (
+                        isAdmin ? (
+                          <Button
+                            asChild
+                            variant="ghost"
+                            onClick={() => setIsMobileMenuOpen(false)}
+                            className={cn("justify-start gap-2 w-full text-lg py-6", pathname.startsWith('/admin') && "bg-primary/10 font-semibold text-primary")}
+                          >
+                            <Link href="/admin"><Shield className="h-4 w-4" />Admin Panel</Link>
+                          </Button>
+                        ) : (
+                           <Button
+                            asChild
+                            variant="ghost"
+                            onClick={() => setIsMobileMenuOpen(false)}
+                            className={cn("justify-start gap-2 w-full text-lg py-6", pathname.startsWith('/dashboard') && "bg-primary/10 font-semibold text-primary")}
+                          >
+                            <Link href="/dashboard"><LayoutDashboard className="h-4 w-4" />Dashboard</Link>
+                          </Button>
+                        )
+                     )}
+                    {!user && (
+                        <div className="flex flex-col space-y-2">
+                            <Button asChild variant="ghost" size="sm" className="w-full text-lg py-6 justify-start">
+                                <Link href="/login" onClick={() => setIsMobileMenuOpen(false)}>
+                                    <LogIn className="mr-2 h-4 w-4" />
+                                    Login
+                                </Link>
+                            </Button>
+                            <Button asChild size="sm" className="w-full text-lg py-6 justify-start">
+                                <Link href="/register" onClick={() => setIsMobileMenuOpen(false)}>
+                                    <UserPlus className="mr-2 h-4 w-4" />
+                                    Register
+                                </Link>
+                            </Button>
+                        </div>
+                     )}
                     {renderNavLinks(true)}
                   </nav>
                 </div>
