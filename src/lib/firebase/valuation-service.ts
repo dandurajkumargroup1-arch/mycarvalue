@@ -13,6 +13,10 @@ import {
   getDoc,
   increment,
   runTransaction,
+  query,
+  where,
+  getDocs,
+  limit,
 } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
@@ -52,6 +56,28 @@ export async function saveValuation(
   
   const userId = user.uid;
   const userDocRef = doc(firestore, `users/${userId}`);
+
+  // First, check if user is a mechanic to decide if we need to check for duplicates
+  const userDocSnap = await getDoc(userDocRef);
+  const isMechanic = userDocSnap.exists() && userDocSnap.data().role === 'Mechanic';
+
+  // If the user is a mechanic and a vehicle number is provided, check for duplicates.
+  if (isMechanic && valuationData.vehicleNumber) {
+    const valuationCollectionRef = collection(firestore, `users/${userId}/carValuations`);
+    const q = query(
+      valuationCollectionRef,
+      where('vehicleNumber', '==', valuationData.vehicleNumber),
+      limit(1)
+    );
+
+    const querySnapshot = await getDocs(q);
+    if (!querySnapshot.empty) {
+      // A valuation for this vehicle number already exists for this mechanic.
+      // Throw a specific error that can be caught by the UI.
+      throw new Error(`A valuation for vehicle number '${valuationData.vehicleNumber}' already exists. You cannot submit a duplicate.`);
+    }
+  }
+
   const valuationCollectionRef = collection(firestore, `users/${userId}/carValuations`);
   const walletRef = doc(firestore, `users/${userId}/wallet/main`);
 
@@ -71,7 +97,7 @@ export async function saveValuation(
   };
   
   const userProfileUpdate: { [key: string]: any } = {
-      id: userId, // Ensure the ID is present for create/update operations
+      id: userId,
       displayName: valuationData.displayName || user.displayName,
       whatsappNumber: valuationData.whatsappNumber,
       vehicleNumber: valuationData.vehicleNumber,
@@ -88,8 +114,6 @@ export async function saveValuation(
   try {
     await runTransaction(firestore, async (transaction) => {
       // --- ALL READS MUST GO FIRST ---
-      const userDoc = await transaction.get(userDocRef);
-      const isMechanic = userDoc.exists() && userDoc.data().role === 'Mechanic';
       const walletDoc = isMechanic ? await transaction.get(walletRef) : null;
 
       // --- ALL WRITES GO AFTER READS ---
@@ -124,6 +148,11 @@ export async function saveValuation(
       }
     });
   } catch (error) {
+    // If the error is our custom duplicate error, re-throw it so the UI can catch it.
+    if (error instanceof Error && error.message.includes('already exists')) {
+        throw error;
+    }
+    
     console.error('Error in saveValuation transaction:', error);
     
     const permissionError = new FirestorePermissionError({
@@ -133,7 +162,7 @@ export async function saveValuation(
     });
     
     errorEmitter.emit('permission-error', permissionError);
-    throw error;
+    throw permissionError;
   }
 }
 

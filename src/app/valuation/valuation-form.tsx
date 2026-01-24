@@ -315,9 +315,6 @@ export function ValuationForm() {
         const result = await getValuationAction(data);
         const fullResult = { valuation: result.valuation, formData: data };
 
-        localStorage.setItem('valuationResult', JSON.stringify(fullResult));
-        localStorage.setItem('paymentSuccess', 'true');
-        
         await saveValuation(firestore, user, {
             paymentId: `test-${Date.now()}`,
             ...data,
@@ -325,18 +322,26 @@ export function ValuationForm() {
             comparableListingsResult: null,
             imageQualityResult: null,
         });
+        
+        localStorage.setItem('valuationResult', JSON.stringify(fullResult));
+        localStorage.setItem('paymentSuccess', 'true');
 
         router.push('/result');
 
     } catch (error: any) {
         console.error("Valuation Action Error:", error);
-        const isQuotaError = error.message?.includes("429") || error.message?.toLowerCase().includes("quota");
+        
+        let description = "An unexpected error occurred during valuation or saving.";
+        if (error.message?.includes("already exists")) {
+            description = error.message;
+        } else if (error.message?.includes("429") || error.message?.toLowerCase().includes("quota")) {
+            description = "Our AI is currently busy. Please try again in 30 seconds.";
+        }
+
         toast({
             variant: "destructive",
             title: "Valuation Failed",
-            description: isQuotaError
-                ? "Our AI is currently busy. Please try again in 30 seconds."
-                : "An unexpected error occurred during valuation or saving.",
+            description: description,
         });
     } finally {
         setLoading(false);
