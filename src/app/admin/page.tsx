@@ -195,12 +195,19 @@ function AdminDashboard() {
   const { data: usersData, isLoading: isUsersLoading } = useCollection<UserProfile>(usersQuery);
   const userMap = useMemo(() => usersData?.reduce((acc, user) => ({ ...acc, [user.id]: user }), {} as Record<string, UserProfile>) || {}, [usersData]);
 
-  // Fetch pending withdrawal requests
-  const requestsQuery = useMemoFirebase(() => {
+  // Fetch ALL withdrawal requests and filter/sort on the client
+  const allRequestsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    return query(collection(firestore, 'withdrawalRequests'), where('status', '==', 'requested'), orderBy('requestedAt', 'desc'));
+    return query(collection(firestore, 'withdrawalRequests'));
   }, [firestore]);
-  const { data: requests, isLoading: isRequestsLoading, error: requestsError } = useCollection<WithdrawalRequest>(requestsQuery);
+  const { data: allRequestsData, isLoading: isRequestsLoading, error: requestsError } = useCollection<WithdrawalRequest>(allRequestsQuery);
+
+  const requests = useMemo(() => {
+      if (!allRequestsData) return null;
+      return allRequestsData
+          .filter(req => req.status === 'requested')
+          .sort((a, b) => b.requestedAt.toMillis() - a.requestedAt.toMillis());
+  }, [allRequestsData]);
 
 
   const [refreshKey, setRefreshKey] = useState(0);
