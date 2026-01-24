@@ -12,6 +12,7 @@ import {
   deleteDoc,
   getDoc,
   increment,
+  runTransaction,
 } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
@@ -33,8 +34,8 @@ export interface ValuationData extends CarValuationFormInput {
 }
 
 /**
- * Saves a completed car valuation and updates the user's profile in a single batch.
- * If the user is a mechanic, it also updates their wallet balance.
+ * Saves a completed car valuation and updates the user's profile in a single atomic transaction.
+ * If the user is a mechanic, it also robustly creates or updates their wallet.
  *
  * @param firestore - The Firestore instance.
  * @param user - The authenticated Firebase User object.
@@ -54,7 +55,7 @@ export async function saveValuation(
   const valuationCollectionRef = collection(firestore, `users/${userId}/carValuations`);
   const walletRef = doc(firestore, `users/${userId}/wallet/main`);
 
-  // Firestore doesn't allow 'undefined', null, or empty string values. We clean the object.
+  // Clean data for Firestore
   const cleanedData: { [key: string]: any } = { ...valuationData };
   Object.keys(cleanedData).forEach(key => {
     const value = cleanedData[key];
@@ -76,7 +77,6 @@ export async function saveValuation(
       lastUpdatedAt: serverTimestamp(),
   };
 
-  // Clean the user profile update object as well
   Object.keys(userProfileUpdate).forEach(key => {
     const value = userProfileUpdate[key];
     if (value === undefined || value === null || value === '') {
@@ -84,44 +84,52 @@ export async function saveValuation(
     }
   });
 
-  // Create a batch to perform multiple writes as a single atomic unit.
-  const batch = writeBatch(firestore);
-
-  // 1. Add the new valuation document to the carValuations subcollection
-  const newValuationDocRef = doc(valuationCollectionRef); 
-  batch.set(newValuationDocRef, valuationRecord);
-  
-  // 2. Update the user's main profile document with contact details
-  batch.set(userDocRef, userProfileUpdate, { merge: true });
-
-  // 3. Check user's role. If they are a Mechanic, credit their wallet.
   try {
-    const userDoc = await getDoc(userDocRef);
-    if (userDoc.exists() && userDoc.data().role === 'Mechanic') {
-        const earningsPerReport = 15; // This value should match the one displayed in the dashboard
-        batch.update(walletRef, {
-            balance: increment(earningsPerReport),
-            totalEarned: increment(earningsPerReport),
-            updatedAt: serverTimestamp(),
-        });
-    }
-  } catch (error) {
-     console.warn("Could not fetch user profile to check role for wallet update. Wallet was not credited.", error);
-  }
+    await runTransaction(firestore, async (transaction) => {
+      // Get user doc to check role
+      const userDoc = await transaction.get(userDocRef);
 
-  try {
-    await batch.commit();
+      // 1. Set the new valuation document
+      const newValuationDocRef = doc(valuationCollectionRef);
+      transaction.set(newValuationDocRef, valuationRecord);
+    
+      // 2. Update the user's main profile document
+      transaction.set(userDocRef, userProfileUpdate, { merge: true });
+
+      // 3. If user is a mechanic, handle wallet creation or update
+      if (userDoc.exists() && userDoc.data().role === 'Mechanic') {
+          const earningsPerReport = 15;
+          const walletDoc = await transaction.get(walletRef);
+
+          if (walletDoc.exists()) {
+              // Wallet exists, so we update it with increment
+              transaction.update(walletRef, {
+                  balance: increment(earningsPerReport),
+                  totalEarned: increment(earningsPerReport),
+                  updatedAt: serverTimestamp(),
+              });
+          } else {
+              // Wallet does not exist, so we create it with the initial amount
+              transaction.set(walletRef, {
+                  userId: userId,
+                  balance: earningsPerReport,
+                  totalEarned: earningsPerReport,
+                  lastWithdrawalDate: null,
+                  updatedAt: serverTimestamp(),
+              });
+          }
+      }
+    });
   } catch (error) {
-    console.error('Error saving valuation and updating user profile:', error);
+    console.error('Error in saveValuation transaction:', error);
     
     const permissionError = new FirestorePermissionError({
-      path: `users/${userId}`, // A representative path for the batch operation
-      operation: 'write', // Use a generic 'write' for batch operations
+      path: `users/${userId}`, // A representative path for the transaction
+      operation: 'write',
       requestResourceData: { valuationRecord, userProfileUpdate },
     });
     
     errorEmitter.emit('permission-error', permissionError);
-    // Re-throw the custom error so the UI can catch it.
     throw permissionError;
   }
 }
