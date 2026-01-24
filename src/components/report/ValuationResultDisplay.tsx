@@ -78,26 +78,23 @@ export const ValuationResultDisplay = ({ result, onNewValuation }: { result: { v
     reportElement.classList.add("pdf-render-mode");
 
     try {
-        const { scrollWidth, scrollHeight } = reportElement;
-        
         const canvas = await html2canvas(reportElement, {
             scale: 2,
             useCORS: true,
             backgroundColor: "#ffffff",
-            width: scrollWidth,
-            height: scrollHeight,
-            windowWidth: scrollWidth,
-            windowHeight: scrollHeight,
+            width: reportElement.scrollWidth,
+            height: reportElement.scrollHeight,
+            windowWidth: reportElement.scrollWidth,
+            windowHeight: reportElement.scrollHeight,
         });
 
-        const imgData = canvas.toDataURL('image/png', 1.0);
         const pdf = new jsPDF({
             orientation: 'p',
             unit: 'px',
             format: [canvas.width, canvas.height],
         });
 
-        pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+        pdf.addImage(canvas.toDataURL('image/png', 1.0), 'PNG', 0, 0, canvas.width, canvas.height);
         pdf.save(`mycarvalue-report-${clientData?.reportId || 'report'}.pdf`);
 
     } catch (err) {
@@ -131,18 +128,6 @@ export const ValuationResultDisplay = ({ result, onNewValuation }: { result: { v
     return `₹${Math.round(value).toLocaleString('en-IN')}`;
   }
   
-  const depreciationSections = [
-    { label: "Usage", value: valuation.u_usageDepreciationPercentage },
-    { label: "Engine & Mechanical", value: valuation.e_engineDepreciationPercentage },
-    { label: "Fluids", value: valuation.f_fluidsDepreciationPercentage },
-    { label: "Exterior", value: valuation.ex_exteriorDepreciationPercentage },
-    { label: "Interior", value: valuation.in_interiorDepreciationPercentage },
-    { label: "Electrical", value: valuation.el_electricalDepreciationPercentage },
-    { label: "Tyres", value: valuation.t_tyresDepreciationPercentage },
-    { label: "Safety", value: valuation.s_safetyDepreciationPercentage },
-    { label: "Documents", value: valuation.d_documentsDepreciationPercentage },
-  ];
-
   const depreciationBreakdown = [
     { category: 'Odometer', value: valuation.depreciation.odometer },
     { category: 'Vehicle Age', value: valuation.depreciation.age },
@@ -238,8 +223,8 @@ export const ValuationResultDisplay = ({ result, onNewValuation }: { result: { v
                 </div>
             </section>
 
-            <section className="grid grid-cols-1 md:grid-cols-2 gap-8 my-8">
-                <div>
+            <section className="my-8">
+                <div className="max-w-md mx-auto">
                     <h2 className="text-base font-semibold text-slate-900 mb-3">Price Calculation Summary</h2>
                     <div className="space-y-2 text-sm">
                         <div className="flex justify-between"><span className="text-slate-600">Your Expected Price</span> <span className="font-medium text-slate-800">{inr(valuation.p0_expectedPrice)}</span></div>
@@ -248,17 +233,6 @@ export const ValuationResultDisplay = ({ result, onNewValuation }: { result: { v
                         <div className="flex justify-between"><span className="text-slate-600">After Age Depreciation ({(valuation.yd_yearDepreciationPercentage || 0).toFixed(1)}%)</span> <span className="font-medium text-slate-800">{inr(valuation.p10_afterYear)}</span></div>
                         {valuation.goodCarBonusApplied && <div className="flex justify-between text-emerald-600"><span className="font-medium">Good Car Bonus</span> <span className="font-medium">+ {inr(valuation.finalPrice - valuation.p10_afterYear)}</span></div>}
                         <div className="flex justify-between pt-2 border-t font-bold"><span className="text-slate-800">Final Assessed Value</span> <span className="text-slate-900">{inr(valuation.finalPrice)}</span></div>
-                    </div>
-                </div>
-                <div>
-                    <h2 className="text-base font-semibold text-slate-900 mb-3">Depreciation by Section (%)</h2>
-                     <div className="space-y-2 text-sm">
-                        {depreciationSections.map(sec => (
-                            <div key={sec.label} className="flex justify-between">
-                                <span className="text-slate-600">{sec.label}</span>
-                                <span className="font-medium text-slate-800">{(sec.value || 0).toFixed(1)}%</span>
-                            </div>
-                        ))}
                     </div>
                 </div>
             </section>
