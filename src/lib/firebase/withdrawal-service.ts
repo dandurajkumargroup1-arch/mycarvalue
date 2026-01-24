@@ -9,6 +9,7 @@ import {
   runTransaction,
   type Firestore,
   increment,
+  updateDoc,
 } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
@@ -96,7 +97,13 @@ export async function approveWithdrawal(
     });
   } catch (error) {
     console.error("Error approving withdrawal:", error);
-    throw new Error("Failed to approve withdrawal.");
+    const err = error as any;
+     const permissionError = new FirestorePermissionError({
+        path: `withdrawalRequests/${requestId}`, 
+        operation: 'update',
+      });
+    errorEmitter.emit('permission-error', permissionError);
+    throw permissionError;
   }
 }
 
@@ -108,20 +115,21 @@ export async function rejectWithdrawal(
 ): Promise<void> {
    try {
     const requestRef = doc(firestore, 'withdrawalRequests', requestId);
-    await runTransaction(firestore, async (transaction) => {
-       const requestDoc = await transaction.get(requestRef);
-       if (!requestDoc.exists()) {
-        throw new Error("Withdrawal request not found!");
-      }
-      transaction.update(requestRef, {
+    await updateDoc(requestRef, {
         status: 'rejected',
         processedAt: serverTimestamp(),
         rejectionReason: rejectionReason,
-      });
     });
   } catch (error) {
     console.error("Error rejecting withdrawal:", error);
-    throw new Error("Failed to reject withdrawal.");
+    const err = error as any;
+    const permissionError = new FirestorePermissionError({
+        path: `withdrawalRequests/${requestId}`,
+        operation: 'update',
+        requestResourceData: { status: 'rejected', rejectionReason: rejectionReason }
+    });
+    errorEmitter.emit('permission-error', permissionError);
+    throw permissionError;
   }
 }
 
