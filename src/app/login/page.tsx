@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -56,8 +55,10 @@ export default function LoginPage() {
         title: "Login Successful",
         description: "Welcome back!",
       });
-      const redirectTo = searchParams.get('redirect') || '/';
-      router.push(redirectTo);
+      const redirectTo = searchParams.get('redirect') || '/dashboard';
+      // Using window.location.href to force a full page reload, ensuring
+      // all auth-dependent UI components are correctly initialized.
+      window.location.href = redirectTo;
     } catch (error: any) {
       // For invalid credentials, we only show the toast, not a console error.
       // For other, unexpected errors, we log them.
