@@ -85,7 +85,7 @@ service cloud.firestore {
       allow list: if isAdmin();
       allow create: if isOwner(userId) && userProfileHasCorrectIdOnCreate(userId);
       allow update: if isOwner(userId) && userIdIsImmutableOnUpdate();
-      allow delete: if isOwner(userId);
+      allow delete: if isOwner(userId) || isAdmin();
 
         match /carValuations/{carValuationId} {
             allow read, list: if isOwner(userId);
