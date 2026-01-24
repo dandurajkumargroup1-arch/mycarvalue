@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -105,7 +104,7 @@ export default function RegisterPage() {
         title: "Registration Successful",
         description: "Welcome! You can now access all features.",
       });
-      router.push('/');
+      router.push('/dashboard');
     } catch (error: any) {
       console.error("Registration Error:", error);
       let description = 'An unexpected error occurred. Please try again.';
