@@ -90,18 +90,14 @@ export const ValuationResultDisplay = ({ result, onNewValuation }: { result: { v
             windowHeight: scrollHeight,
         });
 
-        // The canvas now holds the full-height image of the report
-        const imgWidth = canvas.width;
-        const imgHeight = canvas.height;
-        
-        // Create a PDF with a custom page size that is as long as the content
+        const imgData = canvas.toDataURL('image/png', 1.0);
         const pdf = new jsPDF({
             orientation: 'p',
             unit: 'px',
-            format: [imgWidth, imgHeight],
+            format: [canvas.width, canvas.height],
         });
 
-        pdf.addImage(canvas.toDataURL('image/png', 1.0), 'PNG', 0, 0, imgWidth, imgHeight);
+        pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
         pdf.save(`mycarvalue-report-${clientData?.reportId || 'report'}.pdf`);
 
     } catch (err) {
@@ -113,6 +109,8 @@ export const ValuationResultDisplay = ({ result, onNewValuation }: { result: { v
   };
   
   const {
+      displayName,
+      vehicleNumber,
       make, model, variant, otherVariant, fuelType, transmission, manufactureYear, registrationYear, registrationState, ownership, odometer,
       engine, gearbox, clutch, battery, radiator, exhaust, suspension, steering, brakes,
       frontBumper, rearBumper, bonnet, roof, doors, fenders, paintQuality, scratches, dents, rust_areas, accidentHistory,
@@ -191,6 +189,24 @@ export const ValuationResultDisplay = ({ result, onNewValuation }: { result: { v
                     {clientData && <p className="text-xs text-slate-500">Report ID: {clientData.reportId} | Generated: {clientData.generatedOn}</p>}
                 </div>
             </header>
+
+            <section className="mt-6 mb-8 p-4 bg-slate-50 rounded-lg border border-slate-200">
+                <h2 className="text-sm font-semibold text-slate-600 mb-3">Report For</h2>
+                <div className="grid grid-cols-2 gap-4">
+                    {displayName && (
+                        <div>
+                            <p className="text-xs text-slate-500">Customer Name</p>
+                            <p className="font-medium text-slate-800">{displayName}</p>
+                        </div>
+                    )}
+                    {vehicleNumber && (
+                        <div>
+                            <p className="text-xs text-slate-500">Vehicle Number</p>
+                            <p className="font-medium text-slate-800 uppercase">{vehicleNumber}</p>
+                        </div>
+                    )}
+                </div>
+            </section>
 
             <section className="bg-slate-50 rounded-lg p-6 flex flex-col items-center gap-2 my-8 border border-slate-200">
                 <h3 className="text-sm font-semibold text-slate-700">Your Best Selling Price Estimate</h3>
