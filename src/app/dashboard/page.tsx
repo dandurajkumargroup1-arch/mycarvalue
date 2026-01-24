@@ -320,7 +320,11 @@ function MechanicDashboard({ user, userProfile }: { user: any, userProfile: User
     // Client-side sorting for withdrawals to compensate for simplified query
     const withdrawals = useMemo(() => {
         if (!withdrawalsData) return null;
-        return [...withdrawalsData].sort((a, b) => b.requestedAt.toMillis() - a.requestedAt.toMillis());
+        return [...withdrawalsData].sort((a, b) => {
+            const timeA = a.requestedAt?.toMillis() ?? 0;
+            const timeB = b.requestedAt?.toMillis() ?? 0;
+            return timeB - timeA;
+        });
     }, [withdrawalsData]);
 
     // -- Dynamic & Business Logic --
