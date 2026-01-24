@@ -60,10 +60,6 @@ service cloud.firestore {
     function hasCorrectOwnerDataOnCreate(userId) {
       return request.resource.data.userId == userId;
     }
-
-    function ownerFieldIsImmutable() {
-      return request.resource.data.userId == resource.data.userId;
-    }
     
     function isAdmin() {
       // Check if user has 'Admin' role in their profile
@@ -98,10 +94,11 @@ service cloud.firestore {
         }
 
         match /wallet/{walletId} {
-            allow read: if isOwner(userId) || isAdmin();
+            // Added 'list' to allow admins to get all documents before deletion.
+            allow read, list: if isOwner(userId) || isAdmin();
             allow update: if isOwner(userId) || isAdmin(); // Admin can update balance after withdrawal
             allow create: if isOwner(userId) && hasCorrectOwnerDataOnCreate(userId);
-            allow delete: if isAdmin();
+            allow delete: if isOwner(userId) || isAdmin();
         }
     }
     
