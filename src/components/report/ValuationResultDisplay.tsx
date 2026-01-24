@@ -187,7 +187,7 @@ export const ValuationResultDisplay = ({ result, onNewValuation }: { result: { v
             <section className="bg-slate-50 rounded-lg p-6 text-center my-8 border border-primary/50">
                 <h3 className="text-sm font-semibold text-slate-700">Your Best Selling Price Estimate</h3>
                 <p className="text-5xl font-bold tracking-tight my-2 text-slate-900">{inr(valuation.bestPrice)}</p>
-                <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary border border-primary/20">
+                <div className="inline-flex items-center gap-2 rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-800 border border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800">
                     <ShieldCheck className="h-4 w-4"/>
                     AI-Verified Price Estimate
                 </div>
