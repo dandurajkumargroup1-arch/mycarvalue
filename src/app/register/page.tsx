@@ -25,7 +25,7 @@ const RegisterSchema = z.object({
   displayName: z.string().min(2, { message: "Name must be at least 2 characters." }),
   email: z.string().email({ message: "Please enter a valid email address." }),
   password: z.string().min(6, { message: "Password must be at least 6 characters." }),
-  role: z.enum(['Owner', 'Agent', 'Mechanic', 'Admin'], { required_error: "Please select a role." }),
+  role: z.enum(['Owner', 'Agent', 'Mechanic'], { required_error: "Please select a role." }),
   shopName: z.string().optional(),
   location: z.string().optional(),
 }).superRefine((data, ctx) => {
@@ -187,7 +187,6 @@ export default function RegisterPage() {
                             <SelectItem value="Owner">Car Owner</SelectItem>
                             <SelectItem value="Agent">Agent / Dealer</SelectItem>
                             <SelectItem value="Mechanic">Mechanic</SelectItem>
-                            <SelectItem value="Admin">Admin</SelectItem>
                         </SelectContent>
                     </Select>
                     <FormMessage />
