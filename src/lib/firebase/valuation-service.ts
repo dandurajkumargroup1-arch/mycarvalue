@@ -98,7 +98,6 @@ export async function saveValuation(
   
   const userProfileUpdate: { [key: string]: any } = {
       id: userId,
-      displayName: valuationData.displayName || user.displayName,
       whatsappNumber: valuationData.whatsappNumber,
       vehicleNumber: valuationData.vehicleNumber,
       lastUpdatedAt: serverTimestamp(),
