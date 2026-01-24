@@ -71,6 +71,7 @@ export async function saveValuation(
   };
   
   const userProfileUpdate: { [key: string]: any } = {
+      id: userId, // Ensure the ID is present for create/update operations
       displayName: valuationData.displayName || user.displayName,
       whatsappNumber: valuationData.whatsappNumber,
       vehicleNumber: valuationData.vehicleNumber,
@@ -93,7 +94,7 @@ export async function saveValuation(
       const newValuationDocRef = doc(valuationCollectionRef);
       transaction.set(newValuationDocRef, valuationRecord);
     
-      // 2. Update the user's main profile document
+      // 2. Update the user's main profile document (will create if it doesn't exist)
       transaction.set(userDocRef, userProfileUpdate, { merge: true });
 
       // 3. If user is a mechanic, handle wallet creation or update
