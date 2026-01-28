@@ -188,8 +188,6 @@ function AdminDashboard() {
   // Fetch all users to create a name map
   const usersQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    // Removed orderBy to prevent query failure if the composite index is missing.
-    // Sorting will be handled on the client.
     let q = query(collection(firestore, 'users'));
     return q;
   }, [firestore]);
@@ -365,17 +363,21 @@ function AdminDashboard() {
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
-                                            {(isRequestsLoading || isUsersLoading) ? (
+                                            {isRequestsLoading ? (
                                                 <TableRow><TableCell colSpan={5}><Skeleton className="h-8 w-full" /></TableCell></TableRow>
                                             ) : pendingRequests && pendingRequests.length > 0 ? (
                                                 pendingRequests.map(req => (
                                                     <TableRow key={req.id}>
                                                         <TableCell>
-                                                            <div className="font-medium">{userMap[req.userId]?.displayName || 'Unknown User'}</div>
-                                                            {(userMap[req.userId]?.shopName || userMap[req.userId]?.location) && (
-                                                                <div className="text-xs text-muted-foreground">
-                                                                    {[userMap[req.userId]?.shopName, userMap[req.userId]?.location].filter(Boolean).join(' - ')}
-                                                                </div>
+                                                            {isUsersLoading ? <Skeleton className="h-5 w-32" /> : (
+                                                                <>
+                                                                    <div className="font-medium">{userMap[req.userId]?.displayName || 'Unknown User'}</div>
+                                                                    {(userMap[req.userId]?.shopName || userMap[req.userId]?.location) && (
+                                                                        <div className="text-xs text-muted-foreground">
+                                                                            {[userMap[req.userId]?.shopName, userMap[req.userId]?.location].filter(Boolean).join(' - ')}
+                                                                        </div>
+                                                                    )}
+                                                                </>
                                                             )}
                                                         </TableCell>
                                                         <TableCell>{formatCurrency(req.amount)}</TableCell>
@@ -458,12 +460,14 @@ function AdminDashboard() {
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
-                                             {(isRequestsLoading || isUsersLoading) ? (
+                                             {isRequestsLoading ? (
                                                 <TableRow><TableCell colSpan={5}><Skeleton className="h-8 w-full" /></TableCell></TableRow>
                                             ) : withdrawalHistory && withdrawalHistory.length > 0 ? (
                                                 withdrawalHistory.map(req => (
                                                     <TableRow key={req.id}>
-                                                        <TableCell className="font-medium">{userMap[req.userId]?.displayName || 'Unknown User'}</TableCell>
+                                                        <TableCell className="font-medium">
+                                                            {isUsersLoading ? <Skeleton className="h-5 w-24" /> : (userMap[req.userId]?.displayName || 'Unknown User')}
+                                                        </TableCell>
                                                         <TableCell>{formatCurrency(req.amount)}</TableCell>
                                                         <TableCell>{formatDate(req.processedAt)}</TableCell>
                                                         <TableCell><Badge variant={req.status === 'paid' ? 'default' : 'destructive'}>{req.status}</Badge></TableCell>
