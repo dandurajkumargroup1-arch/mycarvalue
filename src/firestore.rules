@@ -3,15 +3,14 @@
  * @author Firebase Creator
  *
  * @description
- * This ruleset enforces a strict user-ownership security model, with a global
- * override for administrators. A user with the 'Admin' role or the super-admin
- * email has full read/write access to all data for management purposes. All
- * other users are restricted to their own data tree.
+ * This ruleset enforces a strict user-ownership security model, with explicit
+ * overrides for administrators. A user with the 'Admin' role or the super-admin
+ * email has comprehensive access to manage users and their data.
  *
  * @philosophy
  * Core Philosophy: A two-tiered permission model.
- * 1. Admin Override: Explicit checks for `isAdmin()` are included in each rule
- *    to grant administrators comprehensive access.
+ * 1. Admin Override: `isAdmin()` checks are explicitly added to each relevant rule
+ *    to grant administrators granular access for specific operations.
  * 2. User Isolation: A user-centric, path-based ownership model for non-admins.
  *    If a non-admin's UID matches the `{userId}` in the path, they are granted
  *    access; otherwise, access is denied.
@@ -36,10 +35,6 @@ service cloud.firestore {
       return request.resource.data.id == userId;
     }
 
-    function userIdIsImmutableOnUpdate() {
-        return request.resource.data.id == resource.data.id;
-    }
-
     function hasCorrectOwnerDataOnCreate(userId) {
       return request.resource.data.userId == userId;
     }
@@ -57,22 +52,23 @@ service cloud.firestore {
     // User Rules
     // ------------------------------------------------------------------------
     match /users/{userId} {
-      // Admins have full access. Non-admins can get/update/delete their own profile.
+      // Admins have full read/write access. Non-admins can get/update their own profile.
       allow read, update, delete: if isOwner(userId) || isAdmin();
       
-      // New users can create their own profile.
-      allow create: if isOwner(userId) && userProfileHasCorrectIdOnCreate(userId);
+      // New users can create their own profile. Admins can also create profiles if needed.
+      allow create: if (isOwner(userId) && userProfileHasCorrectIdOnCreate(userId)) || isAdmin();
 
       match /carValuations/{carValuationId} {
-        // Admins have full access. Non-admins can read/create/delete their own.
-        allow read, create, delete: if isOwner(userId) || isAdmin();
-        // Valuations are immutable once created.
+        // Admins need list, read, and delete to clean up data. Non-admins can manage their own.
+        allow list, read, create, delete: if isOwner(userId) || isAdmin();
+        
+        // Valuations are immutable by anyone for data integrity.
         allow update: if false;
       }
 
       match /wallet/{walletId} {
-        // Admins have full access. Non-admins can access their own wallet.
-        allow read, write: if isOwner(userId) || isAdmin();
+        // Admins need list/read/write for management and deletion. Non-admins manage their own.
+        allow list, read, write: if isOwner(userId) || isAdmin();
       }
     }
     
