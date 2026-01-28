@@ -347,25 +347,9 @@ export function ValuationForm() {
         const result = await getValuationAction(data);
         const fullResult = { valuation: result.valuation, formData: data };
 
-        if (userProfile?.role === 'Mechanic') {
-            // For Mechanics: save directly and go to results, no payment needed.
-            await saveValuation(firestore, user, {
-                paymentId: `mech-${Date.now()}`,
-                ...data,
-                valuationResult: result.valuation,
-                comparableListingsResult: null,
-                imageQualityResult: null,
-            });
-            
-            localStorage.setItem('valuationResult', JSON.stringify(fullResult));
-            localStorage.setItem('paymentSuccess', 'true'); // Mark as 'paid' for result page access
-            router.push('/result');
-
-        } else {
-            // For Owners/Agents: store result and show payment screen.
-            localStorage.setItem('valuationResult', JSON.stringify(fullResult));
-            setShowPayment(true);
-        }
+        // For ALL roles: store result and show payment screen.
+        localStorage.setItem('valuationResult', JSON.stringify(fullResult));
+        setShowPayment(true);
 
     } catch (error: any) {
         console.error("Valuation Action Error:", error);
@@ -389,10 +373,10 @@ export function ValuationForm() {
   
   const buttonText = useMemo(() => {
     if (loading) {
-      return userProfile?.role === 'Mechanic' ? 'Analyzing & Saving...' : 'Analyzing...';
+      return 'Analyzing...';
     }
-    return userProfile?.role === 'Mechanic' ? 'Get Valuation & Save Report' : 'Get Valuation & Proceed to Payment';
-  }, [loading, userProfile]);
+    return 'Get Valuation & Proceed to Payment';
+  }, [loading]);
 
 
   const sections = [
