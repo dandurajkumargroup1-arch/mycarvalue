@@ -768,5 +768,3 @@ export function ValuationForm() {
     </Card>
   );
 }
-
-    
