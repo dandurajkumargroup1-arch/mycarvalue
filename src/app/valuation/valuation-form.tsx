@@ -347,18 +347,25 @@ export function ValuationForm() {
         const result = await getValuationAction(data);
         const fullResult = { valuation: result.valuation, formData: data };
 
-        await saveValuation(firestore, user, {
-            paymentId: `test-${Date.now()}`,
-            ...data,
-            valuationResult: result.valuation,
-            comparableListingsResult: null,
-            imageQualityResult: null,
-        });
-        
-        localStorage.setItem('valuationResult', JSON.stringify(fullResult));
-        localStorage.setItem('paymentSuccess', 'true');
+        if (userProfile?.role === 'Mechanic') {
+            // For Mechanics: save directly and go to results, no payment needed.
+            await saveValuation(firestore, user, {
+                paymentId: `mech-${Date.now()}`,
+                ...data,
+                valuationResult: result.valuation,
+                comparableListingsResult: null,
+                imageQualityResult: null,
+            });
+            
+            localStorage.setItem('valuationResult', JSON.stringify(fullResult));
+            localStorage.setItem('paymentSuccess', 'true'); // Mark as 'paid' for result page access
+            router.push('/result');
 
-        router.push('/result');
+        } else {
+            // For Owners/Agents: store result and show payment screen.
+            localStorage.setItem('valuationResult', JSON.stringify(fullResult));
+            setShowPayment(true);
+        }
 
     } catch (error: any) {
         console.error("Valuation Action Error:", error);
@@ -366,7 +373,7 @@ export function ValuationForm() {
         let description = "An unexpected error occurred during valuation or saving.";
         if (error.message?.includes("already exists")) {
             description = error.message;
-        } else if (error.message?.includes("429") || error.message?.toLowerCase().includes("quota")) {
+        } else if (error.message?.toLowerCase().includes("quota")) {
             description = "Our AI is currently busy. Please try again in 30 seconds.";
         }
 
@@ -379,6 +386,13 @@ export function ValuationForm() {
         setLoading(false);
     }
   };
+  
+  const buttonText = useMemo(() => {
+    if (loading) {
+      return userProfile?.role === 'Mechanic' ? 'Analyzing & Saving...' : 'Analyzing...';
+    }
+    return userProfile?.role === 'Mechanic' ? 'Get Valuation & Save Report' : 'Get Valuation & Proceed to Payment';
+  }, [loading, userProfile]);
 
 
   const sections = [
@@ -735,7 +749,7 @@ export function ValuationForm() {
                     {isLastSection ? (
                         <Button type="submit" className="w-full" size="lg" disabled={loading}>
                             <Sparkles className="mr-2 h-4 w-4" />
-                            {loading ? 'Analyzing & Saving...' : 'Get Valuation & Save Report'}
+                            {buttonText}
                         </Button>
                     ) : (
                         <Button type="button" onClick={handleNextSection} className="w-full" size="lg">
@@ -754,3 +768,5 @@ export function ValuationForm() {
     </Card>
   );
 }
+
+    
