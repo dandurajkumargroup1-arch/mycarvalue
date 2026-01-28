@@ -312,7 +312,7 @@ function MechanicDashboard({ user, userProfile }: { user: any, userProfile: User
             where('userId', '==', user.uid),
         );
     }, [firestore, user]);
-    const { data: withdrawalsData, isLoading: areWithdrawalsLoading } = useCollection<WithdrawalRequest>(withdrawalsQuery);
+    const { data: withdrawalsData, isLoading: areWithdrawalsLoading, error: withdrawalsError } = useCollection<WithdrawalRequest>(withdrawalsQuery);
     
     // Fetch valuations to count today's completions
     const valuationsQuery = useMemoFirebase(() => {
@@ -452,22 +452,38 @@ function MechanicDashboard({ user, userProfile }: { user: any, userProfile: User
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {withdrawals && withdrawals.length > 0 ? withdrawals.map((item) => (
-                                        <TableRow key={item.id}>
-                                            <TableCell>{formatDate(item.requestedAt)}</TableCell>
-                                            <TableCell className="font-medium">{formatCurrency(item.amount)}</TableCell>
-                                            <TableCell className="text-right">
-                                                <Badge 
-                                                    variant={item.status === 'paid' ? 'default' : item.status === 'rejected' ? 'destructive' : 'secondary'} 
-                                                    className={item.status === 'paid' ? 'bg-green-600 hover:bg-green-700' : ''}
-                                                >
-                                                    {item.status}
-                                                </Badge>
+                                    {withdrawalsError ? (
+                                        <TableRow>
+                                            <TableCell colSpan={3} className="h-24 text-center text-sm text-muted-foreground">
+                                                Could not load withdrawal history due to a permissions change.
                                             </TableCell>
                                         </TableRow>
-                                    )) : (
+                                    ) : areWithdrawalsLoading ? (
                                         <TableRow>
-                                            <TableCell colSpan={3} className="text-center">No withdrawal history found.</TableCell>
+                                            <TableCell colSpan={3} className="h-24 text-center">
+                                                <Skeleton className="h-5 w-full" />
+                                            </TableCell>
+                                        </TableRow>
+                                    ) : withdrawals && withdrawals.length > 0 ? (
+                                        withdrawals.map((item) => (
+                                            <TableRow key={item.id}>
+                                                <TableCell>{formatDate(item.requestedAt)}</TableCell>
+                                                <TableCell className="font-medium">{formatCurrency(item.amount)}</TableCell>
+                                                <TableCell className="text-right">
+                                                    <Badge 
+                                                        variant={item.status === 'paid' ? 'default' : item.status === 'rejected' ? 'destructive' : 'secondary'} 
+                                                        className={item.status === 'paid' ? 'bg-green-600 hover:bg-green-700' : ''}
+                                                    >
+                                                        {item.status}
+                                                    </Badge>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))
+                                    ) : (
+                                        <TableRow>
+                                            <TableCell colSpan={3} className="h-24 text-center text-sm text-muted-foreground">
+                                                No withdrawal history found.
+                                            </TableCell>
                                         </TableRow>
                                     )}
                                 </TableBody>

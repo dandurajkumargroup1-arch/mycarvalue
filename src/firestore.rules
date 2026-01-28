@@ -30,7 +30,7 @@ service cloud.firestore {
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
     }
-
+    
     function userProfileHasCorrectIdOnCreate(userId) {
       return request.resource.data.id == userId;
     }
@@ -38,37 +38,38 @@ service cloud.firestore {
     function hasCorrectOwnerDataOnCreate(userId) {
       return request.resource.data.userId == userId;
     }
-    
+
     function isAdmin() {
-      // Check if user has 'Admin' role in their profile
-      let isRoleAdmin = isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Admin';
-      // Check for the permanent super-admin email
+      // isSuperAdmin does not require a DB read and is faster.
       let isSuperAdmin = isSignedIn() && request.auth.token.email == 'rajmycarvalue@gmail.com';
-      
-      return isRoleAdmin || isSuperAdmin;
+      // isRoleAdmin requires a DB read. The `allow get` rule on /users/{userId} must permit this check.
+      let isRoleAdmin = isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Admin';
+      return isSuperAdmin || isRoleAdmin;
     }
     
     // ------------------------------------------------------------------------
     // User Rules
     // ------------------------------------------------------------------------
     match /users/{userId} {
-      // Admins have full read/write access. Non-admins can get/update their own profile.
-      allow read, update, delete: if isOwner(userId) || isAdmin();
-      
-      // New users can create their own profile. Admins can also create profiles if needed.
+      // An Admin can get/list/update/delete any user.
+      // A non-admin can only get/update their own profile. They cannot list all users.
+      allow get, update: if isOwner(userId) || isAdmin();
+      allow list, delete: if isAdmin();
       allow create: if (isOwner(userId) && userProfileHasCorrectIdOnCreate(userId)) || isAdmin();
 
+      // --- Subcollection Rules ---
+
       match /carValuations/{carValuationId} {
-        // Admins need list, read, and delete to clean up data. Non-admins can manage their own.
-        allow list, read, create, delete: if isOwner(userId) || isAdmin();
-        
-        // Valuations are immutable by anyone for data integrity.
+        // Admins can manage any valuation. Users can manage their own.
+        allow get, list, delete: if isOwner(userId) || isAdmin();
+        allow create: if (isOwner(userId) && hasCorrectOwnerDataOnCreate(userId)) || isAdmin();
+        // Valuations are immutable to maintain data integrity.
         allow update: if false;
       }
 
       match /wallet/{walletId} {
-        // Admins need list/read/write for management and deletion. Non-admins manage their own.
-        allow list, read, write: if isOwner(userId) || isAdmin();
+        // Admins can manage any wallet. Users can manage their own.
+        allow get, list, write: if isOwner(userId) || isAdmin();
       }
     }
     
@@ -76,14 +77,16 @@ service cloud.firestore {
     // Withdrawal Request Rules
     // ------------------------------------------------------------------------
     match /withdrawalRequests/{requestId} {
-      // A user can create their own request. Admins can create too.
-      allow create: if isOwner(request.resource.data.userId) || isAdmin();
+      // A user can create their own request. Admins can also create requests.
+      allow create: if (isOwner(request.resource.data.userId) && hasCorrectOwnerDataOnCreate(request.resource.data.userId)) || isAdmin();
       
-      // A user can read their own request. Admins can read any.
-      allow read: if isOwner(resource.data.userId) || isAdmin();
+      // A user can read their own request. An admin can read any.
+      allow get: if isOwner(resource.data.userId) || isAdmin();
       
-      // A user can only list their own requests. Admins can list all.
-      allow list: if (isSignedIn() && request.query.where.userId == request.auth.uid) || isAdmin();
+      // An admin can list all requests. This is a security-sensitive operation.
+      // Non-admins cannot list from this collection because Firestore rules cannot
+      // securely filter a root collection based on user ID for a 'list' operation.
+      allow list: if isAdmin();
       
       // Only Admins can update (approve/reject) or delete requests.
       allow update, delete: if isAdmin();
