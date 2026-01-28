@@ -14,11 +14,19 @@ service cloud.firestore {
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
     }
+    
+    function userProfileHasCorrectIdOnCreate(userId) {
+      return request.resource.data.id == userId;
+    }
+
+    function hasCorrectOwnerDataOnCreate(userId) {
+      return request.resource.data.userId == userId;
+    }
 
     function isAdmin() {
       // isSuperAdmin does not require a DB read and is faster.
       let isSuperAdmin = isSignedIn() && request.auth.token.email == 'rajmycarvalue@gmail.com';
-      // isRoleAdmin requires a DB read. The rule allowing this read must be solid.
+      // isRoleAdmin requires a DB read. The `allow get` rule on /users/{userId} must permit this check.
       let isRoleAdmin = isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Admin';
       return isSuperAdmin || isRoleAdmin;
     }
@@ -30,16 +38,16 @@ service cloud.firestore {
       // An Admin can get/list/update/delete any user.
       // A non-admin can only get/update their own profile. They cannot list all users.
       allow get, update: if isOwner(userId) || isAdmin();
-      allow list: if isAdmin();
-      allow create: if isOwner(userId);
-      allow delete: if isAdmin();
+      allow list, delete: if isAdmin();
+      allow create: if (isOwner(userId) && userProfileHasCorrectIdOnCreate(userId)) || isAdmin();
 
       // --- Subcollection Rules ---
 
       match /carValuations/{carValuationId} {
         // Admins can manage any valuation. Users can manage their own.
-        allow get, list, delete, create: if isOwner(userId) || isAdmin();
-        // Valuations are immutable.
+        allow get, list, delete: if isOwner(userId) || isAdmin();
+        allow create: if (isOwner(userId) && hasCorrectOwnerDataOnCreate(userId)) || isAdmin();
+        // Valuations are immutable to maintain data integrity.
         allow update: if false;
       }
 
@@ -57,7 +65,7 @@ service cloud.firestore {
       allow create: if isOwner(request.resource.data.userId);
       // A user can read their own request. An admin can read any.
       allow get: if isOwner(resource.data.userId) || isAdmin();
-      // An admin can list all requests. A user can only list their own.
+      // An admin can list all requests. A user can only list their own requests by querying on their userId.
       allow list: if isAdmin() || (isSignedIn() && request.query.where.userId == request.auth.uid);
       // Only Admins can update (approve/reject) or delete requests.
       allow update, delete: if isAdmin();

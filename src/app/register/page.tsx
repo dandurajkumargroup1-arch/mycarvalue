@@ -104,7 +104,8 @@ export default function RegisterPage() {
         title: "Registration Successful",
         description: "Welcome! You can now access all features.",
       });
-      router.push('/dashboard');
+      // Use window.location.href for a full page refresh to ensure clean auth state.
+      window.location.href = '/dashboard';
     } catch (error: any) {
       console.error("Registration Error:", error);
       let description = 'An unexpected error occurred. Please try again.';
