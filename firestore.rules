@@ -15,69 +15,53 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    function userProfileHasCorrectIdOnCreate(userId) {
-      return request.resource.data.id == userId;
-    }
-
-    function userIdIsImmutableOnUpdate() {
-        return request.resource.data.id == resource.data.id;
-    }
-
-    function hasCorrectOwnerDataOnCreate(userId) {
-      return request.resource.data.userId == userId;
-    }
-    
     function isAdmin() {
-      // Check if user has 'Admin' role in their profile
-      let isRoleAdmin = isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Admin';
-      // Check for the permanent super-admin email
+      // isSuperAdmin does not require a DB read and is faster.
       let isSuperAdmin = isSignedIn() && request.auth.token.email == 'rajmycarvalue@gmail.com';
-      
-      return isRoleAdmin || isSuperAdmin;
+      // isRoleAdmin requires a DB read. The rule allowing this read must be solid.
+      let isRoleAdmin = isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Admin';
+      return isSuperAdmin || isRoleAdmin;
     }
 
     // ------------------------------------------------------------------------
-    // Global Admin Rule: This is the definitive fix.
-    // Admins get full read/write access to all documents in the database.
-    // This rule is checked first. If `isAdmin()` is true, access is granted
-    // and no other rules are checked for the request.
+    // User Rules
     // ------------------------------------------------------------------------
-    match /{document=**} {
-      allow read, write: if isAdmin();
-    }
-
-    // ------------------------------------------------------------------------
-    // Non-Admin User Rules (These only apply if the user is not an admin)
-    // ------------------------------------------------------------------------
-
     match /users/{userId} {
-      // A non-admin can only get, update, or delete their own profile.
-      allow get, update, delete: if isOwner(userId);
-      // New users can create their own profile record.
-      allow create: if isOwner(userId) && userProfileHasCorrectIdOnCreate(userId);
+      // ANY signed-in user can get/list user profiles to support isAdmin() checks.
+      // An Admin can update or delete any user.
+      // A non-admin can only update their own profile.
+      allow get, list: if isSignedIn();
+      allow update: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId);
+      allow delete: if isAdmin(); // ONLY admins can delete users.
 
-        match /carValuations/{carValuationId} {
-            // A non-admin can only read, create, and delete their own valuations.
-            allow read, create, delete: if isOwner(userId);
-            allow update: if false; // Valuations are immutable once created
-        }
+      // --- Subcollection Rules ---
 
-        match /wallet/{walletId} {
-            // A non-admin can only read and write to their own wallet.
-            allow read, write: if isOwner(userId);
-        }
+      match /carValuations/{carValuationId} {
+        // Admins can manage any valuation. Users can manage their own.
+        allow get, list, delete, create: if isOwner(userId) || isAdmin();
+        // Valuations are immutable.
+        allow update: if false;
+      }
+
+      match /wallet/{walletId} {
+        // Admins can manage any wallet. Users can manage their own.
+        allow get, list, write: if isOwner(userId) || isAdmin();
+      }
     }
     
+    // ------------------------------------------------------------------------
+    // Withdrawal Request Rules
+    // ------------------------------------------------------------------------
     match /withdrawalRequests/{requestId} {
-        // A user can create their own withdrawal request.
-        allow create: if isOwner(request.resource.data.userId);
-        // A user can read their own request.
-        allow get: if isOwner(resource.data.userId);
-        // A user can ONLY list requests where their UID is in the 'userId' field.
-        allow list: if isSignedIn() && request.query.where.userId == request.auth.uid;
-        
-        // Update/delete is handled by the global admin rule.
-        allow update, delete: if false;
+      // A user can create their own request.
+      allow create: if isOwner(request.resource.data.userId);
+      // A user can read their own request. An admin can read any.
+      allow get: if isOwner(resource.data.userId) || isAdmin();
+      // An admin can list all requests. A user can only list their own.
+      allow list: if isAdmin() || (isSignedIn() && request.query.where.userId == request.auth.uid);
+      // Only Admins can update (approve/reject) or delete requests.
+      allow update, delete: if isAdmin();
     }
   }
 }
