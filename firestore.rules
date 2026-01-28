@@ -27,13 +27,12 @@ service cloud.firestore {
     // User Rules
     // ------------------------------------------------------------------------
     match /users/{userId} {
-      // ANY signed-in user can get/list user profiles to support isAdmin() checks.
-      // An Admin can update or delete any user.
-      // A non-admin can only update their own profile.
-      allow get, list: if isSignedIn();
-      allow update: if isOwner(userId) || isAdmin();
+      // An Admin can get/list/update/delete any user.
+      // A non-admin can only get/update their own profile. They cannot list all users.
+      allow get, update: if isOwner(userId) || isAdmin();
+      allow list: if isAdmin();
       allow create: if isOwner(userId);
-      allow delete: if isAdmin(); // ONLY admins can delete users.
+      allow delete: if isAdmin();
 
       // --- Subcollection Rules ---
 
