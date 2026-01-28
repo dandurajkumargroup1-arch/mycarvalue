@@ -371,7 +371,7 @@ function AdminDashboard() {
                                                         <TableCell>
                                                             {isUsersLoading ? <Skeleton className="h-5 w-32" /> : (
                                                                 <>
-                                                                    <div className="font-medium">{userMap[req.userId]?.displayName || 'Unknown User'}</div>
+                                                                    <div className="font-medium">{userMap[req.userId]?.displayName || userMap[req.userId]?.email || 'Unknown User'}</div>
                                                                     {(userMap[req.userId]?.shopName || userMap[req.userId]?.location) && (
                                                                         <div className="text-xs text-muted-foreground">
                                                                             {[userMap[req.userId]?.shopName, userMap[req.userId]?.location].filter(Boolean).join(' - ')}
@@ -466,7 +466,7 @@ function AdminDashboard() {
                                                 withdrawalHistory.map(req => (
                                                     <TableRow key={req.id}>
                                                         <TableCell className="font-medium">
-                                                            {isUsersLoading ? <Skeleton className="h-5 w-24" /> : (userMap[req.userId]?.displayName || 'Unknown User')}
+                                                            {isUsersLoading ? <Skeleton className="h-5 w-24" /> : (userMap[req.userId]?.displayName || userMap[req.userId]?.email || 'Unknown User')}
                                                         </TableCell>
                                                         <TableCell>{formatCurrency(req.amount)}</TableCell>
                                                         <TableCell>{formatDate(req.processedAt)}</TableCell>
