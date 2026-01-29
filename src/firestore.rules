@@ -62,14 +62,11 @@ service cloud.firestore {
     // ------------------------------------------------------------------------
     match /withdrawalRequests/{requestId} {
       // A user can create their own request.
-      allow create: if isOwner(request.resource.data.userId) || isAdmin();
-      
+      allow create: if isOwner(request.resource.data.userId);
       // A user can read their own request. An admin can read any.
       allow get: if isOwner(resource.data.userId) || isAdmin();
-      
-      // An admin can list all requests. A user cannot list from the root.
+      // An admin can list all requests. A user cannot list from the root collection.
       allow list: if isAdmin();
-      
       // Only Admins can update (approve/reject) or delete requests.
       allow update, delete: if isAdmin();
     }
