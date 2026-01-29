@@ -57,7 +57,7 @@ export async function requestWithdrawal(
       requestResourceData: withdrawalData,
     });
     
-    errorEmitter.emit('permission-error', permissionError);
+    // Let the calling UI component handle the error via toast.
     throw permissionError;
   }
 }
@@ -97,12 +97,11 @@ export async function approveWithdrawal(
     });
   } catch (error) {
     console.error("Error approving withdrawal:", error);
-    const err = error as any;
-     const permissionError = new FirestorePermissionError({
+    const permissionError = new FirestorePermissionError({
         path: `withdrawalRequests/${requestId}`, 
         operation: 'update',
       });
-    errorEmitter.emit('permission-error', permissionError);
+    // Let the calling UI component handle the error.
     throw permissionError;
   }
 }
@@ -122,13 +121,12 @@ export async function rejectWithdrawal(
     });
   } catch (error) {
     console.error("Error rejecting withdrawal:", error);
-    const err = error as any;
     const permissionError = new FirestorePermissionError({
         path: `withdrawalRequests/${requestId}`,
         operation: 'update',
         requestResourceData: { status: 'rejected', rejectionReason: rejectionReason }
     });
-    errorEmitter.emit('permission-error', permissionError);
+    // Let the calling UI component handle the error.
     throw permissionError;
   }
 }
