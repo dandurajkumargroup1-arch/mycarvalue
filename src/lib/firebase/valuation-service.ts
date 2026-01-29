@@ -18,7 +18,6 @@ import {
   getDocs,
   limit,
 } from 'firebase/firestore';
-import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { CarValuationFormInput } from '@/lib/schemas';
 import type { User } from 'firebase/auth';
@@ -160,7 +159,6 @@ export async function saveValuation(
       requestResourceData: { valuationRecord, userProfileUpdate },
     });
     
-    errorEmitter.emit('permission-error', permissionError);
     throw permissionError;
   }
 }
@@ -193,7 +191,6 @@ export async function deleteValuation(
       operation: 'delete',
     });
     
-    errorEmitter.emit('permission-error', permissionError);
     throw permissionError;
   }
 }
