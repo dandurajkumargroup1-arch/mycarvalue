@@ -61,7 +61,7 @@ service cloud.firestore {
 
       match /carValuations/{carValuationId} {
         // Admins can manage any valuation. Users can manage their own.
-        allow get, list, delete: if isOwner(userId) || isAdmin();
+        allow read, delete: if isOwner(userId) || isAdmin();
         allow create: if (isOwner(userId) && hasCorrectOwnerDataOnCreate(userId)) || isAdmin();
         // Valuations are immutable to maintain data integrity.
         allow update: if false;
@@ -69,7 +69,7 @@ service cloud.firestore {
 
       match /wallet/{walletId} {
         // Admins can manage any wallet. Users can manage their own.
-        allow get, list, write: if isOwner(userId) || isAdmin();
+        allow read, write: if isOwner(userId) || isAdmin();
       }
     }
     
@@ -80,13 +80,11 @@ service cloud.firestore {
       // A user can create their own request. Admins can also create requests.
       allow create: if (isOwner(request.resource.data.userId) && hasCorrectOwnerDataOnCreate(request.resource.data.userId)) || isAdmin();
       
-      // A user can read their own request. An admin can read any.
-      allow get: if isOwner(resource.data.userId) || isAdmin();
-      
-      // An admin can list all requests. This is a security-sensitive operation.
-      // Non-admins cannot list from this collection because Firestore rules cannot
-      // securely filter a root collection based on user ID for a 'list' operation.
-      allow list: if isAdmin();
+      // An admin can read ANY request (get or list).
+      // A user can read (get or list) ONLY their own requests.
+      // For 'list', this rule is only secure if the client query includes `where('userId', '==', request.auth.uid)`.
+      // The application code in `dashboard/page.tsx` correctly enforces this query constraint.
+      allow read: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
       
       // Only Admins can update (approve/reject) or delete requests.
       allow update, delete: if isAdmin();
