@@ -106,9 +106,9 @@ export default function PaymentSuccessPage() {
       <Card className="w-full max-w-md text-center shadow-lg">
         <CardHeader>
           <div
-            className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-100"
+            className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/10"
           >
-            <CheckCircle2 className="h-10 w-10 text-green-600" />
+            <CheckCircle2 className="h-10 w-10 text-primary" />
           </div>
           <CardTitle className="mt-4 text-2xl">Payment Successful!</CardTitle>
           <CardDescription>

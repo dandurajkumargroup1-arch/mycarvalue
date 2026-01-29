@@ -471,8 +471,7 @@ function MechanicDashboard({ user, userProfile }: { user: any, userProfile: User
                                                 <TableCell className="font-medium">{formatCurrency(item.amount)}</TableCell>
                                                 <TableCell className="text-right">
                                                     <Badge 
-                                                        variant={item.status === 'paid' ? 'default' : item.status === 'rejected' ? 'destructive' : 'secondary'} 
-                                                        className={item.status === 'paid' ? 'bg-green-600 hover:bg-green-700' : ''}
+                                                        variant={item.status === 'paid' ? 'default' : item.status === 'rejected' ? 'destructive' : 'secondary'}
                                                     >
                                                         {item.status}
                                                     </Badge>
@@ -528,7 +527,7 @@ function MechanicDashboard({ user, userProfile }: { user: any, userProfile: User
                             <p className="text-xs text-muted-foreground mt-1 text-center">
                                 Last withdrawal status: {lastWithdrawalStatus}.
                             </p>
-                             {!!lastPendingRequest && <p className="text-xs text-green-600 mt-2 text-center">Your request is being processed. It will be credited to your account within 24-48 hours.</p>}
+                             {!!lastPendingRequest && <p className="text-xs text-primary mt-2 text-center">Your request is being processed. It will be credited to your account within 24-48 hours.</p>}
                         </CardContent>
                     </Card>
                     

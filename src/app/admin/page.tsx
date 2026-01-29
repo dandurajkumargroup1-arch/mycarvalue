@@ -89,7 +89,7 @@ function ApproveDialog({ request }: { request: WithdrawalRequest }) {
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button size="sm" variant="outline" className="text-green-600 border-green-600 hover:bg-green-50 hover:text-green-700">Approve</Button>
+                <Button size="sm" variant="secondary">Approve</Button>
             </DialogTrigger>
             <DialogContent>
                 <DialogHeader>
@@ -390,7 +390,7 @@ function AdminDashboard() {
                                             ) : (
                                                 <TableRow>
                                                     <TableCell colSpan={5} className="h-24 text-center">
-                                                        <CheckCircle className="mx-auto h-8 w-8 text-green-500 mb-2"/>
+                                                        <CheckCircle className="mx-auto h-8 w-8 text-primary mb-2"/>
                                                         No pending requests. All caught up!
                                                     </TableCell>
                                                 </TableRow>
@@ -716,5 +716,3 @@ export default function AdminPage() {
         </Suspense>
     );
 }
-
-    

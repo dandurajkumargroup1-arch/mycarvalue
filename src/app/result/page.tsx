@@ -84,7 +84,7 @@ const ResultPageClient = () => {
     }
 
     return (
-        <div className="bg-slate-100">
+        <div className="bg-secondary">
             <div className="container mx-auto max-w-4xl py-8">
                 <ValuationResultDisplay result={result} onNewValuation={handleNewValuation} />
             </div>

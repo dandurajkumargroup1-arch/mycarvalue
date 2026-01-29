@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from "react";
@@ -13,8 +14,8 @@ const DetailItem = ({ label, value }: { label: string, value: string | number | 
     if (value === undefined || value === null || value === '') return null;
     return (
         <div>
-            <p className="text-xs text-slate-500 capitalize">{label.replace(/([A-Z])/g, ' $1')}</p>
-            <p className="font-medium text-slate-800 text-sm">{String(value)}</p>
+            <p className="text-xs text-muted-foreground capitalize">{label.replace(/([A-Z])/g, ' $1')}</p>
+            <p className="font-medium text-card-foreground text-sm">{String(value)}</p>
         </div>
     );
 };
@@ -22,7 +23,7 @@ const DetailItem = ({ label, value }: { label: string, value: string | number | 
 // Helper component for report sections
 const ReportSection = ({ title, children }: { title: string, children: React.ReactNode }) => (
     <section className="mt-8">
-        <h2 className="text-base font-semibold text-slate-900 pb-2 border-b mb-4">{title}</h2>
+        <h2 className="text-base font-semibold text-foreground pb-2 border-b mb-4">{title}</h2>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-4">
             {children}
         </div>
@@ -35,7 +36,7 @@ export const ValuationResultDisplay = ({ result, onNewValuation }: { result: { v
   // Robustly check if the result and its nested properties are valid.
   if (!result || !result.valuation || !result.formData) {
       return (
-          <div className="bg-slate-100 p-2 md:p-8">
+          <div className="bg-secondary p-2 md:p-8">
               <Card className="max-w-4xl mx-auto text-center">
                   <CardHeader>
                       <CardTitle>Error Displaying Report</CardTitle>
@@ -158,87 +159,87 @@ export const ValuationResultDisplay = ({ result, onNewValuation }: { result: { v
         color: #1e293b; /* slate-800 */
       }
      `}</style>
-     <div className="bg-slate-100 p-2 md:p-8">
-        <div id="report-content" className="bg-white text-slate-800 p-6 md:p-8 rounded-lg shadow-lg max-w-4xl mx-auto">
+     <div className="bg-secondary p-2 md:p-8">
+        <div id="report-content" className="bg-card text-card-foreground p-6 md:p-8 rounded-lg shadow-lg max-w-4xl mx-auto">
             
-            <header className="flex justify-between items-start pb-4 border-b border-slate-200">
+            <header className="flex justify-between items-start pb-4 border-b">
                 <div>
                     <div className="flex items-center gap-2">
-                        <Car className="h-7 w-7 text-slate-900"/>
-                        <span className="font-bold text-xl text-slate-900">mycarvalue.in</span>
+                        <Car className="h-7 w-7 text-foreground"/>
+                        <span className="font-bold text-xl text-foreground">mycarvalue.in</span>
                     </div>
-                    <p className="text-xs text-slate-500 ml-1">AI Valuation Report</p>
+                    <p className="text-xs text-muted-foreground ml-1">AI Valuation Report</p>
                 </div>
                 <div className="text-right">
-                    <p className="font-semibold text-base text-slate-900">{make} {model}</p>
-                    {clientData && <p className="text-xs text-slate-500">Report ID: {clientData.reportId} | Generated: {clientData.generatedOn}</p>}
+                    <p className="font-semibold text-base text-foreground">{make} {model}</p>
+                    {clientData && <p className="text-xs text-muted-foreground">Report ID: {clientData.reportId} | Generated: {clientData.generatedOn}</p>}
                 </div>
             </header>
 
-            <section className="mt-6 mb-8 p-4 bg-slate-50 rounded-lg border border-slate-200">
-                <h2 className="text-sm font-semibold text-slate-600 mb-3">Report For</h2>
+            <section className="mt-6 mb-8 p-4 bg-muted/50 rounded-lg border">
+                <h2 className="text-sm font-semibold text-muted-foreground mb-3">Report For</h2>
                 <div className="grid grid-cols-2 gap-4">
                     {displayName && (
                         <div>
-                            <p className="text-xs text-slate-500">Customer Name</p>
-                            <p className="font-medium text-slate-800">{displayName}</p>
+                            <p className="text-xs text-muted-foreground">Customer Name</p>
+                            <p className="font-medium text-card-foreground">{displayName}</p>
                         </div>
                     )}
                     {vehicleNumber && (
                         <div>
-                            <p className="text-xs text-slate-500">Vehicle Number</p>
-                            <p className="font-medium text-slate-800 uppercase">{vehicleNumber}</p>
+                            <p className="text-xs text-muted-foreground">Vehicle Number</p>
+                            <p className="font-medium text-card-foreground uppercase">{vehicleNumber}</p>
                         </div>
                     )}
                 </div>
             </section>
 
-            <section className="bg-slate-50 rounded-lg p-6 flex flex-col items-center gap-2 my-8 border border-slate-200">
-                <h3 className="text-sm font-semibold text-slate-700">Your Best Selling Price Estimate</h3>
-                <p className="text-5xl font-bold tracking-tight text-slate-900">{inr(valuation.bestPrice)}</p>
+            <section className="bg-muted/50 rounded-lg p-6 flex flex-col items-center gap-2 my-8 border">
+                <h3 className="text-sm font-semibold text-muted-foreground">Your Best Selling Price Estimate</h3>
+                <p className="text-5xl font-bold tracking-tight text-foreground">{inr(valuation.bestPrice)}</p>
             </section>
             
             <section className="my-8">
-                <h2 className="text-base font-semibold text-slate-900 mb-3 text-center">Price Confidence Guide</h2>
+                <h2 className="text-base font-semibold text-foreground mb-3 text-center">Price Confidence Guide</h2>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
-                    <Card className="p-4 bg-slate-50">
-                        <TrendingUp className="mx-auto h-7 w-7 text-slate-600 mb-2"/>
-                        <CardTitle className="text-sm font-medium text-slate-600">Market Range</CardTitle>
-                        <CardDescription className="text-2xl font-bold text-slate-800 mt-1">{inr(valuation.marketValueMin)} - {inr(valuation.marketValueMax)}</CardDescription>
+                    <Card className="p-4 bg-muted/50">
+                        <TrendingUp className="mx-auto h-7 w-7 text-muted-foreground mb-2"/>
+                        <CardTitle className="text-sm font-medium text-muted-foreground">Market Range</CardTitle>
+                        <CardDescription className="text-2xl font-bold text-card-foreground mt-1">{inr(valuation.marketValueMin)} - {inr(valuation.marketValueMax)}</CardDescription>
                     </Card>
-                    <Card className="p-4 bg-slate-50 border-destructive/50">
+                    <Card className="p-4 bg-muted/50 border-destructive/50">
                         <Target className="mx-auto h-7 w-7 text-destructive mb-2"/>
                         <CardTitle className="text-sm font-medium text-destructive">Fair Deal Price</CardTitle>
                         <CardDescription className="text-2xl font-bold text-destructive mt-1">{inr(valuation.expectedFinalDeal)}</CardDescription>
                     </Card>
-                    <Card className="p-4 bg-slate-50">
-                        <Tag className="mx-auto h-7 w-7 text-slate-600 mb-2"/>
-                        <CardTitle className="text-sm font-medium text-slate-600">Listing Price (For Ads)</CardTitle>
-                        <CardDescription className="text-2xl font-bold text-slate-800 mt-1">{inr(valuation.idealListingPrice)}</CardDescription>
+                    <Card className="p-4 bg-muted/50">
+                        <Tag className="mx-auto h-7 w-7 text-muted-foreground mb-2"/>
+                        <CardTitle className="text-sm font-medium text-muted-foreground">Listing Price (For Ads)</CardTitle>
+                        <CardDescription className="text-2xl font-bold text-card-foreground mt-1">{inr(valuation.idealListingPrice)}</CardDescription>
                     </Card>
                 </div>
-                 <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-center">
-                    <Info className="inline-block h-5 w-5 text-blue-600 mr-2" />
-                    <span className="text-sm text-blue-800">{valuation.buyerPsychologyTip}</span>
+                 <div className="mt-4 p-3 bg-accent/10 border border-accent/20 rounded-lg text-center">
+                    <Info className="inline-block h-5 w-5 text-primary mr-2" />
+                    <span className="text-sm text-primary">{valuation.buyerPsychologyTip}</span>
                 </div>
             </section>
 
             <section className="my-8">
                 <div className="max-w-md mx-auto">
-                    <h2 className="text-base font-semibold text-slate-900 mb-3">Price Calculation Summary</h2>
+                    <h2 className="text-base font-semibold text-foreground mb-3">Price Calculation Summary</h2>
                     <div className="space-y-2 text-sm">
-                        <div className="flex justify-between"><span className="text-slate-600">Your Expected Price</span> <span className="font-medium text-slate-800">{inr(valuation.p0_expectedPrice)}</span></div>
-                        <div className="flex justify-between"><span className="text-slate-600">After Odometer Depreciation ({(valuation.od_odometerDepreciationPercentage || 0).toFixed(1)}%)</span> <span className="font-medium text-slate-800">{inr(valuation.p1_afterOdometer)}</span></div>
-                        <div className="flex justify-between"><span className="text-slate-600">After Condition Depreciation</span> <span className="font-medium text-slate-800">{inr(valuation.p9_afterAllSections)}</span></div>
-                        <div className="flex justify-between"><span className="text-slate-600">After Age Depreciation ({(valuation.yd_yearDepreciationPercentage || 0).toFixed(1)}%)</span> <span className="font-medium text-slate-800">{inr(valuation.p10_afterYear)}</span></div>
-                        {valuation.goodCarBonusApplied && <div className="flex justify-between text-emerald-600"><span className="font-medium">Good Car Bonus</span> <span className="font-medium">+ {inr(valuation.finalPrice - valuation.p10_afterYear)}</span></div>}
-                        <div className="flex justify-between pt-2 border-t font-bold"><span className="text-slate-800">Final Assessed Value</span> <span className="text-slate-900">{inr(valuation.finalPrice)}</span></div>
+                        <div className="flex justify-between"><span className="text-muted-foreground">Your Expected Price</span> <span className="font-medium text-card-foreground">{inr(valuation.p0_expectedPrice)}</span></div>
+                        <div className="flex justify-between"><span className="text-muted-foreground">After Odometer Depreciation ({(valuation.od_odometerDepreciationPercentage || 0).toFixed(1)}%)</span> <span className="font-medium text-card-foreground">{inr(valuation.p1_afterOdometer)}</span></div>
+                        <div className="flex justify-between"><span className="text-muted-foreground">After Condition Depreciation</span> <span className="font-medium text-card-foreground">{inr(valuation.p9_afterAllSections)}</span></div>
+                        <div className="flex justify-between"><span className="text-muted-foreground">After Age Depreciation ({(valuation.yd_yearDepreciationPercentage || 0).toFixed(1)}%)</span> <span className="font-medium text-card-foreground">{inr(valuation.p10_afterYear)}</span></div>
+                        {valuation.goodCarBonusApplied && <div className="flex justify-between text-primary/90"><span className="font-medium">Good Car Bonus</span> <span className="font-medium">+ {inr(valuation.finalPrice - valuation.p10_afterYear)}</span></div>}
+                        <div className="flex justify-between pt-2 border-t font-bold"><span className="text-foreground">Final Assessed Value</span> <span className="text-foreground">{inr(valuation.finalPrice)}</span></div>
                     </div>
                 </div>
             </section>
             
             <section className="my-8">
-                 <h2 className="text-base font-semibold text-slate-900 mb-3 text-center">Depreciation Breakdown (Estimated Value Lost)</h2>
+                 <h2 className="text-base font-semibold text-foreground mb-3 text-center">Depreciation Breakdown (Estimated Value Lost)</h2>
                  <Table>
                     <TableHeader>
                         <TableRow>
@@ -363,7 +364,7 @@ export const ValuationResultDisplay = ({ result, onNewValuation }: { result: { v
             </ReportSection>
 
 
-            <footer className="mt-10 pt-4 border-t border-slate-200 text-xs text-center text-slate-500">
+            <footer className="mt-10 pt-4 border-t text-xs text-center text-muted-foreground">
                 <p>mycarvalue1@gmail.com | +91-9492060040</p>
                 <p className="mt-2">This is an AI-generated report and should be used as an estimate. Physical inspection may affect the final price.</p>
             </footer>

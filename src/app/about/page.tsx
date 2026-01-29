@@ -42,7 +42,7 @@ export default function AboutPage() {
                 {features.map((feature, index) => (
                     <Card key={index} className="p-6 text-left shadow-sm hover:shadow-md transition-shadow bg-secondary/30">
                         <div className="flex items-start gap-4">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-100 text-green-600">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
                                 <CheckCircle className="h-6 w-6" />
                             </div>
                             <div>
