@@ -26,7 +26,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
+import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AlertTriangle, CheckCircle, Shield, Users, Wallet, XCircle, Calendar as CalendarIcon, Download, Trash2 } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -196,19 +196,13 @@ function AdminDashboard() {
 
   const filteredUsers = useMemo(() => {
     if (!allUsersData) return [];
-    
-    // Sort all users by creation date descending (newest first)
-    const sortedData = [...allUsersData].sort((a, b) => {
-        const timeA = a.createdAt?.toMillis() ?? 0;
-        const timeB = b.createdAt?.toMillis() ?? 0;
-        return timeB - timeA;
-    });
 
-    let filteredData = sortedData;
+    // Always filter out Admins first
+    let data = allUsersData.filter(user => user.role !== 'Admin');
 
-    // Filter by role first
+    // Then filter by the selected role
     if (roleFilter !== 'All') {
-      filteredData = filteredData.filter(user => user.role === roleFilter);
+      data = data.filter(user => user.role === roleFilter);
     }
     
     // Then filter by date
@@ -217,14 +211,19 @@ function AdminDashboard() {
       const to = usersDateRange.to ? new Date(usersDateRange.to) : new Date(from);
       to.setHours(23, 59, 59, 999);
 
-      filteredData = filteredData.filter(user => {
+      data = data.filter(user => {
         if (!user.createdAt) return false;
         const userDate = user.createdAt.toDate();
         return userDate >= from && userDate <= to;
       });
     }
 
-    return filteredData;
+    // Finally, sort the filtered data
+    return data.sort((a, b) => {
+        const timeA = a.createdAt?.toMillis() ?? 0;
+        const timeB = b.createdAt?.toMillis() ?? 0;
+        return timeB - timeA;
+    });
   }, [allUsersData, usersDateRange, roleFilter]);
 
   const userMap = useMemo(() => allUsersData?.reduce((acc, user) => ({ ...acc, [user.id]: user }), {} as Record<string, UserProfile>) || {}, [allUsersData]);
@@ -586,7 +585,7 @@ function AdminDashboard() {
                             {isUsersLoading ? (
                                 <TableRow><TableCell colSpan={5} className="h-24 text-center"><Skeleton className="h-8 w-full" /></TableCell></TableRow>
                             ) : filteredUsers && filteredUsers.length > 0 ? (
-                                filteredUsers.filter(u => u.role !== 'Admin').map(user => (
+                                filteredUsers.map(user => (
                                     <TableRow key={user.id}>
                                         <TableCell>
                                             <div className="font-medium">{user.displayName}</div>
