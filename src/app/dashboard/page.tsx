@@ -306,10 +306,10 @@ function MechanicDashboard({ user, userProfile }: { user: any, userProfile: User
 
     const withdrawalsQuery = useMemoFirebase(() => {
         if (!firestore || !user) return null;
-        // SIMPLIFIED QUERY: Removed orderBy to align with security rules.
         return query(
             collection(firestore, 'withdrawalRequests'), 
             where('userId', '==', user.uid),
+            orderBy('requestedAt', 'desc')
         );
     }, [firestore, user]);
     const { data: withdrawalsData, isLoading: areWithdrawalsLoading, error: withdrawalsError } = useCollection<WithdrawalRequest>(withdrawalsQuery);
@@ -455,7 +455,7 @@ function MechanicDashboard({ user, userProfile }: { user: any, userProfile: User
                                     {withdrawalsError ? (
                                         <TableRow>
                                             <TableCell colSpan={3} className="h-24 text-center text-sm text-muted-foreground">
-                                                Could not load withdrawal history due to a permissions change.
+                                                Could not load withdrawal history due to a permissions error.
                                             </TableCell>
                                         </TableRow>
                                     ) : areWithdrawalsLoading ? (
