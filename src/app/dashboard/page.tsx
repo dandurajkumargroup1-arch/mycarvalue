@@ -552,7 +552,7 @@ function AgentOwnerDashboard({ user, userProfile }: { user: any, userProfile: Us
         return query(collection(firestore, 'users', user.uid, 'carValuations'), orderBy('createdAt', 'desc'));
     }, [firestore, user]);
 
-    const { data: valuations, isLoading } = useCollection<ValuationDoc>(valuationsQuery);
+    const { data: valuations, isLoading, error } = useCollection<ValuationDoc>(valuationsQuery);
 
     const filteredValuations = useMemo(() => {
         if (!valuations) return [];
@@ -662,7 +662,14 @@ function AgentOwnerDashboard({ user, userProfile }: { user: any, userProfile: Us
                                     </TableCell>
                                 </TableRow>
                             )}
-                            {!isLoading && filteredValuations && filteredValuations.length > 0 ? (
+                            {error && (
+                                <TableRow>
+                                    <TableCell colSpan={4} className="h-24 text-center text-destructive">
+                                        An error occurred while loading your reports. Please try again later.
+                                    </TableCell>
+                                </TableRow>
+                            )}
+                            {!isLoading && !error && filteredValuations && filteredValuations.length > 0 ? (
                                 filteredValuations.map((valuation) => (
                                     <TableRow key={valuation.id}>
                                         <TableCell className="font-medium">{valuation.make} {valuation.model}</TableCell>
@@ -679,7 +686,7 @@ function AgentOwnerDashboard({ user, userProfile }: { user: any, userProfile: Us
                                     </TableRow>
                                 ))
                             ) : (
-                                !isLoading && (
+                                !isLoading && !error && (
                                     <TableRow>
                                         <TableCell colSpan={4} className="h-24 text-center">
                                             No valuation reports found for the selected period.
