@@ -63,7 +63,7 @@ const ApproveDialogSchema = z.object({
 });
 type ApproveFormInput = z.infer<typeof ApproveDialogSchema>;
 
-function ApproveDialog({ request, onApproved }: { request: WithdrawalRequest, onApproved: () => void }) {
+function ApproveDialog({ request }: { request: WithdrawalRequest }) {
     const [open, setOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const firestore = useFirestore();
@@ -77,7 +77,6 @@ function ApproveDialog({ request, onApproved }: { request: WithdrawalRequest, on
         try {
             await approveWithdrawal(firestore, request.id, data.transactionId);
             toast({ title: "Success", description: "Withdrawal marked as paid." });
-            onApproved();
             setOpen(false);
         } catch (error) {
             console.error(error);
@@ -122,7 +121,7 @@ const RejectDialogSchema = z.object({
 });
 type RejectFormInput = z.infer<typeof RejectDialogSchema>;
 
-function RejectDialog({ request, onRejected }: { request: WithdrawalRequest, onRejected: () => void }) {
+function RejectDialog({ request }: { request: WithdrawalRequest }) {
     const [open, setOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const firestore = useFirestore();
@@ -136,7 +135,6 @@ function RejectDialog({ request, onRejected }: { request: WithdrawalRequest, onR
         try {
             await rejectWithdrawal(firestore, request.id, data.rejectionReason);
             toast({ title: "Success", description: "Withdrawal has been rejected." });
-            onRejected();
             setOpen(false);
         } catch (error) {
              console.error(error);
@@ -262,9 +260,6 @@ function AdminDashboard() {
   }, [allRequestsData, withdrawalDateRange]);
 
 
-  const [refreshKey, setRefreshKey] = useState(0);
-  const forceRefresh = () => setRefreshKey(k => k + 1);
-
   if (requestsError) {
       toast({variant: 'destructive', title: 'Error', description: 'Could not load withdrawal requests. Check security rules.'});
   }
@@ -387,8 +382,8 @@ function AdminDashboard() {
                                                         </TableCell>
                                                         <TableCell>{formatDate(req.requestedAt)}</TableCell>
                                                         <TableCell className="text-right space-x-2">
-                                                            <ApproveDialog request={req} onApproved={forceRefresh} />
-                                                            <RejectDialog request={req} onRejected={forceRefresh} />
+                                                            <ApproveDialog request={req} />
+                                                            <RejectDialog request={req} />
                                                         </TableCell>
                                                     </TableRow>
                                                 ))
@@ -721,3 +716,5 @@ export default function AdminPage() {
         </Suspense>
     );
 }
+
+    
