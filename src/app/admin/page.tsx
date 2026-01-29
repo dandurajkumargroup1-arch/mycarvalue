@@ -466,7 +466,7 @@ function AdminDashboard() {
                                                 withdrawalHistory.map(req => (
                                                     <TableRow key={req.id}>
                                                         <TableCell className="font-medium">
-                                                            {isUsersLoading ? <Skeleton className="h-5 w-24" /> : (userMap[req.userId]?.displayName || userMap[req.userId]?.email || 'Unknown User')}
+                                                             {isUsersLoading ? <Skeleton className="h-5 w-24" /> : (userMap[req.userId]?.displayName || userMap[req.userId]?.email || 'N/A')}
                                                         </TableCell>
                                                         <TableCell>{formatCurrency(req.amount)}</TableCell>
                                                         <TableCell>{formatDate(req.processedAt)}</TableCell>
