@@ -65,8 +65,8 @@ service cloud.firestore {
       allow create: if isOwner(request.resource.data.userId);
       // A user can read their own request. An admin can read any.
       allow get: if isOwner(resource.data.userId) || isAdmin();
-      // An admin can list all requests. A user can only list their own requests by querying on their userId.
-      allow list: if isAdmin() || (isSignedIn() && request.query.where.userId == request.auth.uid);
+      // An admin can list all requests. A user cannot list from the root collection but can query for their own.
+      allow list: if isAdmin();
       // Only Admins can update (approve/reject) or delete requests.
       allow update, delete: if isAdmin();
     }
