@@ -302,15 +302,15 @@
         }
       },
       {
-        "path": "/withdrawalRequests/{requestId}",
+        "path": "/users/{userId}/withdrawalRequests/{requestId}",
         "definition": {
           "entityName": "WithdrawalRequest",
           "schema": { "$ref": "#/backend/entities/WithdrawalRequest" },
-          "description": "Stores withdrawal requests from all users in a single collection for admin processing."
+          "description": "Stores withdrawal requests in a subcollection under each user."
         }
       }
     ],
-    "reasoning": "The Firestore data structure is designed around user-centric data ownership. Each user has a document in the top-level `users` collection. All data specific to that user, such as their car valuations and wallet, is stored in subcollections within their user document. This allows for simple and secure access control rules. Withdrawal requests are stored in a root collection to allow admins to query all requests at once."
+    "reasoning": "The Firestore data structure is user-centric. All user-specific data (valuations, wallet, withdrawals) is stored in subcollections under their main user document. This allows for simple, secure access control rules. Admins use collection group queries to access all withdrawal requests across all users for processing."
   }
 }
 

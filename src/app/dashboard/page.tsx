@@ -307,8 +307,7 @@ function MechanicDashboard({ user, userProfile }: { user: any, userProfile: User
     const withdrawalsQuery = useMemoFirebase(() => {
         if (!firestore || !user) return null;
         return query(
-            collection(firestore, 'withdrawalRequests'), 
-            where('userId', '==', user.uid),
+            collection(firestore, 'users', user.uid, 'withdrawalRequests'), 
             orderBy('requestedAt', 'desc')
         );
     }, [firestore, user]);
@@ -843,3 +842,5 @@ export default function DashboardPage() {
         </Suspense>
     );
 }
+
+    

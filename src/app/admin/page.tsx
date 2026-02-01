@@ -2,7 +2,7 @@
 'use client';
 
 import { Suspense, useEffect, useState, useMemo } from 'react';
-import { doc, collection, query, orderBy, where, Timestamp } from 'firebase/firestore';
+import { doc, collection, query, orderBy, where, Timestamp, collectionGroup } from 'firebase/firestore';
 import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
 import type { UserProfile } from '@/lib/firebase/user-profile-service';
 import { approveWithdrawal, rejectWithdrawal } from '@/lib/firebase/withdrawal-service';
@@ -75,7 +75,7 @@ function ApproveDialog({ request }: { request: WithdrawalRequest }) {
         if (!firestore) return;
         setIsSubmitting(true);
         try {
-            await approveWithdrawal(firestore, request.id, data.transactionId);
+            await approveWithdrawal(firestore, request.userId, request.id, data.transactionId);
             toast({ title: "Success", description: "Withdrawal marked as paid." });
             setOpen(false);
         } catch (error) {
@@ -133,7 +133,7 @@ function RejectDialog({ request }: { request: WithdrawalRequest }) {
         if (!firestore) return;
         setIsSubmitting(true);
         try {
-            await rejectWithdrawal(firestore, request.id, data.rejectionReason);
+            await rejectWithdrawal(firestore, request.userId, request.id, data.rejectionReason);
             toast({ title: "Success", description: "Withdrawal has been rejected." });
             setOpen(false);
         } catch (error) {
@@ -186,8 +186,7 @@ function AdminDashboard() {
   // Fetch all users to create a name map
   const usersQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    let q = query(collection(firestore, 'users'));
-    return q;
+    return query(collection(firestore, 'users'));
   }, [firestore]);
 
   const { data: allUsersData, isLoading: isUsersLoading } = useCollection<UserProfile>(usersQuery);
@@ -226,10 +225,10 @@ function AdminDashboard() {
 
   const userMap = useMemo(() => allUsersData?.reduce((acc, user) => ({ ...acc, [user.id]: user }), {} as Record<string, UserProfile>) || {}, [allUsersData]);
 
-  // Fetch ALL withdrawal requests and filter/sort on the client
+  // Fetch ALL withdrawal requests using a collection group query
   const allRequestsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    return query(collection(firestore, 'withdrawalRequests'));
+    return query(collectionGroup(firestore, 'withdrawalRequests'));
   }, [firestore]);
   const { data: allRequestsData, isLoading: isRequestsLoading, error: requestsError } = useCollection<WithdrawalRequest>(allRequestsQuery);
 
@@ -716,3 +715,5 @@ export default function AdminPage() {
         </Suspense>
     );
 }
+
+    

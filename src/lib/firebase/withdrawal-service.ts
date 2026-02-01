@@ -11,8 +11,6 @@ import {
   increment,
   updateDoc,
 } from 'firebase/firestore';
-import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError } from '@/firebase/errors';
 import type { User } from 'firebase/auth';
 
 export interface WithdrawalRequestPayload {
@@ -37,7 +35,7 @@ export async function requestWithdrawal(
     throw new Error('User is required to request a withdrawal.');
   }
 
-  const withdrawalCollectionRef = collection(firestore, `withdrawalRequests`);
+  const withdrawalCollectionRef = collection(firestore, `users/${user.uid}/withdrawalRequests`);
 
   const withdrawalData: WithdrawalRequestData = {
     userId: user.uid,
@@ -50,26 +48,20 @@ export async function requestWithdrawal(
     await addDoc(withdrawalCollectionRef, withdrawalData);
   } catch (error) {
     console.error('Error creating withdrawal request:', error);
-
-    const permissionError = new FirestorePermissionError({
-      path: withdrawalCollectionRef.path,
-      operation: 'create',
-      requestResourceData: withdrawalData,
-    });
-    
     // Let the calling UI component handle the error via toast.
-    throw permissionError;
+    throw error;
   }
 }
 
 export async function approveWithdrawal(
   firestore: Firestore,
+  userId: string,
   requestId: string,
   transactionId: string,
 ): Promise<void> {
   try {
     await runTransaction(firestore, async (transaction) => {
-      const requestRef = doc(firestore, 'withdrawalRequests', requestId);
+      const requestRef = doc(firestore, 'users', userId, 'withdrawalRequests', requestId);
       const requestDoc = await transaction.get(requestRef);
 
       if (!requestDoc.exists()) {
@@ -77,7 +69,6 @@ export async function approveWithdrawal(
       }
 
       const requestData = requestDoc.data();
-      const userId = requestData.userId;
       const amount = requestData.amount;
       
       const walletRef = doc(firestore, `users/${userId}/wallet/main`);
@@ -97,23 +88,20 @@ export async function approveWithdrawal(
     });
   } catch (error) {
     console.error("Error approving withdrawal:", error);
-    const permissionError = new FirestorePermissionError({
-        path: `withdrawalRequests/${requestId}`, 
-        operation: 'update',
-      });
     // Let the calling UI component handle the error.
-    throw permissionError;
+    throw error;
   }
 }
 
 
 export async function rejectWithdrawal(
   firestore: Firestore,
+  userId: string,
   requestId: string,
   rejectionReason: string,
 ): Promise<void> {
    try {
-    const requestRef = doc(firestore, 'withdrawalRequests', requestId);
+    const requestRef = doc(firestore, 'users', userId, 'withdrawalRequests', requestId);
     await updateDoc(requestRef, {
         status: 'rejected',
         processedAt: serverTimestamp(),
@@ -121,13 +109,8 @@ export async function rejectWithdrawal(
     });
   } catch (error) {
     console.error("Error rejecting withdrawal:", error);
-    const permissionError = new FirestorePermissionError({
-        path: `withdrawalRequests/${requestId}`,
-        operation: 'update',
-        requestResourceData: { status: 'rejected', rejectionReason: rejectionReason }
-    });
     // Let the calling UI component handle the error.
-    throw permissionError;
+    throw error;
   }
 }
 
