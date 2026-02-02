@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Suspense, useEffect, useState, useMemo } from 'react';
@@ -51,9 +52,8 @@ interface WithdrawalRequest {
 const formatCurrency = (value: number) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(value);
 
 const formatDate = (timestamp: Timestamp | FieldValue | null | undefined) => {
-    // Check if it's a Firestore Timestamp object which has a toDate method
-    if (timestamp && typeof (timestamp as Timestamp).toDate === 'function') {
-        return (timestamp as Timestamp).toDate().toLocaleString('en-GB');
+    if (timestamp instanceof Timestamp) {
+        return timestamp.toDate().toLocaleString('en-GB');
     }
     return 'N/A';
 }
@@ -212,16 +212,18 @@ function AdminDashboard() {
       to.setHours(23, 59, 59, 999);
 
       data = data.filter(user => {
-        if (!user.createdAt || typeof (user.createdAt as Timestamp).toDate !== 'function') return false;
-        const userDate = (user.createdAt as Timestamp).toDate();
-        return userDate >= from && userDate <= to;
+        if (user.createdAt && user.createdAt instanceof Timestamp) {
+            const userDate = user.createdAt.toDate();
+            return userDate >= from && userDate <= to;
+        }
+        return false;
       });
     }
 
     // Finally, sort the filtered data
     return data.sort((a, b) => {
-        const timeA = a.createdAt && typeof (a.createdAt as Timestamp).toMillis === 'function' ? (a.createdAt as Timestamp).toMillis() : 0;
-        const timeB = b.createdAt && typeof (b.createdAt as Timestamp).toMillis === 'function' ? (b.createdAt as Timestamp).toMillis() : 0;
+        const timeA = a.createdAt instanceof Timestamp ? a.createdAt.toMillis() : 0;
+        const timeB = b.createdAt instanceof Timestamp ? b.createdAt.toMillis() : 0;
         return timeB - timeA;
     });
   }, [allUsersData, usersDateRange, roleFilter]);
@@ -252,15 +254,17 @@ function AdminDashboard() {
       to.setHours(23, 59, 59, 999);
 
       history = history.filter(req => {
-        if (!req.processedAt || typeof (req.processedAt as Timestamp).toDate !== 'function') return false;
-        const reqDate = (req.processedAt as Timestamp).toDate();
-        return reqDate >= from && reqDate <= to;
+        if (req.processedAt && req.processedAt instanceof Timestamp) {
+            const reqDate = req.processedAt.toDate();
+            return reqDate >= from && reqDate <= to;
+        }
+        return false;
       });
     }
 
     return history.sort((a, b) => {
-        const timeA = a.processedAt && typeof (a.processedAt as Timestamp).toMillis === 'function' ? (a.processedAt as Timestamp).toMillis() : 0;
-        const timeB = b.processedAt && typeof (b.processedAt as Timestamp).toMillis === 'function' ? (b.processedAt as Timestamp).toMillis() : 0;
+        const timeA = a.processedAt instanceof Timestamp ? a.processedAt.toMillis() : 0;
+        const timeB = b.processedAt instanceof Timestamp ? b.processedAt.toMillis() : 0;
         return timeB - timeA;
     });
   }, [allRequestsData, withdrawalDateRange]);
@@ -324,8 +328,8 @@ function AdminDashboard() {
     if (!allUsersData) return [];
     return [...allUsersData]
         .sort((a, b) => {
-            const timeA = a.createdAt && typeof (a.createdAt as Timestamp).toMillis === 'function' ? (a.createdAt as Timestamp).toMillis() : 0;
-            const timeB = b.createdAt && typeof (b.createdAt as Timestamp).toMillis === 'function' ? (b.createdAt as Timestamp).toMillis() : 0;
+            const timeA = a.createdAt instanceof Timestamp ? a.createdAt.toMillis() : 0;
+            const timeB = b.createdAt instanceof Timestamp ? b.createdAt.toMillis() : 0;
             return timeB - timeA;
         })
         .filter(u => u.role !== 'Admin') // Show all roles except Admin
