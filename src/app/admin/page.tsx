@@ -2,7 +2,7 @@
 'use client';
 
 import { Suspense, useEffect, useState, useMemo } from 'react';
-import { doc, collection, query, orderBy, where, Timestamp, collectionGroup } from 'firebase/firestore';
+import { doc, collection, query, orderBy, where, Timestamp, collectionGroup, type FieldValue } from 'firebase/firestore';
 import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
 import type { UserProfile } from '@/lib/firebase/user-profile-service';
 import { approveWithdrawal, rejectWithdrawal } from '@/lib/firebase/withdrawal-service';
@@ -51,9 +51,11 @@ interface WithdrawalRequest {
 
 const formatCurrency = (value: number) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(value);
 // Make formatDate robust to handle optional timestamps
-const formatDate = (timestamp: Timestamp | null | undefined) => {
-    if (!timestamp) return 'N/A';
-    return timestamp.toDate().toLocaleString('en-GB');
+const formatDate = (timestamp: Timestamp | FieldValue | null | undefined) => {
+    if (timestamp instanceof Timestamp) {
+        return timestamp.toDate().toLocaleString('en-GB');
+    }
+    return 'N/A';
 }
 
 // --- Dialog Components ---
@@ -209,7 +211,7 @@ function AdminDashboard() {
       to.setHours(23, 59, 59, 999);
 
       data = data.filter(user => {
-        if (!user.createdAt) return false;
+        if (!user.createdAt || !(user.createdAt instanceof Timestamp)) return false;
         const userDate = user.createdAt.toDate();
         return userDate >= from && userDate <= to;
       });
@@ -217,8 +219,8 @@ function AdminDashboard() {
 
     // Finally, sort the filtered data
     return data.sort((a, b) => {
-        const timeA = a.createdAt?.toMillis() ?? 0;
-        const timeB = b.createdAt?.toMillis() ?? 0;
+        const timeA = a.createdAt instanceof Timestamp ? a.createdAt.toMillis() : 0;
+        const timeB = b.createdAt instanceof Timestamp ? b.createdAt.toMillis() : 0;
         return timeB - timeA;
     });
   }, [allUsersData, usersDateRange, roleFilter]);
@@ -316,7 +318,11 @@ function AdminDashboard() {
   const recentUsers = useMemo(() => {
     if (!allUsersData) return [];
     return [...allUsersData]
-        .sort((a, b) => (b.createdAt?.toMillis() ?? 0) - (a.createdAt?.toMillis() ?? 0))
+        .sort((a, b) => {
+            const timeA = (a.createdAt instanceof Timestamp) ? a.createdAt.toMillis() : 0;
+            const timeB = (b.createdAt instanceof Timestamp) ? b.createdAt.toMillis() : 0;
+            return timeB - timeA;
+        })
         .filter(u => u.role !== 'Admin') // Show all roles except Admin
         .slice(0, 5);
   }, [allUsersData]);
@@ -715,5 +721,3 @@ export default function AdminPage() {
         </Suspense>
     );
 }
-
-    

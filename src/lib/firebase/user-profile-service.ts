@@ -36,8 +36,8 @@ export interface UserProfile {
   upiId?: string;
   bankAccountNumber?: string;
   bankIfscCode?: string;
-  createdAt?: Timestamp;
-  lastUpdatedAt?: Timestamp;
+  createdAt?: Timestamp | FieldValue;
+  lastUpdatedAt?: Timestamp | FieldValue;
 }
 
 
@@ -147,10 +147,9 @@ export async function deleteUser(
     const walletSnapshot = await getDocs(walletRef);
     walletSnapshot.forEach(doc => batch.delete(doc.ref));
     
-    // 3. Find and delete all withdrawalRequests by the user from the root collection
-    const withdrawalsRootRef = collection(firestore, 'withdrawalRequests');
-    const withdrawalsQuery = query(withdrawalsRootRef, where('userId', '==', userId));
-    const withdrawalsSnapshot = await getDocs(withdrawalsQuery);
+    // 3. Find and delete all withdrawalRequests for the user
+    const withdrawalsRef = collection(userDocRef, 'withdrawalRequests');
+    const withdrawalsSnapshot = await getDocs(withdrawalsRef);
     withdrawalsSnapshot.forEach(doc => batch.delete(doc.ref));
 
     // 4. Finally, delete the main user document
