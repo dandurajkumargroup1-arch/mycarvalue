@@ -44,7 +44,7 @@ interface WithdrawalRequest {
     bankIfscCode?: string;
     status: 'requested' | 'paid' | 'rejected';
     requestedAt: Timestamp;
-    processedAt?: Timestamp;
+    processedAt?: Timestamp | FieldValue;
     rejectionReason?: string;
     transactionId?: string;
 }
@@ -251,13 +251,17 @@ function AdminDashboard() {
       to.setHours(23, 59, 59, 999);
 
       history = history.filter(req => {
-        if (!req.processedAt) return false;
+        if (!req.processedAt || !(req.processedAt instanceof Timestamp)) return false;
         const reqDate = req.processedAt.toDate();
         return reqDate >= from && reqDate <= to;
       });
     }
 
-    return history.sort((a, b) => (b.processedAt?.toMillis() ?? 0) - (a.processedAt?.toMillis() ?? 0));
+    return history.sort((a, b) => {
+        const timeA = a.processedAt instanceof Timestamp ? a.processedAt.toMillis() : 0;
+        const timeB = b.processedAt instanceof Timestamp ? b.processedAt.toMillis() : 0;
+        return timeB - timeA;
+    });
   }, [allRequestsData, withdrawalDateRange]);
 
 
