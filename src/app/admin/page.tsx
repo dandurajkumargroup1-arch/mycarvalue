@@ -49,13 +49,15 @@ interface WithdrawalRequest {
 }
 
 const formatCurrency = (value: number) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(value);
-// Make formatDate robust to handle optional timestamps
-const formatDate = (timestamp: Timestamp | null | undefined) => {
-    if (timestamp) {
-        return timestamp.toDate().toLocaleString('en-GB');
+
+const formatDate = (timestamp: Timestamp | FieldValue | null | undefined) => {
+    // Check if it's a Firestore Timestamp object which has a toDate method
+    if (timestamp && typeof (timestamp as Timestamp).toDate === 'function') {
+        return (timestamp as Timestamp).toDate().toLocaleString('en-GB');
     }
     return 'N/A';
 }
+
 
 // --- Dialog Components ---
 
@@ -210,16 +212,16 @@ function AdminDashboard() {
       to.setHours(23, 59, 59, 999);
 
       data = data.filter(user => {
-        if (!user.createdAt) return false;
-        const userDate = user.createdAt.toDate();
+        if (!user.createdAt || typeof (user.createdAt as Timestamp).toDate !== 'function') return false;
+        const userDate = (user.createdAt as Timestamp).toDate();
         return userDate >= from && userDate <= to;
       });
     }
 
     // Finally, sort the filtered data
     return data.sort((a, b) => {
-        const timeA = a.createdAt ? a.createdAt.toMillis() : 0;
-        const timeB = b.createdAt ? b.createdAt.toMillis() : 0;
+        const timeA = a.createdAt && typeof (a.createdAt as Timestamp).toMillis === 'function' ? (a.createdAt as Timestamp).toMillis() : 0;
+        const timeB = b.createdAt && typeof (b.createdAt as Timestamp).toMillis === 'function' ? (b.createdAt as Timestamp).toMillis() : 0;
         return timeB - timeA;
     });
   }, [allUsersData, usersDateRange, roleFilter]);
@@ -250,15 +252,15 @@ function AdminDashboard() {
       to.setHours(23, 59, 59, 999);
 
       history = history.filter(req => {
-        if (!req.processedAt) return false;
-        const reqDate = req.processedAt.toDate();
+        if (!req.processedAt || typeof (req.processedAt as Timestamp).toDate !== 'function') return false;
+        const reqDate = (req.processedAt as Timestamp).toDate();
         return reqDate >= from && reqDate <= to;
       });
     }
 
     return history.sort((a, b) => {
-        const timeA = a.processedAt ? a.processedAt.toMillis() : 0;
-        const timeB = b.processedAt ? b.processedAt.toMillis() : 0;
+        const timeA = a.processedAt && typeof (a.processedAt as Timestamp).toMillis === 'function' ? (a.processedAt as Timestamp).toMillis() : 0;
+        const timeB = b.processedAt && typeof (b.processedAt as Timestamp).toMillis === 'function' ? (b.processedAt as Timestamp).toMillis() : 0;
         return timeB - timeA;
     });
   }, [allRequestsData, withdrawalDateRange]);
@@ -322,8 +324,8 @@ function AdminDashboard() {
     if (!allUsersData) return [];
     return [...allUsersData]
         .sort((a, b) => {
-            const timeA = a.createdAt ? a.createdAt.toMillis() : 0;
-            const timeB = b.createdAt ? b.createdAt.toMillis() : 0;
+            const timeA = a.createdAt && typeof (a.createdAt as Timestamp).toMillis === 'function' ? (a.createdAt as Timestamp).toMillis() : 0;
+            const timeB = b.createdAt && typeof (b.createdAt as Timestamp).toMillis === 'function' ? (b.createdAt as Timestamp).toMillis() : 0;
             return timeB - timeA;
         })
         .filter(u => u.role !== 'Admin') // Show all roles except Admin

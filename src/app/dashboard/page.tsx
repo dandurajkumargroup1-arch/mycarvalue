@@ -2,7 +2,7 @@
 'use client';
 
 import { Suspense, useEffect, useState, useMemo } from 'react';
-import { doc, collection, query, orderBy, limit, where, Timestamp } from 'firebase/firestore';
+import { doc, collection, query, orderBy, limit, where, Timestamp, type FieldValue } from 'firebase/firestore';
 import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
 import type { UserProfile } from '@/lib/firebase/user-profile-service';
 import { requestWithdrawal, type WithdrawalRequestPayload } from '@/lib/firebase/withdrawal-service';
@@ -100,9 +100,9 @@ const formatCurrency = (value: number | undefined) => {
     }).format(value);
 };
 
-const formatDate = (timestamp: Timestamp | null | undefined) => {
-    if (!timestamp) return 'N/A';
-    return timestamp.toDate().toLocaleDateString('en-GB', {
+const formatDate = (timestamp: Timestamp | FieldValue | null | undefined) => {
+    if (!timestamp || typeof (timestamp as Timestamp).toDate !== 'function') return 'N/A';
+    return (timestamp as Timestamp).toDate().toLocaleDateString('en-GB', {
         day: '2-digit', month: 'short', year: 'numeric'
     });
 }
@@ -325,8 +325,8 @@ function MechanicDashboard({ user, userProfile }: { user: any, userProfile: User
     const withdrawals = useMemo(() => {
         if (!withdrawalsData) return null;
         return [...withdrawalsData].sort((a, b) => {
-            const timeA = a.requestedAt?.toMillis() ?? 0;
-            const timeB = b.requestedAt?.toMillis() ?? 0;
+            const timeA = a.requestedAt && typeof (a.requestedAt as Timestamp).toMillis === 'function' ? (a.requestedAt as Timestamp).toMillis() : 0;
+            const timeB = b.requestedAt && typeof (b.requestedAt as Timestamp).toMillis === 'function' ? (b.requestedAt as Timestamp).toMillis() : 0;
             return timeB - timeA;
         });
     }, [withdrawalsData]);
@@ -336,7 +336,7 @@ function MechanicDashboard({ user, userProfile }: { user: any, userProfile: User
         if (!valuations) return 0;
         const today = new Date();
         today.setHours(0, 0, 0, 0); // Start of today
-        return valuations.filter(v => v.createdAt && v.createdAt.toDate() >= today).length;
+        return valuations.filter(v => v.createdAt && typeof (v.createdAt as Timestamp).toDate === 'function' && (v.createdAt as Timestamp).toDate() >= today).length;
     }, [valuations]);
 
     const dailyLimit = 10; 
@@ -561,8 +561,8 @@ function AgentOwnerDashboard({ user, userProfile }: { user: any, userProfile: Us
         to.setHours(23, 59, 59, 999);
     
         return valuations.filter(valuation => {
-          if (!valuation.createdAt) return false;
-          const valuationDate = valuation.createdAt.toDate();
+          if (!valuation.createdAt || typeof (valuation.createdAt as Timestamp).toDate !== 'function') return false;
+          const valuationDate = (valuation.createdAt as Timestamp).toDate();
           return valuationDate >= from && valuationDate <= to;
         });
     }, [valuations, valuationDateRange]);

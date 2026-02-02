@@ -10,6 +10,7 @@ import {
   type Firestore,
   increment,
   updateDoc,
+  type FieldValue,
 } from 'firebase/firestore';
 import type { User } from 'firebase/auth';
 
@@ -23,7 +24,7 @@ export interface WithdrawalRequestPayload {
 export interface WithdrawalRequestData extends WithdrawalRequestPayload {
   userId: string;
   status: 'requested';
-  requestedAt: any;
+  requestedAt: FieldValue;
 }
 
 export async function requestWithdrawal(
