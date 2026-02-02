@@ -8,6 +8,7 @@ import {
   serverTimestamp,
   type Firestore,
   type FieldValue,
+  type Timestamp,
   deleteDoc,
   collection,
   query,
@@ -35,8 +36,8 @@ export interface UserProfile {
   upiId?: string;
   bankAccountNumber?: string;
   bankIfscCode?: string;
-  createdAt?: FieldValue;
-  lastUpdatedAt?: FieldValue;
+  createdAt?: Timestamp;
+  lastUpdatedAt?: Timestamp;
 }
 
 
@@ -79,7 +80,7 @@ export async function upsertUserProfile(
   const profileData: Partial<UserProfile> = {
     ...baseData,
     ...updateData,
-    lastUpdatedAt: serverTimestamp(),
+    lastUpdatedAt: serverTimestamp() as any,
   };
 
   try {
@@ -90,7 +91,7 @@ export async function upsertUserProfile(
       if (!profileData.role) {
         throw new Error("Role is required for new user profile creation.");
       }
-      profileData.createdAt = serverTimestamp();
+      profileData.createdAt = serverTimestamp() as any;
       await setDoc(userDocRef, profileData);
     } else {
       // Existing user, merge data to avoid overwriting createdAt.
