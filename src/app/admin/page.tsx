@@ -49,13 +49,23 @@ interface WithdrawalRequest {
     transactionId?: string;
 }
 
+// Helper to safely convert Firestore Timestamps (live or serialized) to JS Date
+const toDate = (timestamp: any): Date | null => {
+    if (timestamp instanceof Timestamp) {
+        return timestamp.toDate();
+    }
+    // This handles the case where the Timestamp was serialized
+    if (timestamp && typeof timestamp.seconds === 'number') {
+        return new Date(timestamp.seconds * 1000);
+    }
+    return null;
+}
+
 const formatCurrency = (value: number) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(value);
 
-const formatDate = (timestamp: Timestamp | FieldValue | null | undefined) => {
-    if (timestamp instanceof Timestamp) {
-        return timestamp.toDate().toLocaleString('en-GB');
-    }
-    return 'N/A';
+const formatDate = (timestamp: any) => {
+    const date = toDate(timestamp);
+    return date ? date.toLocaleString('en-GB') : 'N/A';
 }
 
 
@@ -212,8 +222,8 @@ function AdminDashboard() {
       to.setHours(23, 59, 59, 999);
 
       data = data.filter(user => {
-        if (user.createdAt && user.createdAt instanceof Timestamp) {
-            const userDate = user.createdAt.toDate();
+        const userDate = toDate(user.createdAt);
+        if (userDate) {
             return userDate >= from && userDate <= to;
         }
         return false;
@@ -222,8 +232,8 @@ function AdminDashboard() {
 
     // Finally, sort the filtered data
     return data.sort((a, b) => {
-        const timeA = a.createdAt instanceof Timestamp ? a.createdAt.toMillis() : 0;
-        const timeB = b.createdAt instanceof Timestamp ? b.createdAt.toMillis() : 0;
+        const timeA = toDate(a.createdAt)?.getTime() ?? 0;
+        const timeB = toDate(b.createdAt)?.getTime() ?? 0;
         return timeB - timeA;
     });
   }, [allUsersData, usersDateRange, roleFilter]);
@@ -254,8 +264,8 @@ function AdminDashboard() {
       to.setHours(23, 59, 59, 999);
 
       history = history.filter(req => {
-        if (req.processedAt && req.processedAt instanceof Timestamp) {
-            const reqDate = req.processedAt.toDate();
+        const reqDate = toDate(req.processedAt);
+        if (reqDate) {
             return reqDate >= from && reqDate <= to;
         }
         return false;
@@ -263,8 +273,8 @@ function AdminDashboard() {
     }
 
     return history.sort((a, b) => {
-        const timeA = a.processedAt instanceof Timestamp ? a.processedAt.toMillis() : 0;
-        const timeB = b.processedAt instanceof Timestamp ? b.processedAt.toMillis() : 0;
+        const timeA = toDate(a.processedAt)?.getTime() ?? 0;
+        const timeB = toDate(b.processedAt)?.getTime() ?? 0;
         return timeB - timeA;
     });
   }, [allRequestsData, withdrawalDateRange]);
@@ -328,8 +338,8 @@ function AdminDashboard() {
     if (!allUsersData) return [];
     return [...allUsersData]
         .sort((a, b) => {
-            const timeA = a.createdAt instanceof Timestamp ? a.createdAt.toMillis() : 0;
-            const timeB = b.createdAt instanceof Timestamp ? b.createdAt.toMillis() : 0;
+            const timeA = toDate(a.createdAt)?.getTime() ?? 0;
+            const timeB = toDate(b.createdAt)?.getTime() ?? 0;
             return timeB - timeA;
         })
         .filter(u => u.role !== 'Admin') // Show all roles except Admin

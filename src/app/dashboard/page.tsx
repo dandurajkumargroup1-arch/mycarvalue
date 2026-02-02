@@ -91,6 +91,18 @@ const WithdrawalSchema = z.object({
 
 type WithdrawalFormInput = z.infer<typeof WithdrawalSchema>;
 
+// Helper to safely convert Firestore Timestamps (live or serialized) to JS Date
+const toDate = (timestamp: any): Date | null => {
+    if (timestamp instanceof Timestamp) {
+        return timestamp.toDate();
+    }
+    // This handles the case where the Timestamp was serialized
+    if (timestamp && typeof timestamp.seconds === 'number') {
+        return new Date(timestamp.seconds * 1000);
+    }
+    return null;
+}
+
 const formatCurrency = (value: number | undefined) => {
     if (value === undefined) return '...';
     return new Intl.NumberFormat('en-IN', {
@@ -100,13 +112,12 @@ const formatCurrency = (value: number | undefined) => {
     }).format(value);
 };
 
-const formatDate = (timestamp: Timestamp | FieldValue | null | undefined) => {
-    if (timestamp instanceof Timestamp) {
-        return timestamp.toDate().toLocaleDateString('en-GB', {
-            day: '2-digit', month: 'short', year: 'numeric'
-        });
-    }
-    return 'N/A';
+const formatDate = (timestamp: any) => {
+    const date = toDate(timestamp);
+    if (!date) return 'N/A';
+    return date.toLocaleDateString('en-GB', {
+        day: '2-digit', month: 'short', year: 'numeric'
+    });
 }
 
 function WithdrawalDialog({ wallet, userProfile, isWithdrawalEnabled }: { wallet: Wallet | null, userProfile: UserProfile, isWithdrawalEnabled: boolean }) {
@@ -193,7 +204,7 @@ function WithdrawalDialog({ wallet, userProfile, isWithdrawalEnabled }: { wallet
                 <DialogHeader>
                     <DialogTitle>Request Withdrawal</DialogTitle>
                     <DialogDescription>
-                        Enter amount and payment details. Payments are processed manually.
+                        Payments are processed manually.
                     </DialogDescription>
                 </DialogHeader>
                 <Form {...form}>
@@ -327,8 +338,8 @@ function MechanicDashboard({ user, userProfile }: { user: any, userProfile: User
     const withdrawals = useMemo(() => {
         if (!withdrawalsData) return null;
         return [...withdrawalsData].sort((a, b) => {
-            const timeA = a.requestedAt instanceof Timestamp ? a.requestedAt.toMillis() : 0;
-            const timeB = b.requestedAt instanceof Timestamp ? b.requestedAt.toMillis() : 0;
+            const timeA = toDate(a.requestedAt)?.getTime() ?? 0;
+            const timeB = toDate(b.requestedAt)?.getTime() ?? 0;
             return timeB - timeA;
         });
     }, [withdrawalsData]);
@@ -338,7 +349,10 @@ function MechanicDashboard({ user, userProfile }: { user: any, userProfile: User
         if (!valuations) return 0;
         const today = new Date();
         today.setHours(0, 0, 0, 0); // Start of today
-        return valuations.filter(v => v.createdAt instanceof Timestamp && v.createdAt.toDate() >= today).length;
+        return valuations.filter(v => {
+            const valuationDate = toDate(v.createdAt);
+            return valuationDate && valuationDate >= today;
+        }).length;
     }, [valuations]);
 
     const dailyLimit = 10; 
@@ -563,8 +577,8 @@ function AgentOwnerDashboard({ user, userProfile }: { user: any, userProfile: Us
         to.setHours(23, 59, 59, 999);
     
         return valuations.filter(valuation => {
-          if (valuation.createdAt instanceof Timestamp) {
-            const valuationDate = valuation.createdAt.toDate();
+          const valuationDate = toDate(valuation.createdAt);
+          if (valuationDate) {
             return valuationDate >= from && valuationDate <= to;
           }
           return false;
