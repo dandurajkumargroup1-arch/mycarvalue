@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -36,8 +35,8 @@ export interface UserProfile {
   upiId?: string;
   bankAccountNumber?: string;
   bankIfscCode?: string;
-  createdAt?: Timestamp | FieldValue;
-  lastUpdatedAt?: Timestamp | FieldValue;
+  createdAt?: Timestamp;
+  lastUpdatedAt?: Timestamp;
 }
 
 
@@ -80,7 +79,7 @@ export async function upsertUserProfile(
   const profileData: Partial<UserProfile> = {
     ...baseData,
     ...updateData,
-    lastUpdatedAt: serverTimestamp() as any,
+    lastUpdatedAt: serverTimestamp() as FieldValue,
   };
 
   try {
@@ -91,7 +90,7 @@ export async function upsertUserProfile(
       if (!profileData.role) {
         throw new Error("Role is required for new user profile creation.");
       }
-      profileData.createdAt = serverTimestamp() as any;
+      profileData.createdAt = serverTimestamp() as FieldValue;
       await setDoc(userDocRef, profileData);
     } else {
       // Existing user, merge data to avoid overwriting createdAt.

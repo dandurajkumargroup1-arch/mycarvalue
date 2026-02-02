@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Suspense, useEffect, useState, useMemo } from 'react';
@@ -44,15 +43,15 @@ interface WithdrawalRequest {
     bankIfscCode?: string;
     status: 'requested' | 'paid' | 'rejected';
     requestedAt: Timestamp;
-    processedAt?: Timestamp | FieldValue;
+    processedAt?: Timestamp;
     rejectionReason?: string;
     transactionId?: string;
 }
 
 const formatCurrency = (value: number) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(value);
 // Make formatDate robust to handle optional timestamps
-const formatDate = (timestamp: Timestamp | FieldValue | null | undefined) => {
-    if (timestamp instanceof Timestamp) {
+const formatDate = (timestamp: Timestamp | null | undefined) => {
+    if (timestamp) {
         return timestamp.toDate().toLocaleString('en-GB');
     }
     return 'N/A';
@@ -211,7 +210,7 @@ function AdminDashboard() {
       to.setHours(23, 59, 59, 999);
 
       data = data.filter(user => {
-        if (!user.createdAt || !(user.createdAt instanceof Timestamp)) return false;
+        if (!user.createdAt) return false;
         const userDate = user.createdAt.toDate();
         return userDate >= from && userDate <= to;
       });
@@ -219,8 +218,8 @@ function AdminDashboard() {
 
     // Finally, sort the filtered data
     return data.sort((a, b) => {
-        const timeA = a.createdAt instanceof Timestamp ? a.createdAt.toMillis() : 0;
-        const timeB = b.createdAt instanceof Timestamp ? b.createdAt.toMillis() : 0;
+        const timeA = a.createdAt ? a.createdAt.toMillis() : 0;
+        const timeB = b.createdAt ? b.createdAt.toMillis() : 0;
         return timeB - timeA;
     });
   }, [allUsersData, usersDateRange, roleFilter]);
@@ -251,15 +250,15 @@ function AdminDashboard() {
       to.setHours(23, 59, 59, 999);
 
       history = history.filter(req => {
-        if (!req.processedAt || !(req.processedAt instanceof Timestamp)) return false;
+        if (!req.processedAt) return false;
         const reqDate = req.processedAt.toDate();
         return reqDate >= from && reqDate <= to;
       });
     }
 
     return history.sort((a, b) => {
-        const timeA = a.processedAt instanceof Timestamp ? a.processedAt.toMillis() : 0;
-        const timeB = b.processedAt instanceof Timestamp ? b.processedAt.toMillis() : 0;
+        const timeA = a.processedAt ? a.processedAt.toMillis() : 0;
+        const timeB = b.processedAt ? b.processedAt.toMillis() : 0;
         return timeB - timeA;
     });
   }, [allRequestsData, withdrawalDateRange]);
@@ -323,8 +322,8 @@ function AdminDashboard() {
     if (!allUsersData) return [];
     return [...allUsersData]
         .sort((a, b) => {
-            const timeA = (a.createdAt instanceof Timestamp) ? a.createdAt.toMillis() : 0;
-            const timeB = (b.createdAt instanceof Timestamp) ? b.createdAt.toMillis() : 0;
+            const timeA = a.createdAt ? a.createdAt.toMillis() : 0;
+            const timeB = b.createdAt ? b.createdAt.toMillis() : 0;
             return timeB - timeA;
         })
         .filter(u => u.role !== 'Admin') // Show all roles except Admin
