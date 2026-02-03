@@ -14,7 +14,7 @@ import { z } from 'zod';
 import { useToast } from "@/hooks/use-toast";
 import { DateRange } from "react-day-picker";
 import { format } from "date-fns";
-import { cn } from "@/lib/utils";
+import { cn, toDate, formatCurrency, formatDateTime } from "@/lib/utils";
 import Papa from 'papaparse';
 
 
@@ -48,26 +48,6 @@ interface WithdrawalRequest {
     rejectionReason?: string;
     transactionId?: string;
 }
-
-// Helper to safely convert Firestore Timestamps (live or serialized) to JS Date
-const toDate = (timestamp: any): Date | null => {
-    if (timestamp instanceof Timestamp) {
-        return timestamp.toDate();
-    }
-    // This handles the case where the Timestamp was serialized
-    if (timestamp && typeof timestamp.seconds === 'number') {
-        return new Date(timestamp.seconds * 1000);
-    }
-    return null;
-}
-
-const formatCurrency = (value: number) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(value);
-
-const formatDate = (timestamp: any) => {
-    const date = toDate(timestamp);
-    return date ? date.toLocaleString('en-GB') : 'N/A';
-}
-
 
 // --- Dialog Components ---
 
@@ -251,7 +231,11 @@ function AdminDashboard() {
       if (!allRequestsData) return null;
       return allRequestsData
           .filter(req => req.status === 'requested')
-          .sort((a, b) => b.requestedAt.toMillis() - a.requestedAt.toMillis());
+          .sort((a, b) => {
+             const timeA = toDate(a.requestedAt)?.getTime() ?? 0;
+             const timeB = toDate(b.requestedAt)?.getTime() ?? 0;
+             return timeB - timeA;
+          });
   }, [allRequestsData]);
 
   const withdrawalHistory = useMemo(() => {
@@ -296,8 +280,8 @@ function AdminDashboard() {
         "Mechanic Email": userMap[req.userId]?.email || 'N/A',
         "Amount (INR)": req.amount,
         "Status": req.status,
-        "Requested At": formatDate(req.requestedAt),
-        "Processed At": formatDate(req.processedAt),
+        "Requested At": formatDateTime(req.requestedAt),
+        "Processed At": formatDateTime(req.processedAt),
         "Payment Method": req.upiId ? 'UPI' : 'Bank Transfer',
         "UPI ID": req.upiId || 'N/A',
         "Bank Account": req.bankAccountNumber || 'N/A',
@@ -404,7 +388,7 @@ function AdminDashboard() {
                                                             {req.bankAccountNumber && <p><strong>Acct:</strong> {req.bankAccountNumber}</p>}
                                                             {req.bankIfscCode && <p><strong>IFSC:</strong> {req.bankIfscCode}</p>}
                                                         </TableCell>
-                                                        <TableCell>{formatDate(req.requestedAt)}</TableCell>
+                                                        <TableCell>{formatDateTime(req.requestedAt)}</TableCell>
                                                         <TableCell className="text-right space-x-2">
                                                             <ApproveDialog request={req} />
                                                             <RejectDialog request={req} />
@@ -487,7 +471,7 @@ function AdminDashboard() {
                                                              {isUsersLoading ? <Skeleton className="h-5 w-24" /> : (userMap[req.userId]?.displayName || userMap[req.userId]?.email || 'N/A')}
                                                         </TableCell>
                                                         <TableCell>{formatCurrency(req.amount)}</TableCell>
-                                                        <TableCell>{formatDate(req.processedAt)}</TableCell>
+                                                        <TableCell>{formatDateTime(req.processedAt)}</TableCell>
                                                         <TableCell><Badge variant={req.status === 'paid' ? 'default' : 'destructive'}>{req.status}</Badge></TableCell>
                                                         <TableCell className="text-xs font-mono">{req.transactionId || 'N/A'}</TableCell>
                                                     </TableRow>
@@ -621,7 +605,7 @@ function AdminDashboard() {
                                                 </div>
                                             ) : 'N/A'}
                                         </TableCell>
-                                        <TableCell>{formatDate(user.createdAt)}</TableCell>
+                                        <TableCell>{formatDateTime(user.createdAt)}</TableCell>
                                         <TableCell className="text-right">
                                             <AlertDialog>
                                                 <AlertDialogTrigger asChild>

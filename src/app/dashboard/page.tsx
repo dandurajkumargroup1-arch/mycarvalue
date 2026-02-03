@@ -17,7 +17,7 @@ import type { CarValuationFormInput } from '@/lib/schemas';
 import { ValuationResultDisplay } from '@/components/report/ValuationResultDisplay';
 import { DateRange } from "react-day-picker";
 import { format } from "date-fns";
-import { cn } from "@/lib/utils";
+import { cn, toDate, formatCurrency, formatDateOnly } from "@/lib/utils";
 
 
 import { Button } from '@/components/ui/button';
@@ -90,35 +90,6 @@ const WithdrawalSchema = z.object({
 
 
 type WithdrawalFormInput = z.infer<typeof WithdrawalSchema>;
-
-// Helper to safely convert Firestore Timestamps (live or serialized) to JS Date
-const toDate = (timestamp: any): Date | null => {
-    if (timestamp instanceof Timestamp) {
-        return timestamp.toDate();
-    }
-    // This handles the case where the Timestamp was serialized
-    if (timestamp && typeof timestamp.seconds === 'number') {
-        return new Date(timestamp.seconds * 1000);
-    }
-    return null;
-}
-
-const formatCurrency = (value: number | undefined) => {
-    if (value === undefined) return '...';
-    return new Intl.NumberFormat('en-IN', {
-        style: 'currency',
-        currency: 'INR',
-        maximumFractionDigits: 0,
-    }).format(value);
-};
-
-const formatDate = (timestamp: any) => {
-    const date = toDate(timestamp);
-    if (!date) return 'N/A';
-    return date.toLocaleDateString('en-GB', {
-        day: '2-digit', month: 'short', year: 'numeric'
-    });
-}
 
 function WithdrawalDialog({ wallet, userProfile, isWithdrawalEnabled }: { wallet: Wallet | null, userProfile: UserProfile, isWithdrawalEnabled: boolean }) {
     const [open, setOpen] = useState(false);
@@ -366,8 +337,8 @@ function MechanicDashboard({ user, userProfile }: { user: any, userProfile: User
     
     const isWithdrawalEnabled = !isWalletLoading && !!wallet && wallet.balance >= minWithdrawalAmount && !lastPendingRequest;
     const lastWithdrawalStatus = lastPendingRequest 
-        ? `Requested on ${formatDate(lastPendingRequest.requestedAt)}` 
-        : (wallet?.lastWithdrawalDate ? `Paid on ${formatDate(wallet.lastWithdrawalDate)}` : 'No recent withdrawals');
+        ? `Requested on ${formatDateOnly(lastPendingRequest.requestedAt)}` 
+        : (wallet?.lastWithdrawalDate ? `Paid on ${formatDateOnly(wallet.lastWithdrawalDate)}` : 'No recent withdrawals');
     
     const dailyEarnings = completedToday * earningsPerReport;
     const weeklyEarnings = dailyEarnings * 7; // This is a placeholder calculation
@@ -482,7 +453,7 @@ function MechanicDashboard({ user, userProfile }: { user: any, userProfile: User
                                     ) : withdrawals && withdrawals.length > 0 ? (
                                         withdrawals.map((item) => (
                                             <TableRow key={item.id}>
-                                                <TableCell>{formatDate(item.requestedAt)}</TableCell>
+                                                <TableCell>{formatDateOnly(item.requestedAt)}</TableCell>
                                                 <TableCell className="font-medium">{formatCurrency(item.amount)}</TableCell>
                                                 <TableCell className="text-right">
                                                     <Badge 
@@ -690,7 +661,7 @@ function AgentOwnerDashboard({ user, userProfile }: { user: any, userProfile: Us
                                     <TableRow key={valuation.id}>
                                         <TableCell className="font-medium">{valuation.make} {valuation.model}</TableCell>
                                         <TableCell className="text-muted-foreground font-mono uppercase">{valuation.vehicleNumber || 'N/A'}</TableCell>
-                                        <TableCell>{formatDate(valuation.createdAt)}</TableCell>
+                                        <TableCell>{formatDateOnly(valuation.createdAt)}</TableCell>
                                         <TableCell className="text-right space-x-2">
                                             <Button variant="outline" size="sm" onClick={() => { setSelectedValuation(valuation); setIsViewReportOpen(true); }}>
                                                 <Eye className="mr-2 h-4 w-4"/> View / Download

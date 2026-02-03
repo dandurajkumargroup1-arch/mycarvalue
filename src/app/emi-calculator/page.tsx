@@ -9,14 +9,7 @@ import { Separator } from '@/components/ui/separator';
 import { PieChart, Pie, Cell, Tooltip } from 'recharts';
 import { ChartConfig, ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
 import { Skeleton } from '@/components/ui/skeleton';
-
-const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-IN', {
-        style: 'currency',
-        currency: 'INR',
-        maximumFractionDigits: 0,
-    }).format(value);
-};
+import { formatCurrency } from '@/lib/utils';
 
 // Represents the calculated EMI details
 type EmiDetails = {
