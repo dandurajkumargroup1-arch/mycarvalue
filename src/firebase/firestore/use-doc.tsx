@@ -10,6 +10,7 @@ import {
   DocumentSnapshot,
 } from 'firebase/firestore';
 import { FirestorePermissionError } from '@/firebase/errors';
+import { errorEmitter } from '@/firebase/error-emitter';
 
 /** Utility type to add an 'id' field to a given type T. */
 type WithId<T> = T & { id: string };
@@ -77,6 +78,8 @@ export function useDoc<T = any>(
           path: memoizedDocRef.path,
         })
 
+        errorEmitter.emit('permission-error', contextualError);
+        
         setError(contextualError)
         setData(null)
         setIsLoading(false)

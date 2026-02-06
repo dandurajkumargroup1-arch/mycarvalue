@@ -11,6 +11,7 @@ import {
   CollectionReference,
 } from 'firebase/firestore';
 import { FirestorePermissionError } from '@/firebase/errors';
+import { errorEmitter } from '@/firebase/error-emitter';
 
 /** Utility type to add an 'id' field to a given type T. */
 export type WithId<T> = T & { id: string };
@@ -95,6 +96,8 @@ export function useCollection<T = any>(
           operation: 'list',
           path,
         })
+        
+        errorEmitter.emit('permission-error', contextualError);
 
         setError(contextualError)
         setData(null)

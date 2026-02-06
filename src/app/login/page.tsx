@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -15,6 +15,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { LogIn } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const LoginSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address." }),
@@ -23,7 +24,7 @@ const LoginSchema = z.object({
 
 type LoginFormInput = z.infer<typeof LoginSchema>;
 
-export default function LoginPage() {
+function LoginComponent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const auth = useAuth();
@@ -130,5 +131,37 @@ export default function LoginPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+const LoginSkeleton = () => (
+    <div className="container mx-auto flex min-h-[80vh] items-center justify-center py-12">
+        <Card className="w-full max-w-md shadow-lg">
+            <CardHeader className="text-center">
+                <Skeleton className="h-8 w-48 mx-auto" />
+                <Skeleton className="h-5 w-64 mx-auto mt-2" />
+            </CardHeader>
+            <CardContent className="space-y-6 pt-6">
+                <div className="space-y-2">
+                    <Skeleton className="h-4 w-16" />
+                    <Skeleton className="h-10 w-full" />
+                </div>
+                <div className="space-y-2">
+                    <Skeleton className="h-4 w-16" />
+                    <Skeleton className="h-10 w-full" />
+                </div>
+                <Skeleton className="h-10 w-full" />
+                 <Skeleton className="h-5 w-72 mx-auto" />
+            </CardContent>
+        </Card>
+    </div>
+);
+
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<LoginSkeleton />}>
+      <LoginComponent />
+    </Suspense>
   );
 }
