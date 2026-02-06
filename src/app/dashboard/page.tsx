@@ -286,7 +286,7 @@ function MechanicDashboard({ user, userProfile }: { user: any, userProfile: User
         return collection(firestore, 'users', user.uid, 'wallet');
     }, [firestore, user]);
     const { data: walletData, isLoading: isWalletLoading } = useCollection<Wallet>(walletQuery);
-    const wallet = walletData?.[0];
+    const wallet = walletData?.[0] || null;
 
     const withdrawalsQuery = useMemoFirebase(() => {
         if (!firestore || !user) return null;
