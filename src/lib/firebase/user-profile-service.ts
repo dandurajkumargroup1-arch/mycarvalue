@@ -36,8 +36,8 @@ export interface UserProfile {
   upiId?: string;
   bankAccountNumber?: string;
   bankIfscCode?: string;
-  createdAt?: Timestamp | FieldValue;
-  lastUpdatedAt?: Timestamp | FieldValue;
+  createdAt?: Timestamp | FieldValue | Date | null;
+  lastUpdatedAt?: Timestamp | FieldValue | Date | null;
 }
 
 

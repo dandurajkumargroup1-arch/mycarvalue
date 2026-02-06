@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Suspense, useEffect, useState, useMemo } from 'react';
@@ -704,28 +705,34 @@ function AdminPageComponent() {
     }
   }, [user, isUserLoading, router]);
 
-  // Wait for auth to resolve first
-  if (isUserLoading || !user) {
+  const authStatus = useMemo(() => {
+    if (isUserLoading || (user && isProfileLoading)) {
+      return 'loading';
+    }
+    if (!user) {
+      // This case is handled by the useEffect redirect, but we keep it for clarity.
+      return 'unauthorized';
+    }
+    const isHardcodedAdmin = user.email === 'rajmycarvalue@gmail.com';
+    const isRoleAdmin = userProfile?.role === 'Admin';
+
+    if (isHardcodedAdmin || isRoleAdmin) {
+      return 'authorized';
+    }
+
+    return 'unauthorized';
+  }, [user, isUserLoading, userProfile, isProfileLoading]);
+
+
+  if (authStatus === 'loading') {
     return <AdminPageLoader />;
   }
-  
-  // Determine admin status with robust logic
-  const isHardcodedAdmin = user.email === 'rajmycarvalue@gmail.com';
-  // We can only check role-based admin after profile is loaded
-  const isRoleAdmin = !isProfileLoading && userProfile?.role === 'Admin';
-  
-  // If it's the hardcoded admin, we don't need to wait for the profile.
-  // If it's not the hardcoded admin, we MUST wait for the profile to load.
-  if (!isHardcodedAdmin && isProfileLoading) {
-      return <AdminPageLoader />;
-  }
 
-  // Now we can make the final decision to grant access
-  if (isHardcodedAdmin || isRoleAdmin) {
+  if (authStatus === 'authorized') {
     return <AdminDashboard />;
   }
 
-  // If we reach here, the user is not an admin.
+  // 'unauthorized' is the only remaining status
   return (
     <div className="container mx-auto flex items-center justify-center py-20">
       <Alert variant="destructive" className="max-w-lg">
