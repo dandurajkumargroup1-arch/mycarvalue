@@ -777,7 +777,7 @@ export function ValuationForm() {
             <div id="submission-section" className="pt-6 space-y-4">
                 <div className="flex flex-col items-center justify-center">
                     {isLastSection ? (
-                        <Button type="submit" className="w-full" size="lg" disabled={loading || (user && isProfileLoading)}>
+                        <Button type="submit" className="w-full" size="lg" disabled={loading || !!(user && isProfileLoading)}>
                             <Sparkles className="mr-2 h-4 w-4" />
                             {buttonText}
                         </Button>

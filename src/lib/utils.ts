@@ -7,20 +7,38 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /**
- * Safely converts a Firestore Timestamp (live or serialized) to a JS Date object.
- * Returns null if the input is not a valid Timestamp representation.
- * @param timestamp - The Firestore Timestamp or a serialized object with seconds.
+ * Safely converts various date/time representations to a JS Date object.
+ * Handles:
+ * - Firestore Timestamps (from live server-side reads)
+ * - Serialized Firestore Timestamps (objects with seconds/nanoseconds from SSR)
+ * - JavaScript Date objects (if data is already processed)
+ * - ISO 8601 date strings (from JSON serialization of Date objects)
+ * Returns null if the input is invalid or null/undefined.
+ * @param timestamp - The value to convert.
  */
 export const toDate = (timestamp: any): Date | null => {
+    if (!timestamp) {
+        return null;
+    }
+    if (timestamp instanceof Date) {
+        return timestamp;
+    }
     if (timestamp instanceof Timestamp) {
         return timestamp.toDate();
     }
-    // This handles the case where the Timestamp was serialized during SSR
     if (timestamp && typeof timestamp.seconds === 'number') {
         return new Date(timestamp.seconds * 1000);
     }
+    if (typeof timestamp === 'string') {
+        // Attempt to parse ISO string
+        const date = new Date(timestamp);
+        if (!isNaN(date.getTime())) {
+            return date;
+        }
+    }
     return null;
 };
+
 
 /**
  * Formats a number as Indian Rupees (INR) without fractional digits.

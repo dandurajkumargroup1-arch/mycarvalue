@@ -42,7 +42,7 @@ interface Wallet {
     userId: string;
     balance: number;
     totalEarned: number;
-    lastWithdrawalDate: Timestamp | FieldValue | null;
+    lastWithdrawalDate: Date | null;
 }
 
 interface WithdrawalRequest {
@@ -53,8 +53,8 @@ interface WithdrawalRequest {
     bankAccountNumber?: string;
     bankIfscCode?: string;
     status: 'requested' | 'paid' | 'rejected';
-    requestedAt: Timestamp | FieldValue;
-    processedAt?: Timestamp | FieldValue;
+    requestedAt: Date | null;
+    processedAt?: Date | null;
     rejectionReason?: string;
     transactionId?: string;
 }
@@ -62,7 +62,7 @@ interface WithdrawalRequest {
 // Represents a valuation document from Firestore, including its ID
 type ValuationDoc = CarValuationFormInput & { 
     id: string;
-    createdAt: Timestamp | FieldValue;
+    createdAt: Date | null;
     valuationResult: any; 
 };
 
@@ -279,12 +279,16 @@ function WithdrawalDialog({ wallet, userProfile, isWithdrawalEnabled }: { wallet
 function MechanicDashboard({ user, userProfile }: { user: any, userProfile: UserProfile }) {
     const firestore = useFirestore();
 
-    // -- Data Fetching --
+    // -- Data Fetching & Processing --
     const walletQuery = useMemo(() => {
         if (!firestore || !user) return null;
         return collection(firestore, 'users', user.uid, 'wallet');
     }, [firestore, user]);
-    const { data: walletData, isLoading: isWalletLoading } = useCollection<Wallet>(walletQuery);
+    const { data: rawWalletData, isLoading: isWalletLoading } = useCollection<Omit<Wallet, 'lastWithdrawalDate'> & { lastWithdrawalDate: any }>(walletQuery);
+    const walletData = useMemo(() => {
+        if (!rawWalletData) return null;
+        return rawWalletData.map(w => ({ ...w, lastWithdrawalDate: toDate(w.lastWithdrawalDate) }));
+    }, [rawWalletData]);
     const wallet = walletData?.[0] || null;
 
     const withdrawalsQuery = useMemo(() => {
@@ -294,33 +298,38 @@ function MechanicDashboard({ user, userProfile }: { user: any, userProfile: User
             orderBy('requestedAt', 'desc')
         );
     }, [firestore, user]);
-    const { data: withdrawalsData, isLoading: areWithdrawalsLoading, error: withdrawalsError } = useCollection<WithdrawalRequest>(withdrawalsQuery);
-    
-    // Fetch valuations to count today's completions
+    const { data: rawWithdrawalsData, isLoading: areWithdrawalsLoading, error: withdrawalsError } = useCollection<Omit<WithdrawalRequest, 'requestedAt' | 'processedAt'> & { requestedAt: any; processedAt: any; }>(withdrawalsQuery);
+    const withdrawalsData = useMemo(() => {
+        if (!rawWithdrawalsData) return null;
+        return rawWithdrawalsData.map(w => ({ ...w, requestedAt: toDate(w.requestedAt), processedAt: toDate(w.processedAt) }));
+    }, [rawWithdrawalsData]);
+
     const valuationsQuery = useMemo(() => {
         if (!firestore || !user) return null;
         return query(collection(firestore, 'users', user.uid, 'carValuations'), orderBy('createdAt', 'desc'));
     }, [firestore, user]);
-    const { data: valuations, isLoading: areValuationsLoading } = useCollection<ValuationDoc>(valuationsQuery);
+    const { data: rawValuations, isLoading: areValuationsLoading } = useCollection<Omit<ValuationDoc, 'createdAt'> & { createdAt: any }>(valuationsQuery);
+    const valuations = useMemo(() => {
+        if (!rawValuations) return null;
+        return rawValuations.map(v => ({ ...v, createdAt: toDate(v.createdAt) }));
+    }, [rawValuations]);
 
-    
-    // Client-side sorting for withdrawals to compensate for simplified query
+    // -- Derived Data --
     const withdrawals = useMemo(() => {
         if (!withdrawalsData) return null;
         return [...withdrawalsData].sort((a, b) => {
-            const timeA = toDate(a.requestedAt)?.getTime() ?? 0;
-            const timeB = toDate(b.requestedAt)?.getTime() ?? 0;
+            const timeA = a.requestedAt?.getTime() ?? 0;
+            const timeB = b.requestedAt?.getTime() ?? 0;
             return timeB - timeA;
         });
     }, [withdrawalsData]);
 
-    // -- Dynamic & Business Logic --
     const completedToday = useMemo(() => {
         if (!valuations) return 0;
         const today = new Date();
         today.setHours(0, 0, 0, 0); // Start of today
         return valuations.filter(v => {
-            const valuationDate = toDate(v.createdAt);
+            const valuationDate = v.createdAt;
             return valuationDate && valuationDate >= today;
         }).length;
     }, [valuations]);
@@ -536,7 +545,11 @@ function AgentOwnerDashboard({ user, userProfile }: { user: any, userProfile: Us
         return query(collection(firestore, 'users', user.uid, 'carValuations'), orderBy('createdAt', 'desc'));
     }, [firestore, user]);
 
-    const { data: valuations, isLoading, error } = useCollection<ValuationDoc>(valuationsQuery);
+    const { data: rawValuations, isLoading, error } = useCollection<Omit<ValuationDoc, 'createdAt'> & { createdAt: any }>(valuationsQuery);
+    const valuations = useMemo(() => {
+        if (!rawValuations) return null;
+        return rawValuations.map(v => ({ ...v, createdAt: toDate(v.createdAt) }));
+    }, [rawValuations]);
 
     const filteredValuations = useMemo(() => {
         if (!valuations) return [];
@@ -547,7 +560,7 @@ function AgentOwnerDashboard({ user, userProfile }: { user: any, userProfile: Us
         to.setHours(23, 59, 59, 999);
     
         return valuations.filter(valuation => {
-          const valuationDate = toDate(valuation.createdAt);
+          const valuationDate = valuation.createdAt;
           if (valuationDate) {
             return valuationDate >= from && valuationDate <= to;
           }

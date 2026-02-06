@@ -42,8 +42,8 @@ interface WithdrawalRequest {
     bankAccountNumber?: string;
     bankIfscCode?: string;
     status: 'requested' | 'paid' | 'rejected';
-    requestedAt: Timestamp | FieldValue;
-    processedAt?: Timestamp | FieldValue;
+    requestedAt: Date | null;
+    processedAt?: Date | null;
     rejectionReason?: string;
     transactionId?: string;
 }
@@ -175,13 +175,43 @@ function AdminDashboard() {
   const [withdrawalDateRange, setWithdrawalDateRange] = useState<DateRange | undefined>();
   const [roleFilter, setRoleFilter] = useState<string>('All');
   
-  // Fetch all users to create a name map
+  // --- Data Fetching & Processing ---
+  
   const usersQuery = useMemo(() => {
     if (!firestore) return null;
     return query(collection(firestore, 'users'));
   }, [firestore]);
 
-  const { data: allUsersData, isLoading: isUsersLoading } = useCollection<UserProfile>(usersQuery);
+  const { data: rawAllUsersData, isLoading: isUsersLoading } = useCollection<Omit<UserProfile, 'createdAt' | 'lastUpdatedAt'> & { createdAt: any; lastUpdatedAt: any }>(usersQuery);
+
+  const allUsersData = useMemo(() => {
+    if (!rawAllUsersData) return null;
+    return rawAllUsersData.map(user => ({
+      ...user,
+      createdAt: toDate(user.createdAt),
+      lastUpdatedAt: toDate(user.lastUpdatedAt),
+    }));
+  }, [rawAllUsersData]);
+
+
+  const allRequestsQuery = useMemo(() => {
+    if (!firestore) return null;
+    return query(collectionGroup(firestore, 'withdrawalRequests'));
+  }, [firestore]);
+
+  const { data: rawAllRequestsData, isLoading: isRequestsLoading, error: requestsError } = useCollection<Omit<WithdrawalRequest, 'requestedAt' | 'processedAt'> & { requestedAt: any; processedAt: any }>(allRequestsQuery);
+  
+  const allRequestsData = useMemo(() => {
+    if (!rawAllRequestsData) return null;
+    return rawAllRequestsData.map(req => ({
+      ...req,
+      requestedAt: toDate(req.requestedAt),
+      processedAt: toDate(req.processedAt),
+    }));
+  }, [rawAllRequestsData]);
+
+
+  // --- Derived Data ---
 
   const filteredUsers = useMemo(() => {
     if (!allUsersData) return [];
@@ -201,7 +231,7 @@ function AdminDashboard() {
       to.setHours(23, 59, 59, 999);
 
       data = data.filter(user => {
-        const userDate = toDate(user.createdAt);
+        const userDate = user.createdAt; // Already a Date object
         if (userDate) {
             return userDate >= from && userDate <= to;
         }
@@ -211,28 +241,21 @@ function AdminDashboard() {
 
     // Finally, sort the filtered data
     return data.sort((a, b) => {
-        const timeA = toDate(a.createdAt)?.getTime() ?? 0;
-        const timeB = toDate(b.createdAt)?.getTime() ?? 0;
+        const timeA = a.createdAt?.getTime() ?? 0;
+        const timeB = b.createdAt?.getTime() ?? 0;
         return timeB - timeA;
     });
   }, [allUsersData, usersDateRange, roleFilter]);
 
   const userMap = useMemo(() => allUsersData?.reduce((acc, user) => ({ ...acc, [user.id]: user }), {} as Record<string, UserProfile>) || {}, [allUsersData]);
 
-  // Fetch ALL withdrawal requests using a collection group query
-  const allRequestsQuery = useMemo(() => {
-    if (!firestore) return null;
-    return query(collectionGroup(firestore, 'withdrawalRequests'));
-  }, [firestore]);
-  const { data: allRequestsData, isLoading: isRequestsLoading, error: requestsError } = useCollection<WithdrawalRequest>(allRequestsQuery);
-
   const pendingRequests = useMemo(() => {
       if (!allRequestsData) return null;
       return allRequestsData
           .filter(req => req.status === 'requested')
           .sort((a, b) => {
-             const timeA = toDate(a.requestedAt)?.getTime() ?? 0;
-             const timeB = toDate(b.requestedAt)?.getTime() ?? 0;
+             const timeA = a.requestedAt?.getTime() ?? 0;
+             const timeB = b.requestedAt?.getTime() ?? 0;
              return timeB - timeA;
           });
   }, [allRequestsData]);
@@ -247,7 +270,7 @@ function AdminDashboard() {
       to.setHours(23, 59, 59, 999);
 
       history = history.filter(req => {
-        const reqDate = toDate(req.processedAt);
+        const reqDate = req.processedAt; // Already a Date object
         if (reqDate) {
             return reqDate >= from && reqDate <= to;
         }
@@ -256,8 +279,8 @@ function AdminDashboard() {
     }
 
     return history.sort((a, b) => {
-        const timeA = toDate(a.processedAt)?.getTime() ?? 0;
-        const timeB = toDate(b.processedAt)?.getTime() ?? 0;
+        const timeA = a.processedAt?.getTime() ?? 0;
+        const timeB = b.processedAt?.getTime() ?? 0;
         return timeB - timeA;
     });
   }, [allRequestsData, withdrawalDateRange]);
@@ -321,8 +344,8 @@ function AdminDashboard() {
     if (!allUsersData) return [];
     return [...allUsersData]
         .sort((a, b) => {
-            const timeA = toDate(a.createdAt)?.getTime() ?? 0;
-            const timeB = toDate(b.createdAt)?.getTime() ?? 0;
+            const timeA = a.createdAt?.getTime() ?? 0;
+            const timeB = b.createdAt?.getTime() ?? 0;
             return timeB - timeA;
         })
         .filter(u => u.role !== 'Admin') // Show all roles except Admin
@@ -498,7 +521,7 @@ function AdminDashboard() {
                         <CardContent>
                             {isUsersLoading ? <Skeleton className="h-40 w-full" /> : (
                                 <div className="space-y-4">
-                                    {recentUsers.map(user => (
+                                    {recentUsers && recentUsers.map(user => (
                                         <div key={user.id} className="flex items-center justify-between">
                                             <div>
                                                 <p className="font-medium">{user.displayName}</p>
