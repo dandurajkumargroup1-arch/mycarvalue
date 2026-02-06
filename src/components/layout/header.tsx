@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -11,7 +12,7 @@ import type { User } from 'firebase/auth';
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
-import { useAuth, useUser, useFirestore, useDoc, useMemoFirebase } from "@/firebase";
+import { useAuth, useUser, useFirestore, useDoc } from "@/firebase";
 import type { UserProfile } from "@/lib/firebase/user-profile-service";
 
 import {
@@ -149,7 +150,7 @@ export default function Header() {
   // Centralize user and profile data fetching here
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
-  const userProfileRef = useMemoFirebase(() => {
+  const userProfileRef = useMemo(() => {
     if (!firestore || !user) return null;
     return doc(firestore, 'users', user.uid);
   }, [firestore, user]);

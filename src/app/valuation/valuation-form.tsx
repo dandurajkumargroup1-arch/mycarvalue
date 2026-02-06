@@ -15,7 +15,7 @@ import { z } from 'zod';
 import { CarValuationObjectSchema, type CarValuationFormInput } from '@/lib/schemas';
 import { getValuationAction } from '@/lib/actions';
 import { carMakesAndModelsAndVariants, indianStates } from "@/lib/variants";
-import { useUser, useFirestore, useDoc, useMemoFirebase } from "@/firebase";
+import { useUser, useFirestore, useDoc } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { saveValuation } from "@/lib/firebase/valuation-service";
 
@@ -188,35 +188,34 @@ export function ValuationForm() {
   const { toast } = useToast();
   const router = useRouter();
 
-  const userProfileRef = useMemoFirebase(() => {
+  const userProfileRef = useMemo(() => {
     if (!firestore || !user) return null;
     return doc(firestore, 'users', user.uid);
   }, [firestore, user]);
   const { data: userProfile } = useDoc<UserProfile>(userProfileRef);
 
   const validationSchema = useMemo(() => {
-    let baseSchema = CarValuationObjectSchema;
+    // Define the schema conditionally using a ternary operator to avoid type inference issues on reassignment.
+    const schema = userProfile?.role === 'Mechanic'
+      ? CarValuationObjectSchema.omit({ vehicleNumber: true }).extend({
+          vehicleNumber: z.string()
+            .min(1, "Vehicle number is required for mechanics.")
+            .transform(val => val.toUpperCase().replace(/[\s-]/g, ''))
+            .refine(val => /^[A-Z]{2}[0-9]{1,2}[A-Z]{0,3}[0-9]{1,4}$/.test(val), "Please enter a valid vehicle number format (e.g., AP09BU1234).")
+        })
+      : CarValuationObjectSchema;
 
-    if (userProfile?.role === 'Mechanic') {
-        // Omit the old 'vehicleNumber' and extend with a new, required definition.
-        baseSchema = baseSchema.omit({ vehicleNumber: true }).extend({
-            vehicleNumber: z.string()
-                .min(1, "Vehicle number is required for mechanics.")
-                .transform(val => val.toUpperCase().replace(/[\s-]/g, ''))
-                .refine(val => /^[A-Z]{2}[0-9]{1,2}[A-Z]{0,3}[0-9]{1,4}$/.test(val), "Please enter a valid vehicle number format (e.g., AP09BU1234).")
+    return schema.superRefine((data, ctx) => {
+      if (data.variant === 'Other' && (!data.otherVariant || data.otherVariant.trim() === '')) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Variant name is required when 'Other' is selected",
+          path: ['otherVariant'],
         });
-    }
-
-    return baseSchema.superRefine((data, ctx) => {
-        if (data.variant === 'Other' && (!data.otherVariant || data.otherVariant.trim() === '')) {
-            ctx.addIssue({
-                code: z.ZodIssueCode.custom,
-                message: "Variant name is required when 'Other' is selected",
-                path: ['otherVariant'],
-            });
-        }
+      }
     });
   }, [userProfile]);
+
 
   const form = useForm<CarValuationFormInput>({
     resolver: zodResolver(validationSchema),

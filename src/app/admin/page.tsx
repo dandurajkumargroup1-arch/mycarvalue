@@ -3,7 +3,7 @@
 
 import { Suspense, useEffect, useState, useMemo } from 'react';
 import { doc, collection, query, orderBy, where, Timestamp, collectionGroup, type FieldValue } from 'firebase/firestore';
-import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
+import { useUser, useFirestore, useDoc, useCollection } from '@/firebase';
 import type { UserProfile } from '@/lib/firebase/user-profile-service';
 import { approveWithdrawal, rejectWithdrawal } from '@/lib/firebase/withdrawal-service';
 import { deleteUser } from '@/lib/firebase/user-profile-service';
@@ -177,7 +177,7 @@ function AdminDashboard() {
   const [roleFilter, setRoleFilter] = useState<string>('All');
   
   // Fetch all users to create a name map
-  const usersQuery = useMemoFirebase(() => {
+  const usersQuery = useMemo(() => {
     if (!firestore) return null;
     return query(collection(firestore, 'users'));
   }, [firestore]);
@@ -221,7 +221,7 @@ function AdminDashboard() {
   const userMap = useMemo(() => allUsersData?.reduce((acc, user) => ({ ...acc, [user.id]: user }), {} as Record<string, UserProfile>) || {}, [allUsersData]);
 
   // Fetch ALL withdrawal requests using a collection group query
-  const allRequestsQuery = useMemoFirebase(() => {
+  const allRequestsQuery = useMemo(() => {
     if (!firestore) return null;
     return query(collectionGroup(firestore, 'withdrawalRequests'));
   }, [firestore]);
@@ -669,7 +669,7 @@ function AdminPageComponent() {
   const firestore = useFirestore();
   const router = useRouter();
 
-  const userProfileRef = useMemoFirebase(() => {
+  const userProfileRef = useMemo(() => {
     if (!firestore || !user) return null;
     return doc(firestore, 'users', user.uid);
   }, [firestore, user]);

@@ -3,7 +3,7 @@
 
 import { Suspense, useEffect, useState, useMemo } from 'react';
 import { doc, collection, query, orderBy, limit, where, Timestamp, type FieldValue } from 'firebase/firestore';
-import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
+import { useUser, useFirestore, useDoc, useCollection } from '@/firebase';
 import type { UserProfile } from '@/lib/firebase/user-profile-service';
 import { requestWithdrawal, type WithdrawalRequestPayload } from '@/lib/firebase/withdrawal-service';
 import { deleteValuation } from '@/lib/firebase/valuation-service';
@@ -281,14 +281,14 @@ function MechanicDashboard({ user, userProfile }: { user: any, userProfile: User
     const firestore = useFirestore();
 
     // -- Data Fetching --
-    const walletQuery = useMemoFirebase(() => {
+    const walletQuery = useMemo(() => {
         if (!firestore || !user) return null;
         return collection(firestore, 'users', user.uid, 'wallet');
     }, [firestore, user]);
     const { data: walletData, isLoading: isWalletLoading } = useCollection<Wallet>(walletQuery);
     const wallet = walletData?.[0] || null;
 
-    const withdrawalsQuery = useMemoFirebase(() => {
+    const withdrawalsQuery = useMemo(() => {
         if (!firestore || !user) return null;
         return query(
             collection(firestore, 'users', user.uid, 'withdrawalRequests'), 
@@ -298,7 +298,7 @@ function MechanicDashboard({ user, userProfile }: { user: any, userProfile: User
     const { data: withdrawalsData, isLoading: areWithdrawalsLoading, error: withdrawalsError } = useCollection<WithdrawalRequest>(withdrawalsQuery);
     
     // Fetch valuations to count today's completions
-    const valuationsQuery = useMemoFirebase(() => {
+    const valuationsQuery = useMemo(() => {
         if (!firestore || !user) return null;
         return query(collection(firestore, 'users', user.uid, 'carValuations'), orderBy('createdAt', 'desc'));
     }, [firestore, user]);
@@ -532,7 +532,7 @@ function AgentOwnerDashboard({ user, userProfile }: { user: any, userProfile: Us
     const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
     const [valuationDateRange, setValuationDateRange] = useState<DateRange | undefined>();
 
-    const valuationsQuery = useMemoFirebase(() => {
+    const valuationsQuery = useMemo(() => {
         if (!firestore || !user) return null;
         return query(collection(firestore, 'users', user.uid, 'carValuations'), orderBy('createdAt', 'desc'));
     }, [firestore, user]);
@@ -755,7 +755,7 @@ function DashboardPageComponent() {
   const firestore = useFirestore();
   const router = useRouter();
 
-  const userProfileRef = useMemoFirebase(() => {
+  const userProfileRef = useMemo(() => {
     if (!firestore || !user) return null;
     return doc(firestore, 'users', user.uid);
   }, [firestore, user]);
