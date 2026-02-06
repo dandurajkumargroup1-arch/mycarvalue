@@ -198,7 +198,8 @@ export function ValuationForm() {
     let baseSchema = CarValuationObjectSchema;
 
     if (userProfile?.role === 'Mechanic') {
-        baseSchema = baseSchema.extend({
+        // Omit the old 'vehicleNumber' and extend with a new, required definition.
+        baseSchema = baseSchema.omit({ vehicleNumber: true }).extend({
             vehicleNumber: z.string()
                 .min(1, "Vehicle number is required for mechanics.")
                 .transform(val => val.toUpperCase().replace(/[\s-]/g, ''))
