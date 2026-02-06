@@ -192,7 +192,7 @@ export function ValuationForm() {
     if (!firestore || !user) return null;
     return doc(firestore, 'users', user.uid);
   }, [firestore, user]);
-  const { data: userProfile } = useDoc<UserProfile>(userProfileRef);
+  const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileRef);
 
   const validationSchema = useMemo(() => {
     // Define the schema conditionally using a ternary operator to avoid type inference issues on reassignment.
@@ -342,14 +342,53 @@ export function ValuationForm() {
         setLoading(false);
         return;
     }
+    
+    // Check if the user is an admin
+    const isAdmin = userProfile?.role === 'Admin' || user.email === 'rajmycarvalue@gmail.com';
 
     try {
         const result = await getValuationAction(data);
         const fullResult = { valuation: result.valuation, formData: data };
 
-        // For ALL roles: store result and show payment screen.
         localStorage.setItem('valuationResult', JSON.stringify(fullResult));
-        setShowPayment(true);
+
+        if (isAdmin) {
+            // Admin Flow: Skip payment and save directly
+            try {
+                await saveValuation(firestore, user, {
+                    paymentId: 'admin_bypass', // Special ID for admin valuations
+                    ...fullResult.formData,
+                    valuationResult: fullResult.valuation,
+                    comparableListingsResult: null, // As per current flow
+                    imageQualityResult: null,     // As per current flow
+                });
+                
+                localStorage.setItem("paymentSuccess", "true"); // Set this so the result page works
+                
+                toast({
+                    title: "Valuation Saved (Admin)",
+                    description: "Admin valuation has been saved directly.",
+                });
+
+                router.push('/result'); // Redirect to the result page
+
+            } catch (error: any) {
+                console.error("Failed to save admin valuation:", error);
+                let errorMessage = "Could not save the valuation report even as admin.";
+                if (error.message?.includes("already exists")) {
+                    errorMessage = error.message;
+                }
+                toast({
+                    variant: "destructive",
+                    title: "Save Failed",
+                    description: errorMessage,
+                });
+            }
+
+        } else {
+            // Regular User Flow: Show payment screen
+            setShowPayment(true);
+        }
 
     } catch (error: any) {
         console.error("Valuation Action Error:", error);
@@ -375,8 +414,15 @@ export function ValuationForm() {
     if (loading) {
       return 'Analyzing...';
     }
+    if (user && isProfileLoading) {
+        return 'Checking user role...';
+    }
+    const isAdmin = userProfile?.role === 'Admin' || user?.email === 'rajmycarvalue@gmail.com';
+    if (isAdmin) {
+        return 'Get Valuation (Admin Bypass)';
+    }
     return 'Get Valuation & Proceed to Payment';
-  }, [loading]);
+  }, [loading, userProfile, user, isProfileLoading]);
 
 
   const sections = [
@@ -731,7 +777,7 @@ export function ValuationForm() {
             <div id="submission-section" className="pt-6 space-y-4">
                 <div className="flex flex-col items-center justify-center">
                     {isLastSection ? (
-                        <Button type="submit" className="w-full" size="lg" disabled={loading}>
+                        <Button type="submit" className="w-full" size="lg" disabled={loading || (user && isProfileLoading)}>
                             <Sparkles className="mr-2 h-4 w-4" />
                             {buttonText}
                         </Button>
