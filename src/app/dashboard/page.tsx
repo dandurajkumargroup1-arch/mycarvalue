@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Suspense, useEffect, useState, useMemo } from 'react';
@@ -43,7 +42,7 @@ interface Wallet {
     userId: string;
     balance: number;
     totalEarned: number;
-    lastWithdrawalDate: Timestamp | null;
+    lastWithdrawalDate: Timestamp | FieldValue | null;
 }
 
 interface WithdrawalRequest {
@@ -54,8 +53,8 @@ interface WithdrawalRequest {
     bankAccountNumber?: string;
     bankIfscCode?: string;
     status: 'requested' | 'paid' | 'rejected';
-    requestedAt: Timestamp;
-    processedAt?: Timestamp;
+    requestedAt: Timestamp | FieldValue;
+    processedAt?: Timestamp | FieldValue;
     rejectionReason?: string;
     transactionId?: string;
 }
@@ -63,7 +62,7 @@ interface WithdrawalRequest {
 // Represents a valuation document from Firestore, including its ID
 type ValuationDoc = CarValuationFormInput & { 
     id: string;
-    createdAt: Timestamp;
+    createdAt: Timestamp | FieldValue;
     valuationResult: any; 
 };
 

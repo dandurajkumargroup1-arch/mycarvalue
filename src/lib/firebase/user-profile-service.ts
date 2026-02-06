@@ -21,6 +21,7 @@ import { FirestorePermissionError } from '@/firebase/errors';
 
 /**
  * Defines the structure for a user profile document in Firestore.
+ * Timestamps can be actual Timestamp objects (on read) or a FieldValue sentinel (on write).
  */
 export interface UserProfile {
   id: string;
@@ -35,8 +36,8 @@ export interface UserProfile {
   upiId?: string;
   bankAccountNumber?: string;
   bankIfscCode?: string;
-  createdAt?: Timestamp;
-  lastUpdatedAt?: Timestamp;
+  createdAt?: Timestamp | FieldValue;
+  lastUpdatedAt?: Timestamp | FieldValue;
 }
 
 
@@ -79,7 +80,7 @@ export async function upsertUserProfile(
   const profileData: Partial<UserProfile> = {
     ...baseData,
     ...updateData,
-    lastUpdatedAt: serverTimestamp() as FieldValue,
+    lastUpdatedAt: serverTimestamp(),
   };
 
   try {
@@ -90,7 +91,7 @@ export async function upsertUserProfile(
       if (!profileData.role) {
         throw new Error("Role is required for new user profile creation.");
       }
-      profileData.createdAt = serverTimestamp() as FieldValue;
+      profileData.createdAt = serverTimestamp();
       await setDoc(userDocRef, profileData);
     } else {
       // Existing user, merge data to avoid overwriting createdAt.

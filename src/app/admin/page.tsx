@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Suspense, useEffect, useState, useMemo } from 'react';
@@ -43,8 +42,8 @@ interface WithdrawalRequest {
     bankAccountNumber?: string;
     bankIfscCode?: string;
     status: 'requested' | 'paid' | 'rejected';
-    requestedAt: Timestamp;
-    processedAt?: Timestamp;
+    requestedAt: Timestamp | FieldValue;
+    processedAt?: Timestamp | FieldValue;
     rejectionReason?: string;
     transactionId?: string;
 }
