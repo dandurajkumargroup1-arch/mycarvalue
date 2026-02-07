@@ -2,7 +2,7 @@
 "use client";
 
 import Link from "next/link";
-import { Car, Menu, Sparkles, LogIn, LogOut, Calculator, Info, HelpCircle, Phone, UserPlus, LayoutDashboard, Shield } from "lucide-react";
+import { Car, Menu, Sparkles, LogIn, LogOut, Calculator, Info, HelpCircle, Phone, UserPlus, LayoutDashboard, Shield, Gavel } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { signOut as firebaseSignOut } from "firebase/auth";
 import { useState, useMemo, useEffect } from "react";
@@ -28,6 +28,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 const navLinks = [
   { href: "/valuation", label: "Valuation", icon: Sparkles },
+  { href: "/live-bids", label: "Live Bids", icon: Gavel },
   { href: "/emi-calculator", label: "EMI Calculator", icon: Calculator },
   { href: "/about", label: "About", icon: Info },
   { href: "/faq", label: "FAQ", icon: HelpCircle },
