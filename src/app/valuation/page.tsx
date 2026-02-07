@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Suspense, useEffect } from 'react';
@@ -71,12 +72,6 @@ function ValuationPageComponent() {
 
 export default function ValuationPage() {
   return (
-    <Suspense fallback={
-        <div className="container mx-auto max-w-3xl py-12 px-4 md:px-6">
-            <Skeleton className="h-screen w-full" />
-        </div>
-    }>
       <ValuationPageComponent />
-    </Suspense>
   )
 }

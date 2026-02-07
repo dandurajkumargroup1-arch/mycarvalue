@@ -160,8 +160,6 @@ const LoginSkeleton = () => (
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<LoginSkeleton />}>
       <LoginComponent />
-    </Suspense>
   );
 }

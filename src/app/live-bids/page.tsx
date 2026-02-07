@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Suspense, useEffect, useState, useMemo, type ElementType } from 'react';
@@ -377,8 +378,6 @@ function LiveBidsPageComponent() {
 
 export default function LiveBidsPage() {
     return (
-        <Suspense fallback={<LiveBidsPageLoader />}>
-            <LiveBidsPageComponent />
-        </Suspense>
+        <LiveBidsPageComponent />
     );
 }

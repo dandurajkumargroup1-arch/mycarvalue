@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, Suspense } from "react";
@@ -94,12 +95,6 @@ const ResultPageClient = () => {
 
 export default function ResultPage() {
     return (
-        <Suspense fallback={
-            <div className="container mx-auto max-w-4xl py-12">
-                <Skeleton className="h-[1200px] w-full" />
-            </div>
-        }>
-            <ResultPageClient />
-        </Suspense>
+        <ResultPageClient />
     );
 }

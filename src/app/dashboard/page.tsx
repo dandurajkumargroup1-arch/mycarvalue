@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Suspense, useEffect, useState, useMemo } from 'react';
@@ -838,9 +839,7 @@ function DashboardPageComponent() {
 
 export default function DashboardPage() {
     return (
-        <Suspense fallback={<DashboardSkeleton />}>
-            <DashboardPageComponent />
-        </Suspense>
+        <DashboardPageComponent />
     );
 }
 

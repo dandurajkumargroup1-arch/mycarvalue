@@ -1098,8 +1098,6 @@ function AdminPageComponent() {
 
 export default function AdminPage() {
     return (
-        <Suspense fallback={<AdminPageLoader />}>
-            <AdminPageComponent />
-        </Suspense>
+        <AdminPageComponent />
     );
 }
