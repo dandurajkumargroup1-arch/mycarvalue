@@ -1,7 +1,9 @@
 
+
 'use client';
 
 import { Suspense, useEffect, useState, useMemo } from 'react';
+import Image from 'next/image';
 import { doc, collection, query, orderBy, where, Timestamp, collectionGroup, type FieldValue } from 'firebase/firestore';
 import { useUser, useFirestore, useDoc, useCollection } from '@/firebase';
 import type { UserProfile } from '@/lib/firebase/user-profile-service';
@@ -184,7 +186,7 @@ function RejectDialog({ request }: { request: WithdrawalRequest }) {
 const AuctionCarSchema = z.object({
   id: z.string().optional(),
   title: z.string().min(5, "Title is required."),
-  images: z.string().min(10, "At least one image URL is required (one per line)."), 
+  images: z.array(z.string()).min(1, "At least one image is required."), 
   odometer: z.string().min(1, "Odometer is required."),
   fuelType: z.string().min(1, "Fuel type is required."),
   transmission: z.string().min(1, "Transmission is required."),
@@ -214,11 +216,11 @@ function AuctionCarDialog({ car, children }: { car?: AuctionCar, children: React
         resolver: zodResolver(AuctionCarSchema),
         defaultValues: car ? {
             ...car,
-            images: car.images?.join('\n') || '',
+            images: car.images || [],
             conditionSummary: car.conditionSummary?.map((c: any) => `${c.item}: ${c.status}`).join('\n') || '',
         } : {
             title: '',
-            images: '',
+            images: [],
             odometer: '',
             fuelType: 'Diesel',
             transmission: 'Automatic',
@@ -239,18 +241,46 @@ function AuctionCarDialog({ car, children }: { car?: AuctionCar, children: React
         if (car) {
             form.reset({
                 ...car,
-                images: car.images?.join('\n') || '',
+                images: car.images || [],
                 conditionSummary: car.conditionSummary?.map((c: any) => `${c.item}: ${c.status}`).join('\n') || '',
             });
         }
     }, [car, form]);
+
+    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>, fieldChange: (value: string[]) => void) => {
+        const files = e.target.files;
+        if (!files) return;
+
+        const filePromises = Array.from(files).map(file => {
+            return new Promise<string>((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    if (event.target?.result) {
+                        resolve(event.target.result as string);
+                    } else {
+                        reject(new Error("Failed to read file."));
+                    }
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        });
+
+        Promise.all(filePromises).then(urls => {
+            const currentImages = form.getValues('images') || [];
+            fieldChange([...currentImages, ...urls]);
+        }).catch(error => {
+            console.error("Error reading files:", error);
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not process selected images.' });
+        });
+    };
 
     const onSubmit = async (data: AuctionCarFormInput) => {
         if (!firestore) return;
         setIsSubmitting(true);
 
         try {
-            const images = data.images.split('\n').map(url => url.trim()).filter(Boolean);
+            const images = data.images;
             const conditionSummary = data.conditionSummary.split('\n').map(line => {
                 const parts = line.split(':');
                 const item = parts[0]?.trim();
@@ -258,12 +288,6 @@ function AuctionCarDialog({ car, children }: { car?: AuctionCar, children: React
                 return { item, status };
             }).filter(c => c.item && c.status);
             
-            if (images.length === 0) {
-                form.setError('images', { message: 'At least one image URL is required.' });
-                setIsSubmitting(false);
-                return;
-            }
-
             const payload: AuctionCarData = { ...data, images, conditionSummary };
             await upsertAuctionCar(firestore, payload);
             
@@ -345,7 +369,48 @@ function AuctionCarDialog({ car, children }: { car?: AuctionCar, children: React
                              <FormField control={form.control} name="inspectionReportUrl" render={({ field }) => ( <FormItem> <FormLabel>Inspection Report URL</FormLabel> <FormControl><Input placeholder="https://example.com/report.pdf" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
                         </div>
                         
-                        <FormField control={form.control} name="images" render={({ field }) => ( <FormItem> <FormLabel>Image URLs</FormLabel> <FormControl><Textarea placeholder="One image URL per line" {...field} rows={4} /></FormControl> <FormMessage /> </FormItem> )} />
+                        <FormField
+                            control={form.control}
+                            name="images"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Images</FormLabel>
+                                    <FormControl>
+                                        <Input
+                                            type="file"
+                                            multiple
+                                            accept="image/*"
+                                            onChange={(e) => handleImageChange(e, field.onChange)}
+                                        />
+                                    </FormControl>
+                                    <FormMessage />
+                                    {field.value && field.value.length > 0 && (
+                                        <div className="mt-4 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">
+                                            {field.value.map((src, index) => (
+                                                <div key={index} className="relative aspect-square">
+                                                    <Image src={src} alt={`Preview ${index + 1}`} fill className="object-cover rounded-md" />
+                                                    <Button
+                                                        type="button"
+                                                        variant="destructive"
+                                                        size="icon"
+                                                        className="absolute top-1 right-1 h-6 w-6 z-10"
+                                                        onClick={() => {
+                                                            const updatedImages = field.value.filter((_, i) => i !== index);
+                                                            field.onChange(updatedImages);
+                                                        }}
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </Button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                     <p className="text-xs text-muted-foreground pt-2">
+                                        Note: Images are stored directly in the database. Large files may impact performance.
+                                     </p>
+                                </FormItem>
+                            )}
+                        />
                         <FormField control={form.control} name="conditionSummary" render={({ field }) => ( <FormItem> <FormLabel>Condition Summary</FormLabel> <FormControl><Textarea placeholder="One item per line, e.g., Engine: Excellent" {...field} rows={5} /></FormControl> <FormMessage /> </FormItem> )} />
                         
                         <DialogFooter>
