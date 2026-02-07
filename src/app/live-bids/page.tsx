@@ -46,17 +46,18 @@ const getConditionIcon = (item: string) => {
 
 function LiveBidsDashboard() {
   const firestore = useFirestore();
+  const { user } = useUser();
   const [timeLeft, setTimeLeft] = useState('');
   
   const auctionCarsQuery = useMemo(() => {
-    if (!firestore) return null;
+    if (!firestore || !user) return null;
     return query(
       collection(firestore, 'auctionCars'),
       where('status', 'in', ['live', 'scheduled']),
       orderBy('startTime', 'asc'),
       limit(1)
     );
-  }, [firestore]);
+  }, [firestore, user]);
 
   const { data: auctionCars, isLoading: isAuctionLoading } = useCollection(auctionCarsQuery);
   
