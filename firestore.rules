@@ -65,6 +65,14 @@ service cloud.firestore {
         allow update, delete: if false;
       }
     }
+
+    // ------------------------------------------------------------------------
+    // Auction Rules
+    // ------------------------------------------------------------------------
+    match /auctionCars/{auctionCarId} {
+        // Only Admins can create, read, update, or delete auction car listings.
+        allow read, write: if isAdmin();
+    }
     
     // ------------------------------------------------------------------------
     // Collection Group Rules for Admin Access

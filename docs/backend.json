@@ -205,6 +205,47 @@
       },
       "required": ["id", "userId", "paymentId", "make", "model", "manufactureYear", "createdAt"]
     },
+    "AuctionCar": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Auction Car",
+      "type": "object",
+      "description": "Represents a car listed for live auction.",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string", "description": "e.g., 2021 Hyundai Creta SX(O)" },
+        "images": { "type": "array", "items": { "type": "string", "format": "uri" }, "description": "Array of image URLs." },
+        "odometer": { "type": "string" },
+        "fuelType": { "type": "string" },
+        "transmission": { "type": "string" },
+        "ownership": { "type": "string" },
+        "registration": { "type": "string" },
+        "conditionSummary": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "item": { "type": "string" },
+              "status": { "type": "string" }
+            },
+            "required": ["item", "status"]
+          }
+        },
+        "inspectionReportUrl": { "type": "string", "format": "uri" },
+        "sellerName": { "type": "string" },
+        "sellerRating": { "type": "number" },
+        "sellerLocation": { "type": "string" },
+        "startTime": { "type": "string", "format": "date-time" },
+        "endTime": { "type": "string", "format": "date-time" },
+        "startPrice": { "type": "number" },
+        "reservePrice": { "type": "number" },
+        "currentBid": { "type": "number" },
+        "highestBidderId": { "type": "string" },
+        "status": { "type": "string", "enum": ["scheduled", "live", "completed", "cancelled"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "title", "startTime", "endTime", "startPrice", "reservePrice", "status"]
+    },
     "Wallet": {
       "title": "Wallet",
       "type": "object",
@@ -308,10 +349,16 @@
           "schema": { "$ref": "#/backend/entities/WithdrawalRequest" },
           "description": "Stores withdrawal requests in a subcollection under each user."
         }
+      },
+      {
+        "path": "/auctionCars/{auctionCarId}",
+        "definition": {
+          "entityName": "AuctionCar",
+          "schema": { "$ref": "#/backend/entities/AuctionCar" },
+          "description": "Stores cars for live auction. Only Admins can manage these."
+        }
       }
     ],
-    "reasoning": "The Firestore data structure is user-centric. All user-specific data (valuations, wallet, withdrawals) is stored in subcollections under their main user document. This allows for simple, secure access control rules. Admins use collection group queries to access all withdrawal requests across all users for processing."
+    "reasoning": "The Firestore data structure is user-centric. All user-specific data (valuations, wallet, withdrawals) is stored in subcollections under their main user document. This allows for simple, secure access control rules. The `auctionCars` collection is a root collection as it is not user-specific and managed only by admins. Admins use collection group queries to access all withdrawal requests across all users for processing."
   }
 }
-
-    
