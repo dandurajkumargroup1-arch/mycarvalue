@@ -1,15 +1,14 @@
 
 'use client';
 
-import { Suspense, useEffect, useState, useMemo } from 'react';
+import { Suspense, useEffect, useState, useMemo, type ElementType } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { doc } from 'firebase/firestore';
+import { doc, collection, query, where, orderBy, limit } from 'firebase/firestore';
 
-import { useUser, useFirestore, useDoc } from '@/firebase';
+import { useUser, useFirestore, useDoc, useCollection } from '@/firebase';
 import type { UserProfile } from '@/lib/firebase/user-profile-service';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -19,47 +18,112 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import {
   Gavel, Clock, Users, Gauge, Fuel, GitPullRequest, User, MapPin, Star, FileText, CheckCircle, Shield, Cog, Car, Armchair, Disc, AlertTriangle
 } from 'lucide-react';
-import { formatCurrency } from '@/lib/utils';
+import { formatCurrency, toDate } from '@/lib/utils';
 
 
-const carForAuction = {
-  title: '2021 Hyundai Creta SX(O)',
-  images: [
-    PlaceHolderImages.find(p => p.id === 'auction-car-main')!,
-    PlaceHolderImages.find(p => p.id === 'auction-car-interior')!,
-    PlaceHolderImages.find(p => p.id === 'auction-car-side')!,
-    PlaceHolderImages.find(p => p.id === 'auction-car-engine')!,
-  ].filter(Boolean),
-  specs: {
-    odometer: '28,500 km',
-    fuelType: 'Diesel',
-    transmission: 'Automatic',
-    ownership: '1st Owner',
-    registration: 'MH 14 (Pune)',
-  },
-  conditionSummary: [
-    { item: 'Engine', status: 'Excellent', icon: Cog },
-    { item: 'Exterior', status: 'Minor Scratches', icon: Car },
-    { item: 'Interior', status: 'Clean', icon: Armchair },
-    { item: 'Tyres', status: '75% Life Remaining', icon: Disc },
-    { item: 'Accident History', status: 'None', icon: Shield },
-  ],
-  seller: {
-    name: 'AutoBest Deals',
-    rating: 4.8,
-    location: 'Pune, Maharashtra',
-  },
-};
-
-const bidHistory = [
+// Simplified Bid History for now
+const staticBidHistory = [
   { bidder: 'Bidder #345', amount: 1455000, time: '2s ago' },
   { bidder: 'You', amount: 1450000, time: '15s ago' },
   { bidder: 'Bidder #123', amount: 1445000, time: '28s ago' },
   { bidder: 'Bidder #678', amount: 1440000, time: '45s ago' },
 ];
 
+const conditionIcons: { [key: string]: ElementType } = {
+  'Engine': Cog,
+  'Exterior': Car,
+  'Interior': Armchair,
+  'Tyres': Disc,
+  'Accident History': Shield,
+  'Brakes': Disc,
+  'Default': FileText
+};
+
+const getConditionIcon = (item: string) => {
+    const foundKey = Object.keys(conditionIcons).find(key => item.toLowerCase().includes(key.toLowerCase()));
+    return foundKey ? conditionIcons[foundKey] : conditionIcons.Default;
+}
+
 function LiveBidsDashboard() {
-  const [mainImage, setMainImage] = useState(carForAuction.images[0]);
+  const firestore = useFirestore();
+  const [timeLeft, setTimeLeft] = useState('');
+  
+  const auctionCarsQuery = useMemo(() => {
+    if (!firestore) return null;
+    return query(
+      collection(firestore, 'auctionCars'),
+      where('status', 'in', ['live', 'scheduled']),
+      orderBy('startTime', 'asc'),
+      limit(1)
+    );
+  }, [firestore]);
+
+  const { data: auctionCars, isLoading: isAuctionLoading } = useCollection(auctionCarsQuery);
+  
+  const carForAuction = useMemo(() => {
+    if (!auctionCars || auctionCars.length === 0) return null;
+    const car = auctionCars[0];
+    return {
+      ...car,
+      startTime: toDate(car.startTime),
+      endTime: toDate(car.endTime)
+    }
+  }, [auctionCars]);
+  
+  const [mainImage, setMainImage] = useState(carForAuction?.images?.[0]);
+
+  useEffect(() => {
+    if (carForAuction?.images?.length) {
+      setMainImage(carForAuction.images[0]);
+    }
+  }, [carForAuction]);
+
+  useEffect(() => {
+    if (!carForAuction?.endTime) return;
+
+    const interval = setInterval(() => {
+        const now = new Date();
+        const end = carForAuction.endTime;
+        if (end) {
+            const diff = end.getTime() - now.getTime();
+            if (diff <= 0) {
+                setTimeLeft('Ended');
+                clearInterval(interval);
+            } else {
+                const hours = Math.floor(diff / (1000 * 60 * 60));
+                const minutes = Math.floor((diff / 1000 / 60) % 60);
+                const seconds = Math.floor((diff / 1000) % 60);
+                setTimeLeft(`${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`);
+            }
+        }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [carForAuction?.endTime]);
+
+  if (isAuctionLoading) {
+    return <LiveBidsPageLoader />;
+  }
+
+  if (!carForAuction) {
+    return (
+      <div className="container mx-auto flex items-center justify-center py-20">
+        <Alert className="max-w-lg">
+            <Gavel className="h-4 w-4" />
+            <AlertTitle>No Live Auctions</AlertTitle>
+            <AlertDescription>
+                There are no auctions scheduled or live at the moment. Please check back later.
+            </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
+  
+  const bidHistory = [
+    { bidder: 'Bidder #XXX', amount: carForAuction.currentBid, time: 'now' },
+    ...staticBidHistory.filter(b => b.amount < carForAuction.currentBid)
+  ];
+
 
   return (
     <div className="container mx-auto py-8 px-4 md:px-6">
@@ -67,7 +131,7 @@ function LiveBidsDashboard() {
         <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
           <Gavel /> Live Auction: <span className="text-primary">{carForAuction.title}</span>
         </h1>
-        <p className="text-muted-foreground">The auction is live. Place your bids now!</p>
+        <p className="text-muted-foreground">The auction is {carForAuction.status}. Place your bids now!</p>
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -75,24 +139,25 @@ function LiveBidsDashboard() {
         <div className="lg:col-span-2 space-y-8">
           <Card>
             <CardContent className="p-4">
-              <div className="relative aspect-video w-full overflow-hidden rounded-lg mb-4">
-                <Image
-                  src={mainImage.imageUrl}
-                  alt={mainImage.description}
-                  fill
-                  style={{objectFit: 'cover'}}
-                  className="transition-transform duration-300 hover:scale-105"
-                  data-ai-hint={mainImage.imageHint}
-                />
+              <div className="relative aspect-video w-full overflow-hidden rounded-lg mb-4 bg-muted">
+                {mainImage && (
+                  <Image
+                    src={mainImage}
+                    alt={carForAuction.title || 'Main car image'}
+                    fill
+                    style={{objectFit: 'cover'}}
+                    className="transition-transform duration-300 hover:scale-105"
+                  />
+                )}
               </div>
               <div className="grid grid-cols-4 gap-2">
-                {carForAuction.images.map((image, index) => (
+                {carForAuction.images.map((image: string, index: number) => (
                   <div
                     key={index}
-                    className={`relative aspect-video w-full overflow-hidden rounded-md cursor-pointer border-2 ${mainImage.imageUrl === image.imageUrl ? 'border-primary' : 'border-transparent'}`}
+                    className={`relative aspect-video w-full overflow-hidden rounded-md cursor-pointer border-2 ${mainImage === image ? 'border-primary' : 'border-transparent'}`}
                     onClick={() => setMainImage(image)}
                   >
-                    <Image src={image.imageUrl} alt={image.description} fill style={{objectFit: 'cover'}} data-ai-hint={image.imageHint} />
+                    <Image src={image} alt={`${carForAuction.title} image ${index + 1}`} fill style={{objectFit: 'cover'}} />
                   </div>
                 ))}
               </div>
@@ -105,26 +170,31 @@ function LiveBidsDashboard() {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-6 text-sm">
-                  <div className="flex items-center gap-3"><Gauge className="text-primary" /><div><p className="text-muted-foreground">Odometer</p><p className="font-semibold">{carForAuction.specs.odometer}</p></div></div>
-                  <div className="flex items-center gap-3"><Fuel className="text-primary" /><div><p className="text-muted-foreground">Fuel Type</p><p className="font-semibold">{carForAuction.specs.fuelType}</p></div></div>
-                  <div className="flex items-center gap-3"><GitPullRequest className="text-primary" /><div><p className="text-muted-foreground">Transmission</p><p className="font-semibold">{carForAuction.specs.transmission}</p></div></div>
-                  <div className="flex items-center gap-3"><User className="text-primary" /><div><p className="text-muted-foreground">Ownership</p><p className="font-semibold">{carForAuction.specs.ownership}</p></div></div>
-                  <div className="flex items-center gap-3"><MapPin className="text-primary" /><div><p className="text-muted-foreground">Registration</p><p className="font-semibold">{carForAuction.specs.registration}</p></div></div>
+                  <div className="flex items-center gap-3"><Gauge className="text-primary" /><div><p className="text-muted-foreground">Odometer</p><p className="font-semibold">{carForAuction.odometer}</p></div></div>
+                  <div className="flex items-center gap-3"><Fuel className="text-primary" /><div><p className="text-muted-foreground">Fuel Type</p><p className="font-semibold">{carForAuction.fuelType}</p></div></div>
+                  <div className="flex items-center gap-3"><GitPullRequest className="text-primary" /><div><p className="text-muted-foreground">Transmission</p><p className="font-semibold">{carForAuction.transmission}</p></div></div>
+                  <div className="flex items-center gap-3"><User className="text-primary" /><div><p className="text-muted-foreground">Ownership</p><p className="font-semibold">{carForAuction.ownership}</p></div></div>
+                  <div className="flex items-center gap-3"><MapPin className="text-primary" /><div><p className="text-muted-foreground">Registration</p><p className="font-semibold">{carForAuction.registration}</p></div></div>
               </div>
                <div className="mt-6 pt-6 border-t">
                   <h3 className="font-semibold mb-3">Condition Summary</h3>
                   <Table>
                     <TableBody>
-                      {carForAuction.conditionSummary.map(({item, status, icon: Icon}) => (
-                        <TableRow key={item}>
-                          <TableCell className="font-medium flex items-center gap-2"><Icon className="text-muted-foreground h-5 w-5"/> {item}</TableCell>
-                          <TableCell>{status}</TableCell>
-                        </TableRow>
-                      ))}
+                      {carForAuction.conditionSummary.map((summary: {item: string, status: string}) => {
+                        const Icon = getConditionIcon(summary.item);
+                        return (
+                          <TableRow key={summary.item}>
+                            <TableCell className="font-medium flex items-center gap-2"><Icon className="text-muted-foreground h-5 w-5"/> {summary.item}</TableCell>
+                            <TableCell>{summary.status}</TableCell>
+                          </TableRow>
+                        )
+                      })}
                     </TableBody>
                   </Table>
-                  <Button variant="outline" className="mt-4 w-full">
-                    <Link href="/report-placeholder" className="flex items-center gap-2"><FileText /> View Full Inspection Report</Link>
+                  <Button variant="outline" className="mt-4 w-full" asChild>
+                    <a href={carForAuction.inspectionReportUrl || '#'} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2" disabled={!carForAuction.inspectionReportUrl}>
+                      <FileText /> View Full Inspection Report
+                    </a>
                   </Button>
                </div>
             </CardContent>
@@ -135,26 +205,29 @@ function LiveBidsDashboard() {
         <div className="lg:col-span-1 space-y-8">
           <Card className="sticky top-24 shadow-xl">
             <CardHeader className="text-center">
-              <CardTitle className="flex items-center justify-center gap-2">Live Auction <Badge>Live</Badge></CardTitle>
+              <CardTitle className="flex items-center justify-center gap-2">Live Auction <Badge variant={carForAuction.status === 'live' ? 'destructive' : 'secondary'}>{carForAuction.status}</Badge></CardTitle>
               <CardDescription>Ends in:</CardDescription>
-              <p className="text-3xl font-bold text-destructive">01:23</p>
+              <p className="text-3xl font-bold text-destructive">{timeLeft || 'Loading...'}</p>
             </CardHeader>
             <CardContent className="space-y-4">
                 <div className="text-center">
                   <p className="text-sm text-muted-foreground">Current Highest Bid</p>
-                  <p className="text-4xl font-bold text-primary">{formatCurrency(bidHistory[0].amount)}</p>
-                  <Badge variant="secondary" className="mt-2 flex items-center gap-2 mx-auto w-fit">
-                    <CheckCircle className="text-green-500 h-4 w-4"/> Reserve Price Met
-                  </Badge>
+                  <p className="text-4xl font-bold text-primary">{formatCurrency(carForAuction.currentBid)}</p>
+                  {carForAuction.currentBid >= carForAuction.reservePrice ? (
+                      <Badge variant="secondary" className="mt-2 flex items-center gap-2 mx-auto w-fit">
+                        <CheckCircle className="text-green-500 h-4 w-4"/> Reserve Price Met
+                      </Badge>
+                  ) : (
+                      <Badge variant="outline" className="mt-2 flex items-center gap-2 mx-auto w-fit">
+                        <Gavel className="h-4 w-4"/> Reserve Price Not Met
+                      </Badge>
+                  )}
                 </div>
                 <div className="p-3 bg-muted rounded-md text-center">
-                  <p className="text-sm">Next minimum bid: <span className="font-bold">{formatCurrency(bidHistory[0].amount + 5000)}</span></p>
+                  <p className="text-sm">Next minimum bid: <span className="font-bold">{formatCurrency(carForAuction.currentBid + 5000)}</span></p>
                 </div>
-                <Button className="w-full" size="lg">Place Your Bid</Button>
+                <Button className="w-full" size="lg" disabled={carForAuction.status !== 'live'}>Place Your Bid</Button>
                 <p className="text-xs text-center text-muted-foreground flex items-center justify-center gap-1"><Users/> {bidHistory.length + 5} bidders watching</p>
-                 <div className="text-center mt-2">
-                    <Badge variant="destructive" className="bg-red-500/10 text-red-500 border-red-500/20">You have been outbid!</Badge>
-                </div>
             </CardContent>
           </Card>
 
@@ -190,14 +263,14 @@ function LiveBidsDashboard() {
               </CardHeader>
               <CardContent className="space-y-3">
                   <div className="flex items-center gap-2 font-semibold">
-                      <User className="text-primary"/> {carForAuction.seller.name}
+                      <User className="text-primary"/> {carForAuction.sellerName}
                   </div>
                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <MapPin/> {carForAuction.seller.location}
+                      <MapPin/> {carForAuction.sellerLocation}
                   </div>
                   <div className="flex items-center gap-2">
                       <Star className="text-amber-500 fill-amber-500"/>
-                      <span className="font-bold">{carForAuction.seller.rating}</span>
+                      <span className="font-bold">{carForAuction.sellerRating}</span>
                       <span className="text-sm text-muted-foreground">/ 5.0</span>
                   </div>
               </CardContent>
