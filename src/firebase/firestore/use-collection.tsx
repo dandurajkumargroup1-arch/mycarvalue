@@ -12,6 +12,7 @@ import {
 } from 'firebase/firestore';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
+import { useUser } from '@/firebase/auth/use-user';
 
 /** Utility type to add an 'id' field to a given type T. */
 export type WithId<T> = T & { id: string };
@@ -47,18 +48,29 @@ export function useCollection<T = any>(
   type StateDataType = ResultItemType[] | null;
 
   const [data, setData] = useState<StateDataType>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<FirestoreError | Error | null>(null);
+  const { isUserLoading } = useUser();
 
   useEffect(() => {
-    if (!targetRefOrQuery) {
+    // Wait for the user's authentication status to be resolved.
+    if (isUserLoading) {
+      setIsLoading(true);
       setData(null);
+      setError(null);
+      return;
+    }
+    
+    // If auth is resolved but there's no query, we are not loading.
+    if (!targetRefOrQuery) {
       setIsLoading(false);
+      setData(null);
       setError(null);
       return;
     }
 
-    setIsLoading(true);
+    // At this point, auth is ready and we have a query. Start the subscription.
+    setIsLoading(true); 
     setError(null);
 
     const unsubscribe = onSnapshot(
@@ -73,8 +85,6 @@ export function useCollection<T = any>(
         setIsLoading(false);
       },
       (error: FirestoreError) => {
-        // This logic extracts the path. It avoids internal properties for queries
-        // to prevent crashes, providing a safe fallback.
         const path: string =
           targetRefOrQuery.type === 'collection'
             ? (targetRefOrQuery as CollectionReference).path
@@ -94,7 +104,7 @@ export function useCollection<T = any>(
     );
 
     return () => unsubscribe();
-  }, [targetRefOrQuery]); // Re-run if the target query/reference changes.
+  }, [targetRefOrQuery, isUserLoading]); // Re-run if the query or auth status changes.
 
   return { data, isLoading, error };
 }

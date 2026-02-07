@@ -93,16 +93,11 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
   // Memoize the context value
   const contextValue = useMemo((): FirebaseContextState => {
     const servicesAvailable = !!(firebaseApp && firestore && auth);
-    
-    // By making firestore's availability dependent on the auth loading state,
-    // we ensure that any hook like useCollection that depends on useFirestore()
-    // will not receive the firestore instance until authentication is resolved.
-    const isAuthReady = !userAuthState.isUserLoading;
 
     return {
       areServicesAvailable: servicesAvailable,
       firebaseApp: firebaseApp,
-      firestore: isAuthReady ? firestore : null, // Pass null until auth is ready
+      firestore: firestore,
       auth: auth,
       user: userAuthState.user,
       isUserLoading: userAuthState.isUserLoading,

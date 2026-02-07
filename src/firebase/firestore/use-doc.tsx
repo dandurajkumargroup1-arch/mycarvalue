@@ -11,6 +11,7 @@ import {
 } from 'firebase/firestore';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
+import { useUser } from '@/firebase/auth/use-user';
 
 /** Utility type to add an 'id' field to a given type T. */
 type WithId<T> = T & { id: string };
@@ -45,20 +46,30 @@ export function useDoc<T = any>(
   type StateDataType = WithId<T> | null;
 
   const [data, setData] = useState<StateDataType>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<FirestoreError | Error | null>(null);
+  const { isUserLoading } = useUser();
 
   useEffect(() => {
-    if (!memoizedDocRef) {
+    // Wait for the user's authentication status to be resolved.
+    if (isUserLoading) {
+      setIsLoading(true);
       setData(null);
-      setIsLoading(false);
       setError(null);
       return;
     }
 
+    // If auth is resolved but there's no document reference, we are not loading.
+    if (!memoizedDocRef) {
+      setIsLoading(false);
+      setData(null);
+      setError(null);
+      return;
+    }
+
+    // At this point, auth is ready and we have a doc ref. Start the subscription.
     setIsLoading(true);
     setError(null);
-    // Optional: setData(null); // Clear previous data instantly
 
     const unsubscribe = onSnapshot(
       memoizedDocRef,
@@ -69,7 +80,7 @@ export function useDoc<T = any>(
           // Document does not exist
           setData(null);
         }
-        setError(null); // Clear any previous error on successful snapshot (even if doc doesn't exist)
+        setError(null);
         setIsLoading(false);
       },
       (error: FirestoreError) => {
@@ -87,7 +98,7 @@ export function useDoc<T = any>(
     );
 
     return () => unsubscribe();
-  }, [memoizedDocRef]); // Re-run if the memoizedDocRef changes.
+  }, [memoizedDocRef, isUserLoading]); // Re-run if the doc ref or auth status changes.
 
   return { data, isLoading, error };
 }
