@@ -1,17 +1,23 @@
 
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useEffect, useState, useMemo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { doc } from 'firebase/firestore';
 
+import { useUser, useFirestore, useDoc } from '@/firebase';
+import type { UserProfile } from '@/lib/firebase/user-profile-service';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import {
-  Gavel, Clock, Users, Gauge, Fuel, GitPullRequest, User, MapPin, Star, FileText, CheckCircle, Shield, Cog, Car, Armchair, Disc
+  Gavel, Clock, Users, Gauge, Fuel, GitPullRequest, User, MapPin, Star, FileText, CheckCircle, Shield, Cog, Car, Armchair, Disc, AlertTriangle
 } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 
@@ -52,7 +58,7 @@ const bidHistory = [
   { bidder: 'Bidder #678', amount: 1440000, time: '45s ago' },
 ];
 
-export default function LiveBidsPage() {
+function LiveBidsDashboard() {
   const [mainImage, setMainImage] = useState(carForAuction.images[0]);
 
   return (
@@ -202,3 +208,104 @@ export default function LiveBidsPage() {
   );
 }
 
+
+function LiveBidsPageLoader() {
+    return (
+        <div className="container mx-auto py-8 px-4 md:px-6">
+            <header className="mb-8">
+                <Skeleton className="h-9 w-3/4" />
+                <Skeleton className="h-5 w-1/2 mt-2" />
+            </header>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* Left Column */}
+                <div className="lg:col-span-2 space-y-8">
+                    <Card>
+                        <CardContent className="p-4">
+                            <Skeleton className="aspect-video w-full rounded-lg mb-4" />
+                            <div className="grid grid-cols-4 gap-2">
+                                <Skeleton className="aspect-video w-full" />
+                                <Skeleton className="aspect-video w-full" />
+                                <Skeleton className="aspect-video w-full" />
+                                <Skeleton className="aspect-video w-full" />
+                            </div>
+                        </CardContent>
+                    </Card>
+                    <Skeleton className="h-96 w-full" />
+                </div>
+
+                {/* Right Column */}
+                <div className="lg:col-span-1 space-y-8">
+                    <Skeleton className="h-80 w-full" />
+                    <Skeleton className="h-64 w-full" />
+                    <Skeleton className="h-48 w-full" />
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function LiveBidsPageComponent() {
+  const { user, isUserLoading } = useUser();
+  const firestore = useFirestore();
+  const router = useRouter();
+
+  const userProfileRef = useMemo(() => {
+    if (!firestore || !user) return null;
+    return doc(firestore, 'users', user.uid);
+  }, [firestore, user]);
+
+  const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileRef);
+
+  useEffect(() => {
+    if (!isUserLoading && !user) {
+      router.push('/login?redirect=/live-bids');
+    }
+  }, [user, isUserLoading, router]);
+
+  const authStatus = useMemo(() => {
+    if (isUserLoading || (user && isProfileLoading)) {
+      return 'loading';
+    }
+    if (!user) {
+      return 'unauthorized';
+    }
+    const isHardcodedAdmin = user.email === 'rajmycarvalue@gmail.com';
+    const isRoleAdmin = userProfile?.role === 'Admin';
+
+    if (isHardcodedAdmin || isRoleAdmin) {
+      return 'authorized';
+    }
+
+    return 'unauthorized';
+  }, [user, isUserLoading, userProfile, isProfileLoading]);
+
+
+  if (authStatus === 'loading') {
+    return <LiveBidsPageLoader />;
+  }
+
+  if (authStatus === 'authorized') {
+    return <LiveBidsDashboard />;
+  }
+
+  return (
+    <div className="container mx-auto flex items-center justify-center py-20">
+      <Alert variant="destructive" className="max-w-lg">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Access Denied</AlertTitle>
+          <AlertDescription>
+              You do not have permission to view this page. This area is for administrators only.
+          </AlertDescription>
+      </Alert>
+    </div>
+  );
+}
+
+export default function LiveBidsPage() {
+    return (
+        <Suspense fallback={<LiveBidsPageLoader />}>
+            <LiveBidsPageComponent />
+        </Suspense>
+    );
+}
