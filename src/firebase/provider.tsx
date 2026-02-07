@@ -93,11 +93,14 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
   // Memoize the context value
   const contextValue = useMemo((): FirebaseContextState => {
     const servicesAvailable = !!(firebaseApp && firestore && auth);
+    const authIsReady = !userAuthState.isUserLoading;
 
     return {
       areServicesAvailable: servicesAvailable,
       firebaseApp: firebaseApp,
-      firestore: firestore,
+      // Only provide the firestore instance AFTER the initial auth check is complete.
+      // This prevents hooks from attempting to query with a null auth state.
+      firestore: authIsReady ? firestore : null,
       auth: auth,
       user: userAuthState.user,
       isUserLoading: userAuthState.isUserLoading,
