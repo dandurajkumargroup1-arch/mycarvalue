@@ -11,6 +11,30 @@
       "description": "Side profile of a modern sedan with highlighted points indicating inspection areas.",
       "imageUrl": "https://images.unsplash.com/photo-1498887960847-2a5e46312788?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxjYXIlMjBpbnNwZWN0aW9ufGVufDB8fHx8MTc2ODQ2MzI1OHww&ixlib=rb-4.1.0&q=80&w=1080",
       "imageHint": "car inspection"
+    },
+    {
+      "id": "auction-car-main",
+      "description": "Front 3/4 view of a white SUV.",
+      "imageUrl": "https://images.unsplash.com/photo-1617808913835-ce377443a59a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHx3aGl0ZSUyMFNVVnxlbnwwfHx8fDE3MTc0NTgxOTV8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "white suv"
+    },
+    {
+      "id": "auction-car-interior",
+      "description": "Interior view of a modern car's dashboard and seats.",
+      "imageUrl": "https://images.unsplash.com/photo-1554223090-7e4827381835?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxjYXIlMjBpbnRlcmlvcnxlbnwwfHx8fDE3MTc0NTgyMjR8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "car interior"
+    },
+    {
+      "id": "auction-car-side",
+      "description": "Side profile of a white SUV on the road.",
+      "imageUrl": "https://images.unsplash.com/photo-1603584173873-fd23a2435b72?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHx3aGl0ZSUyMFNVVnxlbnwwfHx8fDE3MTc0NTgxOTV8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "suv side"
+    },
+    {
+      "id": "auction-car-engine",
+      "description": "Close up of a clean and modern car engine.",
+      "imageUrl": "https://images.unsplash.com/photo-1588644638449-c11538407a8a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxjYXIlMjBlbmdpbmV8ZW58MHx8fHwxNzE3NDU4MjYyfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "car engine"
     }
   ]
 }
