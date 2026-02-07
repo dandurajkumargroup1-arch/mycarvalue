@@ -363,6 +363,7 @@ function AuctionCarDialog({ car, children }: { car?: AuctionCar, children: React
 // --- Main Dashboard Component ---
 
 function AdminDashboard() {
+  const { user } = useUser();
   const firestore = useFirestore();
   const { toast } = useToast();
   const [usersDateRange, setUsersDateRange] = useState<DateRange | undefined>();
@@ -373,9 +374,9 @@ function AdminDashboard() {
   // --- Data Fetching & Processing ---
   
   const usersQuery = useMemo(() => {
-    if (!firestore) return null;
+    if (!firestore || !user) return null;
     return query(collection(firestore, 'users'));
-  }, [firestore]);
+  }, [firestore, user]);
 
   const { data: rawAllUsersData, isLoading: isUsersLoading } = useCollection<Omit<UserProfile, 'createdAt' | 'lastUpdatedAt'> & { createdAt: any; lastUpdatedAt: any }>(usersQuery);
 
@@ -390,9 +391,9 @@ function AdminDashboard() {
 
 
   const allRequestsQuery = useMemo(() => {
-    if (!firestore) return null;
+    if (!firestore || !user) return null;
     return query(collectionGroup(firestore, 'withdrawalRequests'));
-  }, [firestore]);
+  }, [firestore, user]);
 
   const { data: rawAllRequestsData, isLoading: isRequestsLoading, error: requestsError } = useCollection<Omit<WithdrawalRequest, 'requestedAt' | 'processedAt'> & { requestedAt: any; processedAt: any }>(allRequestsQuery);
   
@@ -406,9 +407,9 @@ function AdminDashboard() {
   }, [rawAllRequestsData]);
   
   const auctionCarsQuery = useMemo(() => {
-    if (!firestore) return null;
+    if (!firestore || !user) return null;
     return query(collection(firestore, 'auctionCars'), orderBy('startTime', 'desc'));
-  }, [firestore]);
+  }, [firestore, user]);
 
   const { data: rawAuctionCars, isLoading: areAuctionsLoading } = useCollection(auctionCarsQuery);
 
