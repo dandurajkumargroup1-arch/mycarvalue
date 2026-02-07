@@ -427,8 +427,7 @@ function AuctionCarDialog({ car, children }: { car?: AuctionCar, children: React
 
 // --- Main Dashboard Component ---
 
-function AdminDashboard() {
-  const { user } = useUser();
+function AdminDashboard({ user }: { user: any }) {
   const firestore = useFirestore();
   const { toast } = useToast();
   const [usersDateRange, setUsersDateRange] = useState<DateRange | undefined>();
@@ -1079,8 +1078,8 @@ function AdminPageComponent() {
     return <AdminPageLoader />;
   }
 
-  if (authStatus === 'authorized') {
-    return <AdminDashboard />;
+  if (authStatus === 'authorized' && user) {
+    return <AdminDashboard user={user} />;
   }
 
   // 'unauthorized' is the only remaining status

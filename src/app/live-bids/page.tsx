@@ -44,9 +44,8 @@ const getConditionIcon = (item: string) => {
     return foundKey ? conditionIcons[foundKey] : conditionIcons.Default;
 }
 
-function LiveBidsDashboard() {
+function LiveBidsDashboard({ user }: { user: any }) {
   const firestore = useFirestore();
-  const { user } = useUser();
   const [timeLeft, setTimeLeft] = useState('');
   
   const auctionCarsQuery = useMemo(() => {
@@ -359,8 +358,8 @@ function LiveBidsPageComponent() {
     return <LiveBidsPageLoader />;
   }
 
-  if (authStatus === 'authorized') {
-    return <LiveBidsDashboard />;
+  if (authStatus === 'authorized' && user) {
+    return <LiveBidsDashboard user={user} />;
   }
 
   return (
