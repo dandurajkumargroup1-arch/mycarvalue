@@ -50,10 +50,10 @@ export function useCollection<T = any>(
   const [data, setData] = useState<StateDataType>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<FirestoreError | Error | null>(null);
-  const { isUserLoading } = useUser();
+  const { isUserLoading, user } = useUser(); // Get user object
 
   useEffect(() => {
-    // Wait for the user's authentication status to be resolved.
+    // Primary guard: wait for auth to finish loading.
     if (isUserLoading) {
       setIsLoading(true);
       setData(null);
@@ -61,15 +61,26 @@ export function useCollection<T = any>(
       return;
     }
     
-    // If auth is resolved but there's no query, we are not loading.
+    // Secondary guard: If there's no query, we have nothing to fetch.
     if (!targetRefOrQuery) {
       setIsLoading(false);
       setData(null);
       setError(null);
       return;
     }
+    
+    // **Crucial Guard**: If a query is provided but we have no authenticated user,
+    // it's an invalid state that would lead to a permission error. Do not proceed.
+    // This assumes all collection queries in this app require authentication.
+    if (targetRefOrQuery && !user) {
+        setIsLoading(false);
+        setData(null);
+        setError(null); // Not an error, just no data to fetch.
+        return;
+    }
 
-    // At this point, auth is ready and we have a query. Start the subscription.
+    // At this point, auth is ready, we have a query, AND we have a user.
+    // It's now safe to subscribe.
     setIsLoading(true); 
     setError(null);
 
@@ -104,7 +115,7 @@ export function useCollection<T = any>(
     );
 
     return () => unsubscribe();
-  }, [targetRefOrQuery, isUserLoading]); // Re-run if the query or auth status changes.
+  }, [targetRefOrQuery, isUserLoading, user]); // Re-run if the query, auth status, or user changes.
 
   return { data, isLoading, error };
 }

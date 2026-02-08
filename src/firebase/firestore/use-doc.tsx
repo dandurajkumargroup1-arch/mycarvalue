@@ -48,10 +48,10 @@ export function useDoc<T = any>(
   const [data, setData] = useState<StateDataType>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<FirestoreError | Error | null>(null);
-  const { isUserLoading } = useUser();
+  const { isUserLoading, user } = useUser(); // Get user object as well
 
   useEffect(() => {
-    // Wait for the user's authentication status to be resolved.
+    // Primary guard: wait for auth to finish loading.
     if (isUserLoading) {
       setIsLoading(true);
       setData(null);
@@ -59,7 +59,7 @@ export function useDoc<T = any>(
       return;
     }
 
-    // If auth is resolved but there's no document reference, we are not loading.
+    // Secondary guard: If there's no doc ref, we have nothing to fetch.
     if (!memoizedDocRef) {
       setIsLoading(false);
       setData(null);
@@ -67,7 +67,20 @@ export function useDoc<T = any>(
       return;
     }
 
-    // At this point, auth is ready and we have a doc ref. Start the subscription.
+    // **Crucial Guard**: If a document reference is provided, but we don't have an
+    // authenticated user, it's an invalid state that would lead to a permission
+    // error. We must not proceed.
+    if (memoizedDocRef && !user) {
+        // This can happen in the brief moment between isUserLoading=false and the user object being cleared on sign-out,
+        // or if a component creates a docRef without ensuring a user is logged in.
+        setIsLoading(false);
+        setData(null);
+        setError(null); // Not an error, just no data to fetch.
+        return;
+    }
+
+    // At this point, auth is ready, we have a doc ref, AND we have a user.
+    // It's now safe to subscribe.
     setIsLoading(true);
     setError(null);
 
@@ -98,7 +111,7 @@ export function useDoc<T = any>(
     );
 
     return () => unsubscribe();
-  }, [memoizedDocRef, isUserLoading]); // Re-run if the doc ref or auth status changes.
+  }, [memoizedDocRef, isUserLoading, user]); // Re-run if the doc ref, auth status, or user object changes.
 
   return { data, isLoading, error };
 }

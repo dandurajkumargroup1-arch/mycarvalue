@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { Suspense, useEffect, useState, useMemo, type ElementType } from 'react';
@@ -192,8 +191,8 @@ function LiveBidsDashboard({ user }: { user: any }) {
                       })}
                     </TableBody>
                   </Table>
-                  <Button variant="outline" className="mt-4 w-full" asChild>
-                    <a href={carForAuction.inspectionReportUrl || '#'} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2" disabled={!carForAuction.inspectionReportUrl}>
+                  <Button variant="outline" className="mt-4 w-full" asChild disabled={!carForAuction.inspectionReportUrl}>
+                    <a href={carForAuction.inspectionReportUrl || '#'} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
                       <FileText /> View Full Inspection Report
                     </a>
                   </Button>
@@ -353,22 +352,21 @@ function LiveBidsPageComponent() {
   const isRoleAdmin = userProfile?.role === 'Admin';
   const isAuthorized = isHardcodedAdmin || isRoleAdmin;
   
-  if (isAuthorized) {
-    return <LiveBidsDashboard user={user} />;
+  if (!isAuthorized) {
+    return (
+      <div className="container mx-auto flex items-center justify-center py-20">
+        <Alert variant="destructive" className="max-w-lg">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>Access Denied</AlertTitle>
+            <AlertDescription>
+                You do not have permission to view this page. This area is for administrators only.
+            </AlertDescription>
+        </Alert>
+      </div>
+    );
   }
 
-  // If not authorized, show access denied message
-  return (
-    <div className="container mx-auto flex items-center justify-center py-20">
-      <Alert variant="destructive" className="max-w-lg">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>Access Denied</AlertTitle>
-          <AlertDescription>
-              You do not have permission to view this page. This area is for administrators only.
-          </AlertDescription>
-      </Alert>
-    </div>
-  );
+  return <LiveBidsDashboard user={user} />;
 }
 
 export default function LiveBidsPage() {
