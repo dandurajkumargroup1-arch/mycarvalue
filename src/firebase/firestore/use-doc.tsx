@@ -9,9 +9,6 @@ import {
   FirestoreError,
   DocumentSnapshot,
 } from 'firebase/firestore';
-import { FirestorePermissionError } from '@/firebase/errors';
-import { errorEmitter } from '@/firebase/error-emitter';
-import { useUser } from '@/firebase/auth/use-user';
 
 /** Utility type to add an 'id' field to a given type T. */
 type WithId<T> = T & { id: string };
@@ -23,20 +20,20 @@ type WithId<T> = T & { id: string };
 export interface UseDocResult<T> {
   data: WithId<T> | null; // Document data with ID, or null.
   isLoading: boolean;       // True if loading.
-  error: FirestoreError | Error | null; // Error object, or null.
+  error: FirestoreError | null; // Error object, or null.
 }
 
 /**
  * React hook to subscribe to a single Firestore document in real-time.
- * Handles nullable references.
+ * It depends entirely on the calling component to provide a valid document reference.
+ * If the reference is null or undefined, the hook will wait.
  * 
- * IMPORTANT! YOU MUST MEMOIZE the inputted memoizedTargetRefOrQuery or BAD THINGS WILL HAPPEN
+ * IMPORTANT! YOU MUST MEMOIZE the inputted memoizedDocRef or BAD THINGS WILL HAPPEN
  * use useMemo to memoize it per React guidence.  Also make sure that it's dependencies are stable
  * references
  *
- *
  * @template T Optional type for document data. Defaults to any.
- * @param {DocumentReference<DocumentData> | null | undefined} docRef -
+ * @param {DocumentReference<DocumentData> | null | undefined} memoizedDocRef -
  * The Firestore DocumentReference. Waits if null/undefined.
  * @returns {UseDocResult<T>} Object with data, isLoading, error.
  */
@@ -47,42 +44,20 @@ export function useDoc<T = any>(
 
   const [data, setData] = useState<StateDataType>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [error, setError] = useState<FirestoreError | Error | null>(null);
-  const { isUserLoading, user } = useUser(); // Get user object as well
+  const [error, setError] = useState<FirestoreError | null>(null);
 
   useEffect(() => {
-    // Primary guard: wait for auth to finish loading.
-    if (isUserLoading) {
-      setIsLoading(true);
-      setData(null);
-      setError(null);
-      return;
-    }
-
-    // Secondary guard: If there's no doc ref, we have nothing to fetch.
+    // If no document reference is provided, we are not ready to fetch.
+    // Set loading to false and clear any previous data/errors.
     if (!memoizedDocRef) {
       setIsLoading(false);
       setData(null);
       setError(null);
       return;
     }
-
-    // **Crucial Guard**: If a document reference is provided, but we don't have an
-    // authenticated user, it's an invalid state that would lead to a permission
-    // error. We must not proceed.
-    if (memoizedDocRef && !user) {
-        // This can happen in the brief moment between isUserLoading=false and the user object being cleared on sign-out,
-        // or if a component creates a docRef without ensuring a user is logged in.
-        setIsLoading(false);
-        setData(null);
-        setError(null); // Not an error, just no data to fetch.
-        return;
-    }
-
-    // At this point, auth is ready, we have a doc ref, AND we have a user.
-    // It's now safe to subscribe.
+    
+    // A valid reference has been provided. Set loading state and attach the listener.
     setIsLoading(true);
-    setError(null);
 
     const unsubscribe = onSnapshot(
       memoizedDocRef,
@@ -90,28 +65,28 @@ export function useDoc<T = any>(
         if (snapshot.exists()) {
           setData({ ...(snapshot.data() as T), id: snapshot.id });
         } else {
-          // Document does not exist
+          // Document does not exist, which is a valid state.
           setData(null);
         }
         setError(null);
         setIsLoading(false);
       },
-      (error: FirestoreError) => {
-        const contextualError = new FirestorePermissionError({
-          operation: 'get',
-          path: memoizedDocRef.path,
-        })
-
-        errorEmitter.emit('permission-error', contextualError);
-        
-        setError(contextualError)
-        setData(null)
-        setIsLoading(false)
+      (err: FirestoreError) => {
+        console.error("useDoc Firestore Error:", err);
+        setError(err);
+        setData(null);
+        setIsLoading(false);
       }
     );
 
+    // Cleanup subscription on unmount or when the reference changes.
     return () => unsubscribe();
-  }, [memoizedDocRef, isUserLoading, user]); // Re-run if the doc ref, auth status, or user object changes.
+  }, [memoizedDocRef]); // The hook's logic is now driven solely by the doc ref object.
+
+  if (error) {
+    // Surface the error to the nearest error boundary.
+    throw error;
+  }
 
   return { data, isLoading, error };
 }

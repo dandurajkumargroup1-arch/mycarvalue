@@ -10,9 +10,6 @@ import {
   QuerySnapshot,
   CollectionReference,
 } from 'firebase/firestore';
-import { FirestorePermissionError } from '@/firebase/errors';
-import { errorEmitter } from '@/firebase/error-emitter';
-import { useUser } from '@/firebase/auth/use-user';
 
 /** Utility type to add an 'id' field to a given type T. */
 export type WithId<T> = T & { id: string };
@@ -24,14 +21,14 @@ export type WithId<T> = T & { id: string };
 export interface UseCollectionResult<T> {
   data: WithId<T>[] | null; // Document data with ID, or null.
   isLoading: boolean;       // True if loading.
-  error: FirestoreError | Error | null; // Error object, or null.
+  error: FirestoreError | null; // Error object, or null.
 }
 
 /**
  * React hook to subscribe to a Firestore collection or query in real-time.
- * Handles nullable references/queries.
+ * It depends entirely on the calling component to provide a valid query object.
+ * If the query is null or undefined, the hook will wait.
  * 
- *
  * IMPORTANT! YOU MUST MEMOIZE the inputted targetRefOrQuery or BAD THINGS WILL HAPPEN
  * use useMemo to memoize it per React guidence.  Also make sure that it's dependencies are stable
  * references
@@ -49,19 +46,11 @@ export function useCollection<T = any>(
 
   const [data, setData] = useState<StateDataType>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [error, setError] = useState<FirestoreError | Error | null>(null);
-  const { isUserLoading, user } = useUser(); // Get user object
+  const [error, setError] = useState<FirestoreError | null>(null);
 
   useEffect(() => {
-    // Primary guard: wait for auth to finish loading.
-    if (isUserLoading) {
-      setIsLoading(true);
-      setData(null);
-      setError(null);
-      return;
-    }
-    
-    // Secondary guard: If there's no query, we have nothing to fetch.
+    // If no query is provided, we are not ready to fetch.
+    // Set loading to false and clear any previous data/errors.
     if (!targetRefOrQuery) {
       setIsLoading(false);
       setData(null);
@@ -69,20 +58,8 @@ export function useCollection<T = any>(
       return;
     }
     
-    // **Crucial Guard**: If a query is provided but we have no authenticated user,
-    // it's an invalid state that would lead to a permission error. Do not proceed.
-    // This assumes all collection queries in this app require authentication.
-    if (targetRefOrQuery && !user) {
-        setIsLoading(false);
-        setData(null);
-        setError(null); // Not an error, just no data to fetch.
-        return;
-    }
-
-    // At this point, auth is ready, we have a query, AND we have a user.
-    // It's now safe to subscribe.
-    setIsLoading(true); 
-    setError(null);
+    // A valid query has been provided. Set loading state and attach the listener.
+    setIsLoading(true);
 
     const unsubscribe = onSnapshot(
       targetRefOrQuery,
@@ -95,27 +72,22 @@ export function useCollection<T = any>(
         setError(null);
         setIsLoading(false);
       },
-      (error: FirestoreError) => {
-        const path: string =
-          targetRefOrQuery.type === 'collection'
-            ? (targetRefOrQuery as CollectionReference).path
-            : "A database query (details unavailable)";
-
-        const contextualError = new FirestorePermissionError({
-          operation: 'list',
-          path,
-        });
-        
-        errorEmitter.emit('permission-error', contextualError);
-
-        setError(contextualError);
+      (err: FirestoreError) => {
+        console.error("useCollection Firestore Error:", err);
+        setError(err);
         setData(null);
         setIsLoading(false);
       }
     );
 
+    // Cleanup subscription on unmount or when the query changes.
     return () => unsubscribe();
-  }, [targetRefOrQuery, isUserLoading, user]); // Re-run if the query, auth status, or user changes.
+  }, [targetRefOrQuery]); // The hook's logic is now driven solely by the query object.
+
+  if (error) {
+    // Surface the error to the nearest error boundary.
+    throw error;
+  }
 
   return { data, isLoading, error };
 }

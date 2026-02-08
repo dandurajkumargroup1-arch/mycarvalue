@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -16,8 +17,6 @@ import {
   writeBatch,
 } from 'firebase/firestore';
 import type { User } from 'firebase/auth';
-import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError } from '@/firebase/errors';
 
 /**
  * Defines the structure for a user profile document in Firestore.
@@ -99,15 +98,6 @@ export async function upsertUserProfile(
     }
   } catch (error) {
     console.error('Error upserting user profile:', error);
-
-    const permissionError = new FirestorePermissionError({
-      path: userDocRef.path,
-      operation: 'write',
-      requestResourceData: profileData,
-    });
-    
-    errorEmitter.emit('permission-error', permissionError);
-    
     throw error;
   }
 }
@@ -160,13 +150,6 @@ export async function deleteUser(
 
   } catch (error) {
     console.error(`Error deleting user ${userId} and their data:`, error);
-
-    const permissionError = new FirestorePermissionError({
-      path: userDocRef.path,
-      operation: 'delete',
-    });
-
-    errorEmitter.emit('permission-error', permissionError);
-    throw permissionError;
+    throw error;
   }
 }

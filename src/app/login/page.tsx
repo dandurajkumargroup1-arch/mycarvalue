@@ -4,7 +4,7 @@ import { Suspense, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 
@@ -26,7 +26,6 @@ type LoginFormInput = z.infer<typeof LoginSchema>;
 
 function LoginComponent() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const auth = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
@@ -56,7 +55,9 @@ function LoginComponent() {
         title: "Login Successful",
         description: "Welcome back!",
       });
-      const redirectTo = searchParams.get('redirect') || '/dashboard';
+      // Read the redirect parameter from the URL directly on the client-side
+      const params = new URLSearchParams(window.location.search);
+      const redirectTo = params.get('redirect') || '/dashboard';
       // Using window.location.href to force a full page reload, ensuring
       // all auth-dependent UI components are correctly initialized.
       window.location.href = redirectTo;
@@ -160,6 +161,8 @@ const LoginSkeleton = () => (
 
 export default function LoginPage() {
   return (
+    <Suspense fallback={<LoginSkeleton />}>
       <LoginComponent />
+    </Suspense>
   );
 }

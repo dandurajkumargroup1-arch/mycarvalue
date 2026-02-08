@@ -18,7 +18,6 @@ import {
   getDocs,
   limit,
 } from 'firebase/firestore';
-import { FirestorePermissionError } from '@/firebase/errors';
 import { CarValuationFormInput } from '@/lib/schemas';
 import type { User } from 'firebase/auth';
 
@@ -152,14 +151,7 @@ export async function saveValuation(
     }
     
     console.error('Error in saveValuation transaction:', error);
-    
-    const permissionError = new FirestorePermissionError({
-      path: `users/${userId}`, // A representative path for the transaction
-      operation: 'write',
-      requestResourceData: { valuationRecord, userProfileUpdate },
-    });
-    
-    throw permissionError;
+    throw error;
   }
 }
 
@@ -185,12 +177,6 @@ export async function deleteValuation(
     await deleteDoc(docRef);
   } catch (error) {
     console.error(`Error deleting valuation ${valuationId}:`, error);
-    
-    const permissionError = new FirestorePermissionError({
-      path: docRef.path,
-      operation: 'delete',
-    });
-    
-    throw permissionError;
+    throw error;
   }
 }
