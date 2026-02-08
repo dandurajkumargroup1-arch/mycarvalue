@@ -215,9 +215,24 @@ function AuctionCarDialog({ car, children }: { car?: AuctionCar, children: React
     const form = useForm<AuctionCarFormInput>({
         resolver: zodResolver(AuctionCarSchema),
         defaultValues: car ? {
-            ...car,
+            id: car.id,
+            title: car.title,
             images: car.images || [],
+            odometer: car.odometer,
+            fuelType: car.fuelType,
+            transmission: car.transmission,
+            ownership: car.ownership,
+            registration: car.registration,
+            sellerName: car.sellerName,
+            sellerRating: car.sellerRating,
+            sellerLocation: car.sellerLocation,
+            startTime: car.startTime || new Date(),
+            endTime: car.endTime || new Date(),
+            startPrice: car.startPrice,
+            reservePrice: car.reservePrice,
+            status: car.status,
             conditionSummary: car.conditionSummary?.map((c: any) => `${c.item}: ${c.status}`).join('\n') || '',
+            inspectionReportUrl: car.inspectionReportUrl || '',
         } : {
             title: '',
             images: [],
@@ -229,6 +244,8 @@ function AuctionCarDialog({ car, children }: { car?: AuctionCar, children: React
             sellerName: '',
             sellerRating: 5,
             sellerLocation: '',
+            startTime: new Date(),
+            endTime: new Date(),
             startPrice: 100000,
             reservePrice: 120000,
             status: 'scheduled',
@@ -240,9 +257,24 @@ function AuctionCarDialog({ car, children }: { car?: AuctionCar, children: React
     useEffect(() => {
         if (car) {
             form.reset({
-                ...car,
+                id: car.id,
+                title: car.title,
                 images: car.images || [],
+                odometer: car.odometer,
+                fuelType: car.fuelType,
+                transmission: car.transmission,
+                ownership: car.ownership,
+                registration: car.registration,
+                sellerName: car.sellerName,
+                sellerRating: car.sellerRating,
+                sellerLocation: car.sellerLocation,
+                startTime: car.startTime || new Date(),
+                endTime: car.endTime || new Date(),
+                startPrice: car.startPrice,
+                reservePrice: car.reservePrice,
+                status: car.status,
                 conditionSummary: car.conditionSummary?.map((c: any) => `${c.item}: ${c.status}`).join('\n') || '',
+                inspectionReportUrl: car.inspectionReportUrl || '',
             });
         }
     }, [car, form]);
@@ -1055,34 +1087,27 @@ function AdminPageComponent() {
     }
   }, [user, isUserLoading, router]);
 
-  const authStatus = useMemo(() => {
-    if (isUserLoading || (user && isProfileLoading)) {
-      return 'loading';
-    }
-    if (!user) {
-      // This case is handled by the useEffect redirect, but we keep it for clarity.
-      return 'unauthorized';
-    }
-    const isHardcodedAdmin = user.email === 'rajmycarvalue@gmail.com';
-    const isRoleAdmin = userProfile?.role === 'Admin';
-
-    if (isHardcodedAdmin || isRoleAdmin) {
-      return 'authorized';
-    }
-
-    return 'unauthorized';
-  }, [user, isUserLoading, userProfile, isProfileLoading]);
-
-
-  if (authStatus === 'loading') {
+  // Show a loader while waiting for auth state or profile to load
+  if (isUserLoading || (user && isProfileLoading)) {
     return <AdminPageLoader />;
   }
 
-  if (authStatus === 'authorized' && user) {
-    return <AdminDashboard user={user} />;
+  // After loading, if there is still no user, the redirect will trigger.
+  // In the meantime, we can show a loader.
+  if (!user) {
+    return <AdminPageLoader />;
   }
 
-  // 'unauthorized' is the only remaining status
+  // Once user and profile are loaded, check for authorization
+  const isHardcodedAdmin = user.email === 'rajmycarvalue@gmail.com';
+  const isRoleAdmin = userProfile?.role === 'Admin';
+  const isAuthorized = isHardcodedAdmin || isRoleAdmin;
+
+  if (isAuthorized) {
+    return <AdminDashboard user={user} />;
+  }
+  
+  // If not authorized, show access denied message
   return (
     <div className="container mx-auto flex items-center justify-center py-20">
       <Alert variant="destructive" className="max-w-lg">

@@ -781,30 +781,26 @@ function DashboardPageComponent() {
     }
   }, [user, isUserLoading, router]);
 
-  useEffect(() => {
-    // This effect handles redirecting admin users.
-    // It runs after the component renders and when its dependencies change.
-    if (!isUserLoading && user) {
-      // Immediate check for hardcoded admin email
-      if (user.email === 'rajmycarvalue@gmail.com') {
-        router.push('/admin');
-        return; // Early exit for the primary admin
-      }
-      // If not the hardcoded admin, check the role after the profile has loaded
-      if (!isProfileLoading && userProfile?.role === 'Admin') {
-        router.push('/admin');
-      }
-    }
-  }, [user, isUserLoading, userProfile, isProfileLoading, router]);
+  // Show skeleton while loading auth or profile
+  if (isUserLoading || (user && isProfileLoading)) {
+    return <DashboardSkeleton />;
+  }
 
-  if (isUserLoading || !user || isProfileLoading) {
+  // After loading, if there's no user, show skeleton (will be redirected shortly)
+  if (!user) {
     return <DashboardSkeleton />;
   }
   
-  // Admin users are being redirected by the useEffect. In the meantime, show a skeleton.
-  // This check is robust because `userProfile?.role` safely handles a null profile.
-  if (userProfile?.role === 'Admin' || user.email === 'rajmycarvalue@gmail.com') {
-      return <DashboardSkeleton />;
+  // Check for admin and redirect
+  const isHardcodedAdmin = user.email === 'rajmycarvalue@gmail.com';
+  const isRoleAdmin = userProfile?.role === 'Admin';
+  if (isHardcodedAdmin || isRoleAdmin) {
+    // A redirect inside a render is an anti-pattern. Use useEffect to handle it.
+    useEffect(() => {
+      router.push('/admin');
+    }, [router]);
+    // Render a loader while the redirect is happening
+    return <DashboardSkeleton />;
   }
   
   // If we reach here, the user is not an admin.
@@ -842,5 +838,3 @@ export default function DashboardPage() {
         <DashboardPageComponent />
     );
 }
-
-    

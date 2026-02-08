@@ -337,32 +337,27 @@ function LiveBidsPageComponent() {
     }
   }, [user, isUserLoading, router]);
 
-  const authStatus = useMemo(() => {
-    if (isUserLoading || (user && isProfileLoading)) {
-      return 'loading';
-    }
-    if (!user) {
-      return 'unauthorized';
-    }
-    const isHardcodedAdmin = user.email === 'rajmycarvalue@gmail.com';
-    const isRoleAdmin = userProfile?.role === 'Admin';
-
-    if (isHardcodedAdmin || isRoleAdmin) {
-      return 'authorized';
-    }
-
-    return 'unauthorized';
-  }, [user, isUserLoading, userProfile, isProfileLoading]);
-
-
-  if (authStatus === 'loading') {
+  // Show a loader while waiting for auth state or profile to load
+  if (isUserLoading || (user && isProfileLoading)) {
     return <LiveBidsPageLoader />;
   }
 
-  if (authStatus === 'authorized' && user) {
+  // After loading, if there is still no user, the redirect will trigger.
+  // In the meantime, we can show a loader.
+  if (!user) {
+    return <LiveBidsPageLoader />;
+  }
+
+  // Once user and profile are loaded, check for authorization
+  const isHardcodedAdmin = user.email === 'rajmycarvalue@gmail.com';
+  const isRoleAdmin = userProfile?.role === 'Admin';
+  const isAuthorized = isHardcodedAdmin || isRoleAdmin;
+  
+  if (isAuthorized) {
     return <LiveBidsDashboard user={user} />;
   }
 
+  // If not authorized, show access denied message
   return (
     <div className="container mx-auto flex items-center justify-center py-20">
       <Alert variant="destructive" className="max-w-lg">
