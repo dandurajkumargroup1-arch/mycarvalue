@@ -9,7 +9,6 @@ import { useUser, useFirestore, useDoc, useCollection } from '@/firebase';
 import type { UserProfile } from '@/lib/firebase/user-profile-service';
 import { approveWithdrawal, rejectWithdrawal } from '@/lib/firebase/withdrawal-service';
 import { deleteUser } from '@/lib/firebase/user-profile-service';
-import { upsertAuctionCar, deleteAuctionCar, type AuctionCarData } from '@/lib/firebase/auction-service';
 import { useRouter } from 'next/navigation';
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -30,9 +29,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
-import { AlertTriangle, CheckCircle, Shield, Users, Wallet, XCircle, Calendar as CalendarIcon, Download, Trash2, Gavel } from 'lucide-react';
+import { AlertTriangle, CheckCircle, Shield, Users, Wallet, XCircle, Calendar as CalendarIcon, Download, Trash2 } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -51,17 +49,6 @@ interface WithdrawalRequest {
     processedAt?: Date | null;
     rejectionReason?: string;
     transactionId?: string;
-}
-
-interface AuctionCar {
-  id: string;
-  title: string;
-  images: string[];
-  status: 'scheduled' | 'live' | 'completed' | 'cancelled';
-  startTime: Date | null;
-  endTime: Date | null;
-  currentBid: number;
-  [key: string]: any; 
 }
 
 
@@ -183,279 +170,6 @@ function RejectDialog({ request }: { request: WithdrawalRequest }) {
     );
 }
 
-const AuctionCarSchema = z.object({
-  id: z.string().optional(),
-  title: z.string().min(5, "Title is required."),
-  images: z.array(z.string()).min(1, "At least one image is required."), 
-  odometer: z.string().min(1, "Odometer is required."),
-  fuelType: z.string().min(1, "Fuel type is required."),
-  transmission: z.string().min(1, "Transmission is required."),
-  ownership: z.string().min(1, "Ownership is required."),
-  registration: z.string().min(1, "Registration is required."),
-  sellerName: z.string().min(1, "Seller name is required."),
-  sellerRating: z.coerce.number().min(0).max(5),
-  sellerLocation: z.string().min(1, "Seller location is required."),
-  startTime: z.date({ required_error: "Start time is required." }),
-  endTime: z.date({ required_error: "End time is required." }),
-  startPrice: z.coerce.number().min(1, "Start price must be positive."),
-  reservePrice: z.coerce.number().min(1, "Reserve price must be positive."),
-  status: z.enum(['scheduled', 'live', 'completed', 'cancelled']),
-  conditionSummary: z.string().min(1, "Condition summary is required (item:status per line)."),
-  inspectionReportUrl: z.string().url("Must be a valid URL.").optional().or(z.literal('')),
-});
-
-type AuctionCarFormInput = z.infer<typeof AuctionCarSchema>;
-
-function AuctionCarDialog({ car, children }: { car?: AuctionCar, children: React.ReactNode }) {
-    const [open, setOpen] = useState(false);
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const firestore = useFirestore();
-    const { toast } = useToast();
-
-    const form = useForm<AuctionCarFormInput>({
-        resolver: zodResolver(AuctionCarSchema),
-        defaultValues: car ? {
-            id: car.id,
-            title: car.title,
-            images: car.images || [],
-            odometer: car.odometer,
-            fuelType: car.fuelType,
-            transmission: car.transmission,
-            ownership: car.ownership,
-            registration: car.registration,
-            sellerName: car.sellerName,
-            sellerRating: car.sellerRating,
-            sellerLocation: car.sellerLocation,
-            startTime: car.startTime || new Date(),
-            endTime: car.endTime || new Date(),
-            startPrice: car.startPrice,
-            reservePrice: car.reservePrice,
-            status: car.status,
-            conditionSummary: car.conditionSummary?.map((c: any) => `${c.item}: ${c.status}`).join('\n') || '',
-            inspectionReportUrl: car.inspectionReportUrl || '',
-        } : {
-            title: '',
-            images: [],
-            odometer: '',
-            fuelType: 'Diesel',
-            transmission: 'Automatic',
-            ownership: '1st Owner',
-            registration: '',
-            sellerName: '',
-            sellerRating: 5,
-            sellerLocation: '',
-            startTime: new Date(),
-            endTime: new Date(),
-            startPrice: 100000,
-            reservePrice: 120000,
-            status: 'scheduled',
-            conditionSummary: 'Engine: Excellent\nExterior: Minor Scratches',
-            inspectionReportUrl: '',
-        },
-    });
-
-    useEffect(() => {
-        if (car) {
-            form.reset({
-                id: car.id,
-                title: car.title,
-                images: car.images || [],
-                odometer: car.odometer,
-                fuelType: car.fuelType,
-                transmission: car.transmission,
-                ownership: car.ownership,
-                registration: car.registration,
-                sellerName: car.sellerName,
-                sellerRating: car.sellerRating,
-                sellerLocation: car.sellerLocation,
-                startTime: car.startTime || new Date(),
-                endTime: car.endTime || new Date(),
-                startPrice: car.startPrice,
-                reservePrice: car.reservePrice,
-                status: car.status,
-                conditionSummary: car.conditionSummary?.map((c: any) => `${c.item}: ${c.status}`).join('\n') || '',
-                inspectionReportUrl: car.inspectionReportUrl || '',
-            });
-        }
-    }, [car, form]);
-
-    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>, fieldChange: (value: string[]) => void) => {
-        const files = e.target.files;
-        if (!files) return;
-
-        const filePromises = Array.from(files).map(file => {
-            return new Promise<string>((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    if (event.target?.result) {
-                        resolve(event.target.result as string);
-                    } else {
-                        reject(new Error("Failed to read file."));
-                    }
-                };
-                reader.onerror = reject;
-                reader.readAsDataURL(file);
-            });
-        });
-
-        Promise.all(filePromises).then(urls => {
-            const currentImages = form.getValues('images') || [];
-            fieldChange([...currentImages, ...urls]);
-        }).catch(error => {
-            console.error("Error reading files:", error);
-            toast({ variant: 'destructive', title: 'Error', description: 'Could not process selected images.' });
-        });
-    };
-
-    const onSubmit = async (data: AuctionCarFormInput) => {
-        if (!firestore) return;
-        setIsSubmitting(true);
-
-        try {
-            const images = data.images;
-            const conditionSummary = data.conditionSummary.split('\n').map(line => {
-                const parts = line.split(':');
-                const item = parts[0]?.trim();
-                const status = parts.slice(1).join(':').trim();
-                return { item, status };
-            }).filter(c => c.item && c.status);
-            
-            const payload: AuctionCarData = { ...data, images, conditionSummary };
-            await upsertAuctionCar(firestore, payload);
-            
-            toast({ title: `Auction car ${car ? 'updated' : 'created'} successfully.` });
-            setOpen(false);
-        } catch (error) {
-            console.error("Error saving auction car:", error);
-            toast({ variant: "destructive", title: "Error", description: "Could not save auction car." });
-        } finally {
-            setIsSubmitting(false);
-        }
-    }
-
-    return (
-        <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>{children}</DialogTrigger>
-            <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                    <DialogTitle>{car ? 'Edit' : 'Add'} Auction Car</DialogTitle>
-                    <DialogDescription>
-                        Fill in the details for the car to be listed in the live auction.
-                    </DialogDescription>
-                </DialogHeader>
-                <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                             <FormField control={form.control} name="title" render={({ field }) => ( <FormItem> <FormLabel>Title</FormLabel> <FormControl><Input placeholder="e.g., 2021 Hyundai Creta" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
-                             <FormField control={form.control} name="status" render={({ field }) => ( <FormItem> <FormLabel>Status</FormLabel> <Select onValueChange={field.onChange} value={field.value}> <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl> <SelectContent> <SelectItem value="scheduled">Scheduled</SelectItem> <SelectItem value="live">Live</SelectItem> <SelectItem value="completed">Completed</SelectItem> <SelectItem value="cancelled">Cancelled</SelectItem> </SelectContent> </Select> <FormMessage /> </FormItem> )} />
-                             <FormField control={form.control} name="odometer" render={({ field }) => ( <FormItem> <FormLabel>Odometer</FormLabel> <FormControl><Input placeholder="e.g., 28,500 km" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
-                             <FormField control={form.control} name="fuelType" render={({ field }) => ( <FormItem> <FormLabel>Fuel Type</FormLabel> <FormControl><Input placeholder="e.g., Diesel" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
-                             <FormField control={form.control} name="transmission" render={({ field }) => ( <FormItem> <FormLabel>Transmission</FormLabel> <FormControl><Input placeholder="e.g., Automatic" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
-                             <FormField control={form.control} name="ownership" render={({ field }) => ( <FormItem> <FormLabel>Ownership</FormLabel> <FormControl><Input placeholder="e.g., 1st Owner" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
-                             <FormField control={form.control} name="registration" render={({ field }) => ( <FormItem> <FormLabel>Registration</FormLabel> <FormControl><Input placeholder="e.g., MH 14 (Pune)" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
-                             <FormField control={form.control} name="sellerName" render={({ field }) => ( <FormItem> <FormLabel>Seller Name</FormLabel> <FormControl><Input placeholder="e.g., AutoBest Deals" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
-                             <FormField control={form.control} name="sellerLocation" render={({ field }) => ( <FormItem> <FormLabel>Seller Location</FormLabel> <FormControl><Input placeholder="e.g., Pune, Maharashtra" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
-                             <FormField control={form.control} name="sellerRating" render={({ field }) => ( <FormItem> <FormLabel>Seller Rating</FormLabel> <FormControl><Input type="number" step="0.1" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
-                             <FormField control={form.control} name="startPrice" render={({ field }) => ( <FormItem> <FormLabel>Start Price</FormLabel> <FormControl><Input type="number" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
-                             <FormField control={form.control} name="reservePrice" render={({ field }) => ( <FormItem> <FormLabel>Reserve Price</FormLabel> <FormControl><Input type="number" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
-
-                             <FormField control={form.control} name="startTime" render={({ field }) => (
-                                <FormItem className="flex flex-col">
-                                    <FormLabel>Start Time</FormLabel>
-                                    <Popover>
-                                        <PopoverTrigger asChild>
-                                        <FormControl>
-                                            <Button variant="outline" className={cn("pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
-                                            {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
-                                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                            </Button>
-                                        </FormControl>
-                                        </PopoverTrigger>
-                                        <PopoverContent className="w-auto p-0" align="start">
-                                            <Calendar mode="single" selected={field.value} onSelect={field.onChange} />
-                                        </PopoverContent>
-                                    </Popover>
-                                    <FormMessage />
-                                </FormItem>
-                             )} />
-                             <FormField control={form.control} name="endTime" render={({ field }) => (
-                                <FormItem className="flex flex-col">
-                                    <FormLabel>End Time</FormLabel>
-                                    <Popover>
-                                        <PopoverTrigger asChild>
-                                        <FormControl>
-                                            <Button variant="outline" className={cn("pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
-                                            {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
-                                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                            </Button>
-                                        </FormControl>
-                                        </PopoverTrigger>
-                                        <PopoverContent className="w-auto p-0" align="start">
-                                            <Calendar mode="single" selected={field.value} onSelect={field.onChange} />
-                                        </PopoverContent>
-                                    </Popover>
-                                    <FormMessage />
-                                </FormItem>
-                             )} />
-                             
-                             <FormField control={form.control} name="inspectionReportUrl" render={({ field }) => ( <FormItem> <FormLabel>Inspection Report URL</FormLabel> <FormControl><Input placeholder="https://example.com/report.pdf" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
-                        </div>
-                        
-                        <FormField
-                            control={form.control}
-                            name="images"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Images</FormLabel>
-                                    <FormControl>
-                                        <Input
-                                            type="file"
-                                            multiple
-                                            accept="image/*"
-                                            onChange={(e) => handleImageChange(e, field.onChange)}
-                                        />
-                                    </FormControl>
-                                    <FormMessage />
-                                    {field.value && field.value.length > 0 && (
-                                        <div className="mt-4 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">
-                                            {field.value.map((src, index) => (
-                                                <div key={index} className="relative aspect-square">
-                                                    <Image src={src} alt={`Preview ${index + 1}`} fill className="object-cover rounded-md" />
-                                                    <Button
-                                                        type="button"
-                                                        variant="destructive"
-                                                        size="icon"
-                                                        className="absolute top-1 right-1 h-6 w-6 z-10"
-                                                        onClick={() => {
-                                                            const updatedImages = field.value.filter((_, i) => i !== index);
-                                                            field.onChange(updatedImages);
-                                                        }}
-                                                    >
-                                                        <Trash2 className="h-4 w-4" />
-                                                    </Button>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                     <p className="text-xs text-muted-foreground pt-2">
-                                        Note: Images are stored directly in the database. Large files may impact performance.
-                                     </p>
-                                </FormItem>
-                            )}
-                        />
-                        <FormField control={form.control} name="conditionSummary" render={({ field }) => ( <FormItem> <FormLabel>Condition Summary</FormLabel> <FormControl><Textarea placeholder="One item per line, e.g., Engine: Excellent" {...field} rows={5} /></FormControl> <FormMessage /> </FormItem> )} />
-                        
-                        <DialogFooter>
-                            <DialogClose asChild><Button type="button" variant="secondary" disabled={isSubmitting}>Cancel</Button></DialogClose>
-                            <Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Saving...' : 'Save Car'}</Button>
-                        </DialogFooter>
-                    </form>
-                </Form>
-            </DialogContent>
-        </Dialog>
-    )
-}
-
 
 // --- Main Dashboard Component ---
 
@@ -502,22 +216,6 @@ function AdminDashboard({ user }: { user: any }) {
     }));
   }, [rawAllRequestsData]);
   
-  const auctionCarsQuery = useMemo(() => {
-    if (!firestore || !user) return null;
-    return query(collection(firestore, 'auctionCars'), orderBy('startTime', 'desc'));
-  }, [firestore, user]);
-
-  const { data: rawAuctionCars, isLoading: areAuctionsLoading } = useCollection(auctionCarsQuery);
-
-  const auctionCars: AuctionCar[] | null = useMemo(() => {
-    if (!rawAuctionCars) return null;
-    return rawAuctionCars.map((car: any) => ({
-        ...car,
-        startTime: toDate(car.startTime),
-        endTime: toDate(car.endTime),
-    }));
-  }, [rawAuctionCars]);
-
 
   // --- Derived Data ---
 
@@ -645,18 +343,8 @@ function AdminDashboard({ user }: { user: any }) {
     }
   };
   
-  const handleDeleteAuctionCar = async (carId: string) => {
-    if (!firestore) return;
-    try {
-        await deleteAuctionCar(firestore, carId);
-        toast({ title: "Auction Car Deleted" });
-    } catch (error) {
-        toast({ variant: "destructive", title: "Error", description: "Could not delete auction car." });
-    }
-  };
 
-
-  const isLoading = isUsersLoading || isRequestsLoading || areAuctionsLoading;
+  const isLoading = isUsersLoading || isRequestsLoading;
 
   const recentUsers = useMemo(() => {
     if (!allUsersData) return [];
@@ -673,14 +361,13 @@ function AdminDashboard({ user }: { user: any }) {
   const cardDescriptions: Record<string, string> = {
     pending: 'Review pending requests for withdrawals.',
     history: 'Browse historical withdrawals.',
-    auctions: 'Manage cars for live auctions.'
   };
 
   return (
     <div className="container mx-auto py-8 px-4 md:px-6 bg-background">
         <header className="mb-8">
             <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
-            <p className="text-muted-foreground">Manage withdrawals, users, and auctions.</p>
+            <p className="text-muted-foreground">Manage withdrawals and users.</p>
         </header>
 
         <main className="grid grid-cols-1 gap-8">
@@ -694,7 +381,6 @@ function AdminDashboard({ user }: { user: any }) {
                                     <TabsList>
                                         <TabsTrigger value="pending">Pending</TabsTrigger>
                                         <TabsTrigger value="history">History</TabsTrigger>
-                                        <TabsTrigger value="auctions">Auctions</TabsTrigger>
                                     </TabsList>
                                 </div>
                                 <CardDescription>{cardDescriptions[activeTab]}</CardDescription>
@@ -832,64 +518,6 @@ function AdminDashboard({ user }: { user: any }) {
                                             )}
                                         </TableBody>
                                      </Table>
-                                </CardContent>
-                            </TabsContent>
-                             <TabsContent value="auctions">
-                                <CardContent>
-                                    <div className="flex justify-end mb-4">
-                                        <AuctionCarDialog>
-                                            <Button><Gavel className="mr-2" /> Add New Auction Car</Button>
-                                        </AuctionCarDialog>
-                                    </div>
-                                    <Table>
-                                        <TableHeader>
-                                            <TableRow>
-                                                <TableHead>Car</TableHead>
-                                                <TableHead>Status</TableHead>
-                                                <TableHead>Start Time</TableHead>
-                                                <TableHead>Current Bid</TableHead>
-                                                <TableHead className="text-right">Actions</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {areAuctionsLoading ? (
-                                                 <TableRow><TableCell colSpan={5}><Skeleton className="h-8 w-full" /></TableCell></TableRow>
-                                            ) : auctionCars && auctionCars.length > 0 ? (
-                                                auctionCars.map(car => (
-                                                    <TableRow key={car.id}>
-                                                        <TableCell className="font-medium">{car.title}</TableCell>
-                                                        <TableCell><Badge variant={car.status === 'live' ? 'destructive' : 'secondary'}>{car.status}</Badge></TableCell>
-                                                        <TableCell>{formatDateTime(car.startTime)}</TableCell>
-                                                        <TableCell>{formatCurrency(car.currentBid)}</TableCell>
-                                                        <TableCell className="text-right space-x-2">
-                                                            <AuctionCarDialog car={car}>
-                                                                <Button variant="outline" size="sm">Edit</Button>
-                                                            </AuctionCarDialog>
-                                                             <AlertDialog>
-                                                                <AlertDialogTrigger asChild>
-                                                                    <Button variant="destructive" size="sm">Delete</Button>
-                                                                </AlertDialogTrigger>
-                                                                <AlertDialogContent>
-                                                                    <AlertDialogHeader>
-                                                                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                                                        <AlertDialogDescription>This will permanently delete the auction for '{car.title}'.</AlertDialogDescription>
-                                                                    </AlertDialogHeader>
-                                                                    <AlertDialogFooter>
-                                                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                                        <AlertDialogAction onClick={() => handleDeleteAuctionCar(car.id)} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
-                                                                    </AlertDialogFooter>
-                                                                </AlertDialogContent>
-                                                            </AlertDialog>
-                                                        </TableCell>
-                                                    </TableRow>
-                                                ))
-                                            ) : (
-                                                <TableRow>
-                                                    <TableCell colSpan={5} className="h-24 text-center">No auction cars found.</TableCell>
-                                                </TableRow>
-                                            )}
-                                        </TableBody>
-                                    </Table>
                                 </CardContent>
                             </TabsContent>
                         </Tabs>
