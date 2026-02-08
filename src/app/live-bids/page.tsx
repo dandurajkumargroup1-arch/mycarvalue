@@ -47,35 +47,55 @@ const getConditionIcon = (item: string) => {
 function LiveBidsDashboard({ user }: { user: any }) {
   const firestore = useFirestore();
   const [timeLeft, setTimeLeft] = useState('');
+  const [mainImage, setMainImage] = useState<string | undefined>();
   
-  const auctionCarsQuery = useMemo(() => {
+  // Query for the highest priority 'live' auction
+  const liveAuctionQuery = useMemo(() => {
     if (!firestore || !user) return null;
     return query(
       collection(firestore, 'auctionCars'),
-      where('status', 'in', ['live', 'scheduled']),
-      orderBy('status', 'asc'), // Prioritize 'live' over 'scheduled'
+      where('status', '==', 'live'),
       orderBy('startTime', 'asc'),
       limit(1)
     );
   }, [firestore, user]);
+  const { data: liveAuctions, isLoading: isLiveLoading } = useCollection(liveAuctionQuery);
 
-  const { data: auctionCars, isLoading: isAuctionLoading } = useCollection(auctionCarsQuery);
-  
+  // Query for the soonest 'scheduled' auction
+  const scheduledAuctionQuery = useMemo(() => {
+    if (!firestore || !user) return null;
+    return query(
+      collection(firestore, 'auctionCars'),
+      where('status', '==', 'scheduled'),
+      orderBy('startTime', 'asc'),
+      limit(1)
+    );
+  }, [firestore, user]);
+  const { data: scheduledAuctions, isLoading: isScheduledLoading } = useCollection(scheduledAuctionQuery);
+
+  const isAuctionLoading = isLiveLoading || isScheduledLoading;
+
+  // Determine which car to display by prioritizing live auctions
   const carForAuction = useMemo(() => {
-    if (!auctionCars || auctionCars.length === 0) return null;
-    const car = auctionCars[0];
+    const liveAuction = liveAuctions?.[0];
+    const scheduledAuction = scheduledAuctions?.[0];
+
+    const car = liveAuction || scheduledAuction || null;
+    
+    if (!car) return null;
+
     return {
       ...car,
       startTime: toDate(car.startTime),
       endTime: toDate(car.endTime)
     }
-  }, [auctionCars]);
+  }, [liveAuctions, scheduledAuctions]);
   
-  const [mainImage, setMainImage] = useState(carForAuction?.images?.[0]);
-
   useEffect(() => {
     if (carForAuction?.images?.length) {
       setMainImage(carForAuction.images[0]);
+    } else {
+      setMainImage(undefined);
     }
   }, [carForAuction]);
 
@@ -349,11 +369,7 @@ function LiveBidsPageComponent() {
 
   }, [user, isUserLoading, userProfile, isProfileLoading, router]);
 
-  if (isUserLoading || (user && isProfileLoading)) {
-    return <LiveBidsPageLoader />;
-  }
-
-  if (!user) {
+  if (isUserLoading || !user || (user && isProfileLoading)) {
     return <LiveBidsPageLoader />;
   }
 
