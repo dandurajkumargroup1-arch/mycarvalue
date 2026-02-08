@@ -53,6 +53,7 @@ function LiveBidsDashboard({ user }: { user: any }) {
     return query(
       collection(firestore, 'auctionCars'),
       where('status', 'in', ['live', 'scheduled']),
+      orderBy('status', 'asc'), // Prioritize 'live' over 'scheduled'
       orderBy('startTime', 'asc'),
       limit(1)
     );
@@ -331,23 +332,31 @@ function LiveBidsPageComponent() {
   const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileRef);
 
   useEffect(() => {
-    if (!isUserLoading && !user) {
-      router.push('/login?redirect=/live-bids');
+    if (isUserLoading || (user && isProfileLoading)) {
+      return; 
     }
-  }, [user, isUserLoading, router]);
 
-  // Show a loader while waiting for auth state or profile to load
+    if (!user) {
+      router.push('/login?redirect=/live-bids');
+      return;
+    }
+    
+    const isHardcodedAdmin = user.email === 'rajmycarvalue@gmail.com';
+    const isRoleAdmin = userProfile?.role === 'Admin';
+    if (!isHardcodedAdmin && !isRoleAdmin) {
+       router.push('/dashboard'); 
+    }
+
+  }, [user, isUserLoading, userProfile, isProfileLoading, router]);
+
   if (isUserLoading || (user && isProfileLoading)) {
     return <LiveBidsPageLoader />;
   }
 
-  // After loading, if there is still no user, the redirect will trigger.
-  // In the meantime, we can show a loader.
   if (!user) {
     return <LiveBidsPageLoader />;
   }
 
-  // Once user and profile are loaded, check for authorization
   const isHardcodedAdmin = user.email === 'rajmycarvalue@gmail.com';
   const isRoleAdmin = userProfile?.role === 'Admin';
   const isAuthorized = isHardcodedAdmin || isRoleAdmin;
