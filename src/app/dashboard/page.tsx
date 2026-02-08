@@ -776,42 +776,48 @@ function DashboardPageComponent() {
   const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileRef);
 
   useEffect(() => {
-    if (!isUserLoading && !user) {
-      router.push('/login?redirect=/dashboard');
+    // This effect handles all redirection logic. It's safe to run on every render.
+    if (isUserLoading || (user && isProfileLoading)) {
+      // Still loading data, so we wait before making a decision.
+      return;
     }
-  }, [user, isUserLoading, router]);
 
-  // Show skeleton while loading auth or profile
+    if (!user) {
+      // If loading is done and there's no user, redirect to login.
+      router.push('/login?redirect=/dashboard');
+      return;
+    }
+    
+    // If a user exists and their profile is loaded, check their role.
+    const isHardcodedAdmin = user.email === 'rajmycarvalue@gmail.com';
+    const isRoleAdmin = userProfile?.role === 'Admin';
+    if (isHardcodedAdmin || isRoleAdmin) {
+      router.push('/admin');
+    }
+    // If not an admin, no redirect happens, and the component proceeds to render the correct dashboard.
+  }, [user, isUserLoading, userProfile, isProfileLoading, router]);
+
+  // RENDER LOGIC
+  // Show skeleton while loading auth or profile, or while a redirect is in progress.
   if (isUserLoading || (user && isProfileLoading)) {
     return <DashboardSkeleton />;
   }
-
-  // After loading, if there's no user, show skeleton (will be redirected shortly)
-  if (!user) {
+  
+  // If loading is complete but we don't have a user or their profile, it means a redirect is happening.
+  // Show a skeleton to avoid a flash of incorrect content.
+  if (!user || !userProfile) {
     return <DashboardSkeleton />;
   }
   
-  // Check for admin and redirect
+  // Also show a skeleton if the user is an admin, while the redirect effect takes place.
   const isHardcodedAdmin = user.email === 'rajmycarvalue@gmail.com';
   const isRoleAdmin = userProfile?.role === 'Admin';
   if (isHardcodedAdmin || isRoleAdmin) {
-    // A redirect inside a render is an anti-pattern. Use useEffect to handle it.
-    useEffect(() => {
-      router.push('/admin');
-    }, [router]);
-    // Render a loader while the redirect is happening
-    return <DashboardSkeleton />;
-  }
-  
-  // If we reach here, the user is not an admin.
-  // Now we can safely assume they need a profile to see their specific dashboard.
-  if (!userProfile) {
-    // This can happen briefly if the user profile is still loading
-    // or if the profile document doesn't exist yet for a new user.
-    // Showing the skeleton is a safe default.
     return <DashboardSkeleton />;
   }
 
+  // At this point, we know we have a logged-in, non-admin user with a loaded profile.
+  // We can now safely render their specific dashboard.
   if (userProfile.role === 'Mechanic') {
     return <MechanicDashboard user={user} userProfile={userProfile} />;
   }
@@ -820,6 +826,7 @@ function DashboardPageComponent() {
     return <AgentOwnerDashboard user={user} userProfile={userProfile} />;
   }
 
+  // Fallback for an invalid user role.
   return (
     <div className="container mx-auto py-12 text-center">
       <Alert variant="destructive">
@@ -832,6 +839,7 @@ function DashboardPageComponent() {
     </div>
   );
 }
+
 
 export default function DashboardPage() {
     return (
