@@ -34,6 +34,16 @@ const nextConfig = {
         hostname: '**.ibb.co',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'www.facebook.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: '**.fbcdn.net',
+        pathname: '/**',
+      },
     ],
   },
 };
