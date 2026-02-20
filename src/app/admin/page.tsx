@@ -548,7 +548,7 @@ function AdminDashboard({ user }: { user: any }) {
                 </div>
             </div>
 
-            <div style="display: grid; grid-template-cols: repeat(2, 1fr); gap: 20px; margin-bottom: 30px;">
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-bottom: 30px;">
                 <div style="background-color: #f8fafc; padding: 15px; border-radius: 6px;">
                     <p style="font-size: 10px; text-transform: uppercase; font-weight: 700; color: #64748b; margin-bottom: 5px;">Kilometers</p>
                     <p style="font-size: 16px; font-weight: 600;">${car.km.toLocaleString()} km</p>
