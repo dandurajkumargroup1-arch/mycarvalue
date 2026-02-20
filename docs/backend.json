@@ -215,7 +215,12 @@
         "title": { "type": "string" },
         "imageUrl": { "type": "string", "format": "uri" },
         "price": { "type": "number" },
-        "location": { "type": "string" },
+        "state": { "type": "string" },
+        "city": { "type": "string" },
+        "area": { "type": "string" },
+        "ownerName": { "type": "string" },
+        "ownerPhone": { "type": "string" },
+        "isDirectOwner": { "type": "boolean" },
         "year": { "type": "number" },
         "km": { "type": "number" },
         "fuelType": { "type": "string" },
@@ -223,7 +228,7 @@
         "aiInsight": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["id", "title", "imageUrl", "price", "location", "year", "km", "createdAt"]
+      "required": ["id", "title", "imageUrl", "price", "state", "city", "year", "km", "createdAt"]
     },
     "Wallet": {
       "title": "Wallet",

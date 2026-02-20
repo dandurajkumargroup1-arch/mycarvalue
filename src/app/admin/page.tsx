@@ -18,6 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import { DateRange } from "react-day-picker";
 import { format } from "date-fns";
 import { cn, toDate, formatCurrency, formatDateTime } from "@/lib/utils";
+import { indianStates } from "@/lib/variants";
 import Papa from 'papaparse';
 
 
@@ -32,11 +33,12 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
-import { AlertTriangle, CheckCircle, Shield, Users, Wallet, XCircle, Calendar as CalendarIcon, Download, Trash2, Plus, Flame, Edit, Sparkles } from 'lucide-react';
+import { AlertTriangle, CheckCircle, Shield, Users, Wallet, XCircle, Calendar as CalendarIcon, Download, Trash2, Plus, Flame, Edit, Sparkles, User, Phone } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 
 
 interface WithdrawalRequest {
@@ -57,7 +59,12 @@ const FreshCarSchema = z.object({
     title: z.string().min(5, "Title is required"),
     imageUrl: z.string().url("Valid image URL is required"),
     price: z.coerce.number().min(10000, "Price must be at least 10,000"),
-    location: z.string().min(3, "Location is required"),
+    state: z.string().min(1, "State is required"),
+    city: z.string().min(2, "City is required"),
+    area: z.string().min(2, "Area is required"),
+    ownerName: z.string().min(2, "Owner name is required"),
+    ownerPhone: z.string().regex(/^\d{10}$/, "10-digit phone number required"),
+    isDirectOwner: z.boolean().default(true),
     year: z.coerce.number().min(1980, "Year must be 1980 or later"),
     km: z.coerce.number().min(0, "KM is required"),
     fuelType: z.string().min(1, "Fuel type is required"),
@@ -80,7 +87,12 @@ function FreshCarDialog({ car }: { car?: any }) {
             title: car.title,
             imageUrl: car.imageUrl,
             price: car.price,
-            location: car.location,
+            state: car.state || '',
+            city: car.city || '',
+            area: car.area || '',
+            ownerName: car.ownerName || '',
+            ownerPhone: car.ownerPhone || '',
+            isDirectOwner: car.isDirectOwner ?? true,
             year: car.year,
             km: car.km,
             fuelType: car.fuelType,
@@ -90,7 +102,12 @@ function FreshCarDialog({ car }: { car?: any }) {
             title: '',
             imageUrl: '',
             price: 500000,
-            location: '',
+            state: '',
+            city: '',
+            area: '',
+            ownerName: '',
+            ownerPhone: '',
+            isDirectOwner: true,
             year: new Date().getFullYear(),
             km: 50000,
             fuelType: 'petrol',
@@ -117,7 +134,6 @@ function FreshCarDialog({ car }: { car?: any }) {
 
     const handleGenerateInsight = async () => {
         const values = form.getValues();
-        // Minimal check before generating
         if (!values.title || !values.price) {
             toast({ variant: 'destructive', title: "Missing Info", description: "Enter at least title and price first." });
             return;
@@ -140,28 +156,64 @@ function FreshCarDialog({ car }: { car?: any }) {
             <DialogTrigger asChild>
                 {car ? <Button variant="ghost" size="icon"><Edit className="h-4 w-4"/></Button> : <Button><Plus className="mr-2 h-4 w-4" /> Add Fresh Car</Button>}
             </DialogTrigger>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="max-w-3xl overflow-y-auto max-h-[90vh]">
                 <DialogHeader>
                     <DialogTitle>{car ? 'Edit Listing' : 'Add Daily Fresh Car'}</DialogTitle>
                     <DialogDescription>These listings appear on the public 'Daily Fresh Cars' page.</DialogDescription>
                 </DialogHeader>
                 <Form {...form}>
-                    <form onSubmit={form.handleSubmit(handleSave)} className="space-y-4">
-                        <div className="grid grid-cols-2 gap-4">
+                    <form onSubmit={form.handleSubmit(handleSave)} className="space-y-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <FormField control={form.control} name="title" render={({ field }) => (
-                                <FormItem className="col-span-2"><FormLabel>Title</FormLabel><FormControl><Input placeholder="e.g. 2021 Hyundai Creta SX" {...field} /></FormControl><FormMessage /></FormItem>
+                                <FormItem className="col-span-full"><FormLabel>Car Title</FormLabel><FormControl><Input placeholder="e.g. 2021 Hyundai Creta SX" {...field} /></FormControl><FormMessage /></FormItem>
                             )} />
                             <FormField control={form.control} name="imageUrl" render={({ field }) => (
-                                <FormItem className="col-span-2"><FormLabel>Image URL (Unsplash/Picsum)</FormLabel><FormControl><Input placeholder="https://..." {...field} /></FormControl><FormMessage /></FormItem>
+                                <FormItem className="col-span-full"><FormLabel>Image URL</FormLabel><FormControl><Input placeholder="https://..." {...field} /></FormControl><FormMessage /></FormItem>
                             )} />
+                            
+                            <div className="col-span-full grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-muted/30 rounded-lg border">
+                                <FormField control={form.control} name="state" render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>State</FormLabel>
+                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                            <FormControl><SelectTrigger><SelectValue placeholder="Select State" /></SelectTrigger></FormControl>
+                                            <SelectContent>{indianStates.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+                                        </Select>
+                                        <FormMessage />
+                                    </FormItem>
+                                )} />
+                                <FormField control={form.control} name="city" render={({ field }) => (
+                                    <FormItem><FormLabel>City</FormLabel><FormControl><Input placeholder="e.g. Mumbai" {...field} /></FormControl><FormMessage /></FormItem>
+                                )} />
+                                <FormField control={form.control} name="area" render={({ field }) => (
+                                    <FormItem><FormLabel>Area</FormLabel><FormControl><Input placeholder="e.g. Bandra" {...field} /></FormControl><FormMessage /></FormItem>
+                                )} />
+                            </div>
+
+                            <div className="col-span-full grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-primary/5 rounded-lg border border-primary/10">
+                                <FormField control={form.control} name="ownerName" render={({ field }) => (
+                                    <FormItem><FormLabel>Owner Name</FormLabel><FormControl><Input placeholder="Name" {...field} /></FormControl><FormMessage /></FormItem>
+                                )} />
+                                <FormField control={form.control} name="ownerPhone" render={({ field }) => (
+                                    <FormItem><FormLabel>Owner Phone</FormLabel><FormControl><Input placeholder="10 digits" {...field} /></FormControl><FormMessage /></FormItem>
+                                )} />
+                                <FormField control={form.control} name="isDirectOwner" render={({ field }) => (
+                                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 bg-background">
+                                        <div className="space-y-0.5">
+                                            <FormLabel>Direct Owner?</FormLabel>
+                                        </div>
+                                        <FormControl>
+                                            <Switch checked={field.value} onCheckedChange={field.onChange} />
+                                        </FormControl>
+                                    </FormItem>
+                                )} />
+                            </div>
+
                             <FormField control={form.control} name="price" render={({ field }) => (
                                 <FormItem><FormLabel>Price (INR)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
                             )} />
-                            <FormField control={form.control} name="location" render={({ field }) => (
-                                <FormItem><FormLabel>Location</FormLabel><FormControl><Input placeholder="e.g. Mumbai, MH" {...field} /></FormControl><FormMessage /></FormItem>
-                            )} />
                             <FormField control={form.control} name="year" render={({ field }) => (
-                                <FormItem><FormLabel>Manufacture Year</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                                <FormItem><FormLabel>Mfg Year</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
                             )} />
                             <FormField control={form.control} name="km" render={({ field }) => (
                                 <FormItem><FormLabel>KM Driven</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
@@ -624,7 +676,7 @@ function AdminDashboard({ user }: { user: any }) {
                                                 <TableHead>Car</TableHead>
                                                 <TableHead>Location</TableHead>
                                                 <TableHead>Price</TableHead>
-                                                <TableHead>Insight</TableHead>
+                                                <TableHead>Owner</TableHead>
                                                 <TableHead className="text-right">Actions</TableHead>
                                             </TableRow>
                                         </TableHeader>
@@ -645,10 +697,15 @@ function AdminDashboard({ user }: { user: any }) {
                                                                 </div>
                                                             </div>
                                                         </TableCell>
-                                                        <TableCell className="text-sm">{car.location}</TableCell>
+                                                        <TableCell className="text-xs">
+                                                            <p className="font-medium">{car.city}, {car.state}</p>
+                                                            <p className="text-muted-foreground">{car.area}</p>
+                                                        </TableCell>
                                                         <TableCell className="font-bold">{formatCurrency(car.price)}</TableCell>
-                                                        <TableCell className="max-w-[200px] truncate text-xs italic">
-                                                            {car.aiInsight || 'No insight'}
+                                                        <TableCell className="text-xs">
+                                                            <div className="flex items-center gap-1"><User className="h-3 w-3" /> {car.ownerName}</div>
+                                                            <div className="flex items-center gap-1 text-muted-foreground"><Phone className="h-3 w-3" /> {car.ownerPhone}</div>
+                                                            {car.isDirectOwner && <Badge className="mt-1 h-4 text-[10px] bg-green-500/10 text-green-500 border-green-500/20">Direct</Badge>}
                                                         </TableCell>
                                                         <TableCell className="text-right">
                                                             <div className="flex justify-end gap-1">

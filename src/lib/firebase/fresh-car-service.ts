@@ -17,7 +17,12 @@ export interface FreshCarData {
   title: string;
   imageUrl: string;
   price: number;
-  location: string;
+  state: string;
+  city: string;
+  area: string;
+  ownerName: string;
+  ownerPhone: string;
+  isDirectOwner: boolean;
   year: number;
   km: number;
   fuelType: string;
