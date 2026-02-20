@@ -4,10 +4,11 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Car, Download, ShieldCheck, TrendingUp, Tag, Target, Info } from "lucide-react";
+import { Car, Download, ShieldCheck, TrendingUp, Tag, Target, Info, Camera } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
+import Image from "next/image";
 
 // Helper component for displaying a single detail item in the report
 const DetailItem = ({ label, value }: { label: string, value: string | number | undefined | null }) => {
@@ -22,7 +23,7 @@ const DetailItem = ({ label, value }: { label: string, value: string | number | 
 
 // Helper component for report sections
 const ReportSection = ({ title, children }: { title: string, children: React.ReactNode }) => (
-    <section className="mt-8">
+    <section className="mt-8 break-inside-avoid">
         <h2 className="text-base font-semibold text-foreground pb-2 border-b mb-4">{title}</h2>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-4">
             {children}
@@ -33,7 +34,6 @@ const ReportSection = ({ title, children }: { title: string, children: React.Rea
 
 export const ValuationResultDisplay = ({ result, onNewValuation }: { result: { valuation: any; formData: any; }, onNewValuation: () => void }) => {
     
-  // Robustly check if the result and its nested properties are valid.
   if (!result || !result.valuation || !result.formData) {
       return (
           <div className="bg-secondary p-2 md:p-8">
@@ -55,7 +55,6 @@ export const ValuationResultDisplay = ({ result, onNewValuation }: { result: { v
   const [isDownloading, setIsDownloading] = useState(false);
 
   useEffect(() => {
-    // This effect is safe because this component is only rendered on the client.
     const randomPart = Math.random().toString(36).substring(2, 8).toUpperCase();
     const reportId = `MCV-${randomPart}`;
 
@@ -82,6 +81,7 @@ export const ValuationResultDisplay = ({ result, onNewValuation }: { result: { v
         const canvas = await html2canvas(reportElement, {
             scale: 2,
             useCORS: true,
+            allowTaint: true,
             backgroundColor: "#ffffff",
             width: reportElement.scrollWidth,
             height: reportElement.scrollHeight,
@@ -119,6 +119,7 @@ export const ValuationResultDisplay = ({ result, onNewValuation }: { result: { v
       usageType, cityDriven, floodDamage, accident, serviceCenter,
       musicSystem, reverseParkingSensor, dashcam, fogLamps, gpsTracker,
       engineOil, coolant, brakeFluid, washerFluid,
+      images,
   } = formData || {};
 
   const finalVariant = variant === 'Other' && otherVariant ? otherVariant : variant;
@@ -138,7 +139,7 @@ export const ValuationResultDisplay = ({ result, onNewValuation }: { result: { v
     { category: 'Interior Condition', value: valuation.depreciation.interior },
     { category: 'Tyre Condition', value: valuation.depreciation.tyres },
     { category: 'Documents', value: valuation.depreciation.documents },
-    { category: 'Other (Electrical, Safety, Fluids)', value: valuation.depreciation.electrical + valuation.depreciation.safety + valuation.depreciation.fluids },
+    { category: 'Other (Electrical, Safety, Fluids)', value: (valuation.depreciation.electrical || 0) + (valuation.depreciation.safety || 0) + (valuation.depreciation.fluids || 0) },
   ].filter(item => item.value > 0);
 
 
@@ -157,6 +158,9 @@ export const ValuationResultDisplay = ({ result, onNewValuation }: { result: { v
         box-shadow: none !important;
         border: none !important;
         color: #1e293b; /* slate-800 */
+      }
+      .break-inside-avoid {
+        break-inside: avoid;
       }
      `}</style>
      <div className="bg-secondary p-2 md:p-8">
@@ -194,12 +198,12 @@ export const ValuationResultDisplay = ({ result, onNewValuation }: { result: { v
                 </div>
             </section>
 
-            <section className="bg-muted/50 rounded-lg p-6 flex flex-col items-center gap-2 my-8 border">
+            <section className="bg-muted/50 rounded-lg p-6 flex flex-col items-center gap-2 my-8 border break-inside-avoid">
                 <h3 className="text-sm font-semibold text-muted-foreground">Your Best Selling Price Estimate</h3>
                 <p className="text-5xl font-bold tracking-tight text-foreground">{inr(valuation.bestPrice)}</p>
             </section>
             
-            <section className="my-8">
+            <section className="my-8 break-inside-avoid">
                 <h2 className="text-base font-semibold text-foreground mb-3 text-center">Price Confidence Guide</h2>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
                     <Card className="p-4 bg-muted/50">
@@ -224,7 +228,22 @@ export const ValuationResultDisplay = ({ result, onNewValuation }: { result: { v
                 </div>
             </section>
 
-            <section className="my-8">
+            {images && images.length > 0 && (
+                <section className="my-8 break-inside-avoid">
+                    <h2 className="text-base font-semibold text-foreground pb-2 border-b mb-4 flex items-center gap-2">
+                        <Camera className="h-4 w-4" /> Inspection Gallery
+                    </h2>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                        {images.map((src: string, idx: number) => (
+                            <div key={idx} className="relative aspect-video rounded border overflow-hidden bg-muted">
+                                <Image src={src} alt={`Inspection Photo ${idx + 1}`} fill className="object-cover" />
+                            </div>
+                        ))}
+                    </div>
+                </section>
+            )}
+
+            <section className="my-8 break-inside-avoid">
                 <div className="max-w-md mx-auto">
                     <h2 className="text-base font-semibold text-foreground mb-3">Price Calculation Summary</h2>
                     <div className="space-y-2 text-sm">
@@ -238,7 +257,7 @@ export const ValuationResultDisplay = ({ result, onNewValuation }: { result: { v
                 </div>
             </section>
             
-            <section className="my-8">
+            <section className="my-8 break-inside-avoid">
                  <h2 className="text-base font-semibold text-foreground mb-3 text-center">Depreciation Breakdown (Estimated Value Lost)</h2>
                  <Table>
                     <TableHeader>

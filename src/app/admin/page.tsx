@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Suspense, useEffect, useState, useMemo } from 'react';
@@ -8,6 +9,7 @@ import type { UserProfile } from '@/lib/firebase/user-profile-service';
 import { approveWithdrawal, rejectWithdrawal } from '@/lib/firebase/withdrawal-service';
 import { deleteUser } from '@/lib/firebase/user-profile-service';
 import { upsertFreshCar, deleteFreshCar, type FreshCarData } from '@/lib/firebase/fresh-car-service';
+import { deleteValuation } from '@/lib/firebase/valuation-service';
 import { useRouter } from 'next/navigation';
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -15,9 +17,10 @@ import { z } from 'zod';
 import { useToast } from "@/hooks/use-toast";
 import { DateRange } from "react-day-picker";
 import { format } from "date-fns";
-import { cn, toDate, formatCurrency, formatDateTime } from "@/lib/utils";
+import { cn, toDate, formatCurrency, formatDateTime, formatDateOnly } from "@/lib/utils";
 import { indianStates } from "@/lib/variants";
 import Papa from 'papaparse';
+import { ValuationResultDisplay } from '@/components/report/ValuationResultDisplay';
 
 
 import { Button } from '@/components/ui/button';
@@ -31,7 +34,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
-import { AlertTriangle, CheckCircle, Shield, Users, Wallet, XCircle, Calendar as CalendarIcon, Download, Trash2, Plus, Flame, Edit, Sparkles, User, Phone } from 'lucide-react';
+import { AlertTriangle, CheckCircle, Shield, Users, Wallet, XCircle, Calendar as CalendarIcon, Download, Trash2, Plus, Flame, Edit, Sparkles, User, Phone, Eye, FileText, Camera } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -358,9 +361,13 @@ function AdminDashboard({ user }: { user: any }) {
   const { toast } = useToast();
   const [usersDateRange, setUsersDateRange] = useState<DateRange | undefined>();
   const [withdrawalDateRange, setWithdrawalDateRange] = useState<DateRange | undefined>();
+  const [valuationDateRange, setValuationDateRange] = useState<DateRange | undefined>();
   const [roleFilter, setRoleFilter] = useState<string>('All');
   const [activeTab, setActiveTab] = useState('pending');
   
+  const [selectedValuation, setSelectedValuation] = useState<any>(null);
+  const [isViewReportOpen, setIsViewReportOpen] = useState(false);
+
   // --- Data Fetching & Processing ---
   
   const usersQuery = useMemo(() => {
@@ -402,169 +409,137 @@ function AdminDashboard({ user }: { user: any }) {
   }, [firestore, user]);
   const { data: freshCars, isLoading: isFreshCarsLoading } = useCollection<any>(freshCarsQuery);
   
+  const allValuationsQuery = useMemo(() => {
+    if (!firestore || !user) return null;
+    // Note: This requires a composite index if filtered/sorted by complex fields.
+    // For simplicity, we just fetch and handle filtering in memory if small, or use a basic query.
+    return query(collectionGroup(firestore, 'carValuations'), orderBy('createdAt', 'desc'));
+  }, [firestore, user]);
+  
+  const { data: rawAllValuations, isLoading: isValuationsLoading } = useCollection<any>(allValuationsQuery);
 
   // --- Derived Data ---
 
   const filteredUsers = useMemo(() => {
     if (!allUsersData) return [];
-
-    // Always filter out Admins first
     let data = allUsersData.filter(user => user.role !== 'Admin');
-
-    // Then filter by the selected role
     if (roleFilter !== 'All') {
       data = data.filter(user => user.role === roleFilter);
     }
-    
-    // Then filter by date
     if (usersDateRange?.from) {
       const from = usersDateRange.from;
       const to = usersDateRange.to ? new Date(usersDateRange.to) : new Date(from);
       to.setHours(23, 59, 59, 999);
-
       data = data.filter(user => {
-        const userDate = user.createdAt; // Already a Date object
-        if (userDate) {
-            return userDate >= from && userDate <= to;
-        }
-        return false;
+        const userDate = user.createdAt;
+        return userDate && userDate >= from && userDate <= to;
       });
     }
-
-    // Finally, sort the filtered data
-    return data.sort((a, b) => {
-        const timeA = a.createdAt?.getTime() ?? 0;
-        const timeB = b.createdAt?.getTime() ?? 0;
-        return timeB - timeA;
-    });
+    return data.sort((a, b) => (b.createdAt?.getTime() ?? 0) - (a.createdAt?.getTime() ?? 0));
   }, [allUsersData, usersDateRange, roleFilter]);
 
   const userMap = useMemo(() => allUsersData?.reduce((acc, user) => ({ ...acc, [user.id]: user }), {} as Record<string, UserProfile & { createdAt: Date | null; lastUpdatedAt: Date | null }>) || {}, [allUsersData]);
 
   const pendingRequests = useMemo(() => {
       if (!allRequestsData) return null;
-      return allRequestsData
-          .filter(req => req.status === 'requested')
-          .sort((a, b) => {
-             const timeA = a.requestedAt?.getTime() ?? 0;
-             const timeB = b.requestedAt?.getTime() ?? 0;
-             return timeB - timeA;
-          });
+      return allRequestsData.filter(req => req.status === 'requested')
+          .sort((a, b) => (b.requestedAt?.getTime() ?? 0) - (a.requestedAt?.getTime() ?? 0));
   }, [allRequestsData]);
 
   const withdrawalHistory = useMemo(() => {
     if (!allRequestsData) return [];
     let history = allRequestsData.filter(req => req.status === 'paid' || req.status === 'rejected');
-    
     if (withdrawalDateRange?.from) {
       const from = withdrawalDateRange.from;
       const to = withdrawalDateRange.to ? new Date(withdrawalDateRange.to) : new Date(from);
       to.setHours(23, 59, 59, 999);
-
       history = history.filter(req => {
-        const reqDate = req.processedAt; // Already a Date object
-        if (reqDate) {
-            return reqDate >= from && reqDate <= to;
-        }
-        return false;
+        const reqDate = req.processedAt;
+        return reqDate && reqDate >= from && reqDate <= to;
       });
     }
-
-    return history.sort((a, b) => {
-        const timeA = a.processedAt?.getTime() ?? 0;
-        const timeB = b.processedAt?.getTime() ?? 0;
-        return timeB - timeA;
-    });
+    return history.sort((a, b) => (b.processedAt?.getTime() ?? 0) - (a.processedAt?.getTime() ?? 0));
   }, [allRequestsData, withdrawalDateRange]);
 
+  const valuations = useMemo(() => {
+    if (!rawAllValuations) return [];
+    let data = rawAllValuations.map(v => ({ ...v, createdAt: toDate(v.createdAt) }));
+    if (valuationDateRange?.from) {
+        const from = valuationDateRange.from;
+        const to = valuationDateRange.to ? new Date(valuationDateRange.to) : new Date(from);
+        to.setHours(23, 59, 59, 999);
+        data = data.filter(v => v.createdAt && v.createdAt >= from && v.createdAt <= to);
+    }
+    return data;
+  }, [rawAllValuations, valuationDateRange]);
 
-  if (requestsError) {
-      toast({variant: 'destructive', title: 'Error', description: 'Could not load withdrawal requests. Check security rules.'});
-  }
 
   const handleDownloadCsv = () => {
     if (!withdrawalHistory || withdrawalHistory.length === 0) {
-        toast({ title: "No Data", description: "There is no historical data to download for the selected range." });
+        toast({ title: "No Data", description: "There is no historical data to download." });
         return;
     }
-
     const dataToExport = withdrawalHistory.map(req => ({
         "Request ID": req.id,
         "Mechanic Name": userMap[req.userId]?.displayName || 'N/A',
-        "Mechanic Email": userMap[req.userId]?.email || 'N/A',
         "Amount (INR)": req.amount,
         "Status": req.status,
         "Requested At": formatDateTime(req.requestedAt),
         "Processed At": formatDateTime(req.processedAt),
-        "Payment Method": req.upiId ? 'UPI' : 'Bank Transfer',
-        "UPI ID": req.upiId || 'N/A',
-        "Bank Account": req.bankAccountNumber || 'N/A',
-        "IFSC Code": req.bankIfscCode || 'N/A',
         "Transaction ID": req.transactionId || 'N/A',
-        "Rejection Reason": req.rejectionReason || 'N/A',
     }));
-
     const csv = Papa.unparse(dataToExport);
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', `withdrawal-history-${new Date().toISOString().split('T')[0]}.csv`);
-    document.body.appendChild(link);
+    link.href = URL.createObjectURL(blob);
+    link.download = `withdrawal-history-${new Date().toISOString().split('T')[0]}.csv`;
     link.click();
-    document.body.removeChild(link);
   };
   
   const handleDeleteUser = async (userId: string) => {
-    if (!firestore) {
-        toast({ variant: "destructive", title: "Error", description: "Database service not available." });
-        return;
-    }
+    if (!firestore) return;
     try {
         await deleteUser(firestore, userId);
-        toast({ title: "User Deleted", description: "The user profile has been successfully deleted." });
+        toast({ title: "User Deleted" });
     } catch (error) {
-        console.error("Delete user error:", error);
-        toast({ variant: "destructive", title: "Deletion Failed", description: "Could not delete the user." });
+        toast({ variant: "destructive", title: "Deletion Failed" });
     }
   };
+
+  const handleDeleteValuation = async (userId: string, valuationId: string) => {
+    if (!firestore) return;
+    try {
+        // Need a modified service or direct doc deletion since valuations are user-nested
+        const vRef = doc(firestore, 'users', userId, 'carValuations', valuationId);
+        await deleteValuation(firestore, { uid: userId } as any, valuationId);
+        toast({ title: "Valuation Deleted" });
+    } catch (e) {
+        toast({ variant: 'destructive', title: "Error" });
+    }
+  }
 
   const handleDeleteFreshCar = async (carId: string) => {
     if (!firestore) return;
     try {
         await deleteFreshCar(firestore, carId);
-        toast({ title: "Listing Deleted", description: "The listing has been removed from Hot Picks." });
+        toast({ title: "Listing Deleted" });
     } catch (e) {
-        toast({ variant: 'destructive', title: "Error", description: "Failed to delete listing." });
+        toast({ variant: 'destructive', title: "Error" });
     }
   }
-  
-
-  const isLoading = isUsersLoading || isRequestsLoading;
-
-  const recentUsers = useMemo(() => {
-    if (!allUsersData) return [];
-    return [...allUsersData]
-        .sort((a, b) => {
-            const timeA = a.createdAt?.getTime() ?? 0;
-            const timeB = b.createdAt?.getTime() ?? 0;
-            return timeB - timeA;
-        })
-        .filter(u => u.role !== 'Admin') // Show all roles except Admin
-        .slice(0, 5);
-  }, [allUsersData]);
 
   const cardDescriptions: Record<string, string> = {
     pending: 'Review pending requests for withdrawals.',
     history: 'Browse historical withdrawals.',
     freshCars: 'Manage featured Hot Listings for the public feed.',
+    valuations: 'Master list of all car valuation reports generated.',
   };
 
   return (
     <div className="container mx-auto py-8 px-4 md:px-6 bg-background">
         <header className="mb-8">
             <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
-            <p className="text-muted-foreground">Manage withdrawals, users, and market listings.</p>
+            <p className="text-muted-foreground">Platform oversight and management.</p>
         </header>
 
         <main className="grid grid-cols-1 gap-8">
@@ -577,12 +552,68 @@ function AdminDashboard({ user }: { user: any }) {
                                     <CardTitle className="flex items-center gap-2"><Shield/> Management</CardTitle>
                                     <TabsList>
                                         <TabsTrigger value="pending">Withdrawals</TabsTrigger>
+                                        <TabsTrigger value="valuations">All Reports</TabsTrigger>
                                         <TabsTrigger value="freshCars">Hot Listings</TabsTrigger>
                                         <TabsTrigger value="history">History</TabsTrigger>
                                     </TabsList>
                                 </div>
                                 <CardDescription>{cardDescriptions[activeTab]}</CardDescription>
                             </CardHeader>
+                            
+                            <TabsContent value="valuations">
+                                <div className="px-6 pb-4">
+                                    <Popover>
+                                        <PopoverTrigger asChild>
+                                            <Button variant="outline" size="sm" className="w-full sm:w-auto">
+                                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                                {valuationDateRange?.from ? (valuationDateRange.to ? `${format(valuationDateRange.from, "PP")} - ${format(valuationDateRange.to, "PP")}` : format(valuationDateRange.from, "PP")) : "Filter by date"}
+                                            </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-auto p-0" align="start">
+                                            <Calendar mode="range" selected={valuationDateRange} onSelect={setValuationDateRange} numberOfMonths={2} />
+                                        </PopoverContent>
+                                    </Popover>
+                                </div>
+                                <CardContent>
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead>Car / Report</TableHead>
+                                                <TableHead>User</TableHead>
+                                                <TableHead>Date</TableHead>
+                                                <TableHead className="text-right">Actions</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {isValuationsLoading ? (
+                                                <TableRow><TableCell colSpan={4}><Skeleton className="h-8 w-full" /></TableCell></TableRow>
+                                            ) : valuations.length > 0 ? (
+                                                valuations.map(v => (
+                                                    <TableRow key={v.id}>
+                                                        <TableCell>
+                                                            <div className="font-medium">{v.make} {v.model}</div>
+                                                            <div className="text-xs text-muted-foreground uppercase font-mono">{v.vehicleNumber || 'No Plate'}</div>
+                                                            {v.images && v.images.length > 0 && <Badge variant="outline" className="mt-1 h-4 text-[9px] gap-1"><Camera className="h-2 w-2"/> {v.images.length} Photos</Badge>}
+                                                        </TableCell>
+                                                        <TableCell className="text-xs">
+                                                            <div className="font-medium">{userMap[v.userId]?.displayName || 'System'}</div>
+                                                            <div className="text-muted-foreground">{userMap[v.userId]?.role || 'User'}</div>
+                                                        </TableCell>
+                                                        <TableCell className="text-xs">{formatDateOnly(v.createdAt)}</TableCell>
+                                                        <TableCell className="text-right">
+                                                            <div className="flex justify-end gap-1">
+                                                                <Button size="icon" variant="ghost" onClick={() => { setSelectedValuation(v); setIsViewReportOpen(true); }}><Eye className="h-4 w-4"/></Button>
+                                                                <Button size="icon" variant="ghost" onClick={() => handleDeleteValuation(v.userId, v.id)}><Trash2 className="h-4 w-4 text-destructive"/></Button>
+                                                            </div>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ))
+                                            ) : <TableRow><TableCell colSpan={4} className="text-center py-8 text-muted-foreground">No reports found.</TableCell></TableRow>}
+                                        </TableBody>
+                                    </Table>
+                                </CardContent>
+                            </TabsContent>
+
                             <TabsContent value="pending">
                                 <CardContent>
                                     <Table>
@@ -590,96 +621,63 @@ function AdminDashboard({ user }: { user: any }) {
                                             <TableRow>
                                                 <TableHead>User / Shop</TableHead>
                                                 <TableHead>Amount</TableHead>
-                                                <TableHead>Payment Details</TableHead>
                                                 <TableHead>Requested At</TableHead>
                                                 <TableHead className="text-right">Actions</TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
                                             {isRequestsLoading ? (
-                                                <TableRow><TableCell colSpan={5}><Skeleton className="h-8 w-full" /></TableCell></TableRow>
+                                                <TableRow><TableCell colSpan={4}><Skeleton className="h-8 w-full" /></TableCell></TableRow>
                                             ) : pendingRequests && pendingRequests.length > 0 ? (
                                                 pendingRequests.map(req => (
                                                     <TableRow key={req.id}>
                                                         <TableCell>
-                                                            {isUsersLoading ? <Skeleton className="h-5 w-32" /> : (
-                                                                <>
-                                                                    <div className="font-medium">{userMap[req.userId]?.displayName || userMap[req.userId]?.email || 'Unknown User'}</div>
-                                                                    {(userMap[req.userId]?.shopName || userMap[req.userId]?.location) && (
-                                                                        <div className="text-xs text-muted-foreground">
-                                                                            {[userMap[req.userId]?.shopName, userMap[req.userId]?.location].filter(Boolean).join(' - ')}
-                                                                        </div>
-                                                                    )}
-                                                                </>
-                                                            )}
+                                                            <div className="font-medium">{userMap[req.userId]?.displayName || userMap[req.userId]?.email || 'Unknown'}</div>
+                                                            <div className="text-xs text-muted-foreground">{userMap[req.userId]?.shopName || 'No Shop'}</div>
                                                         </TableCell>
-                                                        <TableCell>{formatCurrency(req.amount)}</TableCell>
-                                                        <TableCell className="text-xs">
-                                                            {req.upiId && <p><strong>UPI:</strong> {req.upiId}</p>}
-                                                            {req.bankAccountNumber && <p><strong>Acct:</strong> {req.bankAccountNumber}</p>}
-                                                            {req.bankIfscCode && <p><strong>IFSC:</strong> {req.bankIfscCode}</p>}
-                                                        </TableCell>
-                                                        <TableCell>{formatDateTime(req.requestedAt)}</TableCell>
+                                                        <TableCell className="font-bold">{formatCurrency(req.amount)}</TableCell>
+                                                        <TableCell className="text-xs">{formatDateTime(req.requestedAt)}</TableCell>
                                                         <TableCell className="text-right space-x-2">
                                                             <ApproveDialog request={req} />
                                                             <RejectDialog request={req} />
                                                         </TableCell>
                                                     </TableRow>
                                                 ))
-                                            ) : (
-                                                <TableRow>
-                                                    <TableCell colSpan={5} className="h-24 text-center">
-                                                        <CheckCircle className="mx-auto h-8 w-8 text-primary mb-2"/>
-                                                        No pending requests. All caught up!
-                                                    </TableCell>
-                                                </TableRow>
-                                            )}
+                                            ) : <TableRow><TableCell colSpan={4} className="h-24 text-center">No pending requests.</TableCell></TableRow>}
                                         </TableBody>
                                     </Table>
                                 </CardContent>
                             </TabsContent>
+
                             <TabsContent value="freshCars">
                                 <CardContent>
-                                    <div className="flex justify-end mb-4">
-                                        <FreshCarDialog />
-                                    </div>
+                                    <div className="flex justify-end mb-4"><FreshCarDialog /></div>
                                     <Table>
                                         <TableHeader>
                                             <TableRow>
                                                 <TableHead>Car</TableHead>
-                                                <TableHead>Location</TableHead>
                                                 <TableHead>Price</TableHead>
-                                                <TableHead>Owner</TableHead>
                                                 <TableHead className="text-right">Actions</TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
                                             {isFreshCarsLoading ? (
-                                                <TableRow><TableCell colSpan={5}><Skeleton className="h-8 w-full" /></TableCell></TableRow>
+                                                <TableRow><TableCell colSpan={3}><Skeleton className="h-8 w-full" /></TableCell></TableRow>
                                             ) : freshCars && freshCars.length > 0 ? (
                                                 freshCars.map(car => (
                                                     <TableRow key={car.id}>
-                                                        <TableCell className="font-medium">
+                                                        <TableCell>
                                                             <div className="flex items-center gap-3">
-                                                                <div className="relative h-10 w-10 rounded overflow-hidden flex-shrink-0">
+                                                                <div className="relative h-10 w-10 rounded overflow-hidden border bg-muted flex-shrink-0">
                                                                     <Image src={car.imageUrl} alt={car.title} fill className="object-cover" />
                                                                 </div>
                                                                 <div>
-                                                                    <p>{car.title}</p>
-                                                                    <p className="text-xs text-muted-foreground">{car.year} | {car.km.toLocaleString()} km</p>
+                                                                    <p className="font-medium text-sm">{car.title}</p>
+                                                                    <p className="text-[10px] text-muted-foreground">{car.city}, {car.state}</p>
                                                                 </div>
                                                             </div>
                                                         </TableCell>
-                                                        <TableCell className="text-xs">
-                                                            <p className="font-medium">{car.city}, {car.state}</p>
-                                                            <p className="text-muted-foreground">{car.area}</p>
-                                                        </TableCell>
-                                                        <TableCell className="font-bold">{formatCurrency(car.price)}</TableCell>
-                                                        <TableCell className="text-xs">
-                                                            <div className="flex items-center gap-1"><User className="h-3 w-3" /> {car.ownerName}</div>
-                                                            <div className="flex items-center gap-1 text-muted-foreground"><Phone className="h-3 w-3" /> {car.ownerPhone}</div>
-                                                            {car.isDirectOwner && <Badge className="mt-1 h-4 text-[10px] bg-green-500/10 text-green-500 border-green-500/20">Direct</Badge>}
-                                                        </TableCell>
+                                                        <TableCell className="font-bold text-sm">{formatCurrency(car.price)}</TableCell>
                                                         <TableCell className="text-right">
                                                             <div className="flex justify-end gap-1">
                                                                 <FreshCarDialog car={car} />
@@ -688,89 +686,46 @@ function AdminDashboard({ user }: { user: any }) {
                                                         </TableCell>
                                                     </TableRow>
                                                 ))
-                                            ) : (
-                                                <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">No listings found. Add your first hot listing!</TableCell></TableRow>
-                                            )}
+                                            ) : <TableRow><TableCell colSpan={3} className="text-center py-8 text-muted-foreground">No hot listings.</TableCell></TableRow>}
                                         </TableBody>
                                     </Table>
                                 </CardContent>
                             </TabsContent>
+
                             <TabsContent value="history">
                                 <div className="px-6 pb-4 flex flex-wrap items-center justify-between gap-4">
                                      <Popover>
                                         <PopoverTrigger asChild>
-                                            <Button
-                                                id="withdrawal-date"
-                                                variant={"outline"}
-                                                className={cn(
-                                                    "w-auto min-w-[260px] justify-start text-left font-normal",
-                                                    !withdrawalDateRange && "text-muted-foreground"
-                                                )}
-                                            >
+                                            <Button variant="outline" size="sm" className="w-full sm:w-auto">
                                                 <CalendarIcon className="mr-2 h-4 w-4" />
-                                                {withdrawalDateRange?.from ? (
-                                                    withdrawalDateRange.to ? (
-                                                        <>
-                                                            {format(withdrawalDateRange.from, "LLL dd, y")} -{" "}
-                                                            {format(withdrawalDateRange.to, "LLL dd, y")}
-                                                        </>
-                                                    ) : (
-                                                        format(withdrawalDateRange.from, "LLL dd, y")
-                                                    )
-                                                ) : (
-                                                    <span>Pick a date range</span>
-                                                )}
+                                                {withdrawalDateRange?.from ? (withdrawalDateRange.to ? `${format(withdrawalDateRange.from, "PP")} - ${format(withdrawalDateRange.to, "PP")}` : format(withdrawalDateRange.from, "PP")) : "Pick date range"}
                                             </Button>
                                         </PopoverTrigger>
                                         <PopoverContent className="w-auto p-0" align="start">
-                                            <Calendar
-                                                initialFocus
-                                                mode="range"
-                                                defaultMonth={withdrawalDateRange?.from}
-                                                selected={withdrawalDateRange}
-                                                onSelect={setWithdrawalDateRange}
-                                                numberOfMonths={2}
-                                            />
+                                            <Calendar mode="range" selected={withdrawalDateRange} onSelect={setWithdrawalDateRange} numberOfMonths={2} />
                                         </PopoverContent>
                                     </Popover>
-                                    <Button onClick={handleDownloadCsv} variant="outline" size="sm">
-                                        <Download className="mr-2 h-4 w-4"/>
-                                        Download CSV
-                                    </Button>
+                                    <Button onClick={handleDownloadCsv} variant="outline" size="sm"><Download className="mr-2 h-4 w-4"/> CSV</Button>
                                 </div>
                                 <CardContent>
                                      <Table>
                                         <TableHeader>
                                             <TableRow>
-                                                <TableHead>Mechanic</TableHead>
+                                                <TableHead>User</TableHead>
                                                 <TableHead>Amount</TableHead>
-                                                <TableHead>Processed At</TableHead>
                                                 <TableHead>Status</TableHead>
-                                                <TableHead>Txn ID</TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
-                                             {isRequestsLoading ? (
-                                                <TableRow><TableCell colSpan={5}><Skeleton className="h-8 w-full" /></TableCell></TableRow>
-                                            ) : withdrawalHistory && withdrawalHistory.length > 0 ? (
+                                             {withdrawalHistory && withdrawalHistory.length > 0 ? (
                                                 withdrawalHistory.map(req => (
                                                     <TableRow key={req.id}>
-                                                        <TableCell className="font-medium">
-                                                             {isUsersLoading ? <Skeleton className="h-5 w-24" /> : (userMap[req.userId]?.displayName || userMap[req.userId]?.email || 'N/A')}
-                                                        </TableCell>
-                                                        <TableCell>{formatCurrency(req.amount)}</TableCell>
-                                                        <TableCell>{formatDateTime(req.processedAt)}</TableCell>
+                                                        <TableCell className="text-xs">{userMap[req.userId]?.displayName || 'N/A'}</TableCell>
+                                                        <TableCell className="text-sm font-bold">{formatCurrency(req.amount)}</TableCell>
                                                         <TableCell><Badge variant={req.status === 'paid' ? 'default' : 'destructive'}>{req.status}</Badge></TableCell>
-                                                        <TableCell className="text-xs font-mono">{req.transactionId || 'N/A'}</TableCell>
                                                     </TableRow>
                                                 ))
-                                            ) : (
-                                                 <TableRow>
-                                                    <TableCell colSpan={5} className="h-24 text-center">
-                                                        No historical records found for the selected period.
-                                                    </TableCell>
-                                                </TableRow>
-                                            )}
+                                            ) : <TableRow><TableCell colSpan={3} className="h-24 text-center">No history.</TableCell></TableRow>}
                                         </TableBody>
                                      </Table>
                                 </CardContent>
@@ -778,26 +733,44 @@ function AdminDashboard({ user }: { user: any }) {
                         </Tabs>
                     </Card>
                 </div>
-                <div>
+                
+                <div className="space-y-8">
+                     <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2"><Users/> Quick Stats</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="flex justify-between items-center text-sm">
+                                <span className="text-muted-foreground">Total Users</span>
+                                <span className="font-bold">{allUsersData?.length || 0}</span>
+                            </div>
+                            <div className="flex justify-between items-center text-sm">
+                                <span className="text-muted-foreground">Total Reports</span>
+                                <span className="font-bold">{rawAllValuations?.length || 0}</span>
+                            </div>
+                            <div className="flex justify-between items-center text-sm">
+                                <span className="text-muted-foreground">Withdrawal Volume</span>
+                                <span className="font-bold">{formatCurrency(withdrawalHistory.reduce((acc, r) => acc + (r.status === 'paid' ? r.amount : 0), 0))}</span>
+                            </div>
+                        </CardContent>
+                     </Card>
+
                      <Card>
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2"><Users/> Recent Users</CardTitle>
-                            <CardDescription>Newest Owners, Agents, and Mechanics.</CardDescription>
                         </CardHeader>
                         <CardContent>
-                            {isUsersLoading ? <Skeleton className="h-40 w-full" /> : (
-                                <div className="space-y-4">
-                                    {recentUsers && recentUsers.map(user => (
-                                        <div key={user.id} className="flex items-center justify-between">
-                                            <div>
-                                                <p className="font-medium">{user.displayName}</p>
-                                                <p className="text-sm text-muted-foreground">{user.shopName ? `${user.shopName} - ${user.location}`: user.email}</p>
-                                            </div>
-                                            <Badge variant={user.role === 'Mechanic' ? 'secondary' : user.role === 'Agent' ? 'outline' : 'default'}>{user.role}</Badge>
+                            <div className="space-y-4">
+                                {allUsersData?.filter(u => u.role !== 'Admin').slice(0, 5).map(user => (
+                                    <div key={user.id} className="flex items-center justify-between text-sm">
+                                        <div>
+                                            <p className="font-medium">{user.displayName}</p>
+                                            <p className="text-[10px] text-muted-foreground">{user.email}</p>
                                         </div>
-                                    ))}
-                                </div>
-                            )}
+                                        <Badge variant="outline" className="text-[10px]">{user.role}</Badge>
+                                    </div>
+                                ))}
+                            </div>
                         </CardContent>
                      </Card>
                 </div>
@@ -808,13 +781,11 @@ function AdminDashboard({ user }: { user: any }) {
                   <div className="flex flex-wrap items-center justify-between gap-4">
                     <div>
                         <CardTitle className="flex items-center gap-2"><Users/> All Users</CardTitle>
-                        <CardDescription>Browse and manage all registered users, filtered by role or date.</CardDescription>
+                        <CardDescription>Manage user profiles and roles.</CardDescription>
                     </div>
-                    <div className="flex flex-wrap items-center gap-2">
+                    <div className="flex gap-2">
                         <Select value={roleFilter} onValueChange={setRoleFilter}>
-                            <SelectTrigger className="w-auto min-w-[180px]">
-                                <SelectValue placeholder="Filter by role" />
-                            </SelectTrigger>
+                            <SelectTrigger className="w-auto min-w-[140px]"><SelectValue placeholder="Role" /></SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="All">All Roles</SelectItem>
                                 <SelectItem value="Owner">Owner</SelectItem>
@@ -822,42 +793,6 @@ function AdminDashboard({ user }: { user: any }) {
                                 <SelectItem value="Mechanic">Mechanic</SelectItem>
                             </SelectContent>
                         </Select>
-                        <Popover>
-                            <PopoverTrigger asChild>
-                                <Button
-                                    id="date"
-                                    variant={"outline"}
-                                    className={cn(
-                                        "w-auto min-w-[260px] justify-start text-left font-normal",
-                                        !usersDateRange && "text-muted-foreground"
-                                    )}
-                                >
-                                    <CalendarIcon className="mr-2 h-4 w-4" />
-                                    {usersDateRange?.from ? (
-                                        usersDateRange.to ? (
-                                            <>
-                                                {format(usersDateRange.from, "LLL dd, y")} -{" "}
-                                                {format(usersDateRange.to, "LLL dd, y")}
-                                            </>
-                                        ) : (
-                                            format(usersDateRange.from, "LLL dd, y")
-                                        )
-                                    ) : (
-                                        <span>Pick a date range</span>
-                                    )}
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="end">
-                                <Calendar
-                                    initialFocus
-                                    mode="range"
-                                    defaultMonth={usersDateRange?.from}
-                                    selected={usersDateRange}
-                                    onSelect={setUsersDateRange}
-                                    numberOfMonths={2}
-                                />
-                            </PopoverContent>
-                        </Popover>
                     </div>
                   </div>
                 </CardHeader>
@@ -868,87 +803,60 @@ function AdminDashboard({ user }: { user: any }) {
                                 <TableHead>User</TableHead>
                                 <TableHead>Role</TableHead>
                                 <TableHead>Shop / Location</TableHead>
-                                <TableHead>Joined</TableHead>
                                 <TableHead className="text-right">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {isUsersLoading ? (
-                                <TableRow><TableCell colSpan={5} className="h-24 text-center"><Skeleton className="h-8 w-full" /></TableCell></TableRow>
-                            ) : filteredUsers && filteredUsers.length > 0 ? (
+                                <TableRow><TableCell colSpan={4}><Skeleton className="h-8 w-full" /></TableCell></TableRow>
+                            ) : filteredUsers.length > 0 ? (
                                 filteredUsers.map(user => (
                                     <TableRow key={user.id}>
                                         <TableCell>
-                                            <div className="font-medium">{user.displayName}</div>
-                                            <div className="text-xs text-muted-foreground">{user.email}</div>
+                                            <div className="font-medium text-sm">{user.displayName}</div>
+                                            <div className="text-[10px] text-muted-foreground">{user.email}</div>
                                         </TableCell>
-                                        <TableCell>
-                                            <Badge variant={user.role === 'Mechanic' ? 'secondary' : user.role === 'Agent' ? 'outline' : 'default'}>{user.role}</Badge>
-                                        </TableCell>
-                                        <TableCell>
-                                            {user.shopName ? (
-                                                <div>
-                                                    <div className="font-medium">{user.shopName}</div>
-                                                    <div className="text-xs text-muted-foreground">{user.location}</div>
-                                                </div>
-                                            ) : 'N/A'}
-                                        </TableCell>
-                                        <TableCell>{formatDateTime(user.createdAt)}</TableCell>
+                                        <TableCell><Badge variant="secondary" className="text-[10px]">{user.role}</Badge></TableCell>
+                                        <TableCell className="text-xs">{user.shopName || 'N/A'}</TableCell>
                                         <TableCell className="text-right">
                                             <AlertDialog>
-                                                <AlertDialogTrigger asChild>
-                                                    <Button variant="destructive" size="icon">
-                                                        <Trash2 className="h-4 w-4" />
-                                                        <span className="sr-only">Delete User</span>
-                                                    </Button>
-                                                </AlertDialogTrigger>
+                                                <AlertDialogTrigger asChild><Button variant="destructive" size="icon" className="h-7 w-7"><Trash2 className="h-3.5 w-3.5" /></Button></AlertDialogTrigger>
                                                 <AlertDialogContent>
-                                                    <AlertDialogHeader>
-                                                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                                                        <AlertDialogDescription>
-                                                            This will permanently delete the user '{user.displayName}' and their Firestore data. This action cannot be undone.
-                                                        </AlertDialogDescription>
-                                                    </AlertDialogHeader>
-                                                    <AlertDialogFooter>
-                                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                        <AlertDialogAction onClick={() => handleDeleteUser(user.id)} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
-                                                    </AlertDialogFooter>
+                                                    <AlertDialogHeader><AlertDialogTitle>Delete User?</AlertDialogTitle><AlertDialogDescription>This will delete all data for {user.displayName}.</AlertDialogDescription></AlertDialogHeader>
+                                                    <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteUser(user.id)} className="bg-destructive">Delete</AlertDialogAction></AlertDialogFooter>
                                                 </AlertDialogContent>
                                             </AlertDialog>
                                         </TableCell>
                                     </TableRow>
                                 ))
-                            ) : (
-                                <TableRow>
-                                    <TableCell colSpan={5} className="h-24 text-center">
-                                        No users found.
-                                    </TableCell>
-                                </TableRow>
-                            )}
+                            ) : <TableRow><TableCell colSpan={4} className="text-center py-8">No users.</TableCell></TableRow>}
                         </TableBody>
                     </Table>
                 </CardContent>
             </Card>
-
         </main>
+
+        <Dialog open={isViewReportOpen} onOpenChange={setIsViewReportOpen}>
+            <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                    <DialogTitle>Admin Review: Valuation Report</DialogTitle>
+                </DialogHeader>
+                {selectedValuation && (
+                    <ValuationResultDisplay 
+                        result={{ valuation: selectedValuation.valuationResult, formData: selectedValuation }} 
+                        onNewValuation={() => setIsViewReportOpen(false)}
+                    />
+                )}
+            </DialogContent>
+        </Dialog>
     </div>
   );
 }
 
 
-// --- Page Loader and Auth Guard ---
-
 function AdminPageLoader() {
     return (
-        <div className="container mx-auto py-8">
-            <Skeleton className="h-8 w-64 mb-2" />
-            <Skeleton className="h-5 w-80 mb-8" />
-            <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-                <div className="lg:col-span-2"><Skeleton className="h-64" /></div>
-                <div><Skeleton className="h-48" /></div>
-            </div>
-            <Skeleton className="h-96 mt-8" />
-        </div>
+        <div className="container mx-auto py-8"><Skeleton className="h-8 w-64 mb-2" /><Skeleton className="h-5 w-80 mb-8" /></div>
     );
 }
 
@@ -970,42 +878,24 @@ function AdminPageComponent() {
     }
   }, [user, isUserLoading, router]);
 
-  // Show a loader while waiting for auth state or profile to load
-  if (isUserLoading || (user && isProfileLoading)) {
-    return <AdminPageLoader />;
-  }
+  if (isUserLoading || (user && isProfileLoading)) return <AdminPageLoader />;
+  if (!user) return <AdminPageLoader />;
 
-  // After loading, if there is still no user, the redirect will trigger.
-  // In the meantime, we can show a loader.
-  if (!user) {
-    return <AdminPageLoader />;
-  }
+  const isAuthorized = user.email === 'rajmycarvalue@gmail.com' || userProfile?.role === 'Admin';
 
-  // Once user and profile are loaded, check for authorization
-  const isHardcodedAdmin = user.email === 'rajmycarvalue@gmail.com';
-  const isRoleAdmin = userProfile?.role === 'Admin';
-  const isAuthorized = isHardcodedAdmin || isRoleAdmin;
-
-  if (isAuthorized) {
-    return <AdminDashboard user={user} />;
-  }
+  if (isAuthorized) return <AdminDashboard user={user} />;
   
-  // If not authorized, show access denied message
   return (
     <div className="container mx-auto flex items-center justify-center py-20">
       <Alert variant="destructive" className="max-w-lg">
           <AlertTriangle className="h-4 w-4" />
           <AlertTitle>Access Denied</AlertTitle>
-          <AlertDescription>
-              You do not have permission to view this page. This area is for administrators only.
-          </AlertDescription>
+          <AlertDescription>Administrators only.</AlertDescription>
       </Alert>
     </div>
   );
 }
 
 export default function AdminPage() {
-    return (
-        <AdminPageComponent />
-    );
+    return <AdminPageComponent />;
 }

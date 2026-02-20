@@ -93,6 +93,7 @@
         "rcStatus": { "type": "string" },
         "insurance": { "type": "string" },
         "hypothecation": { "type": "string" },
+        "images": { "type": "array", "items": { "type": "string" }, "description": "Base64 encoded car images" },
         "engineMechanical": {
           "type": "object",
           "properties": {

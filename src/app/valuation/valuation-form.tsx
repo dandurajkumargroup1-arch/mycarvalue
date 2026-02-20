@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Script from "next/script";
@@ -27,7 +27,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import { Sparkles, User as UserIcon, Lock, CreditCard, Info, Wrench, Car, Package, Power, Disc, Shield, FileText, History, PlusSquare, Droplets, ChevronRight } from "lucide-react";
+import { Sparkles, User as UserIcon, Lock, CreditCard, Info, Wrench, Car, Package, Power, Disc, Shield, FileText, History, PlusSquare, Droplets, ChevronRight, Image as ImageIcon, Trash2, Camera } from "lucide-react";
+import Image from "next/image";
 
 
 const ValuationLoadingScreen = () => (
@@ -74,7 +75,6 @@ const PaymentDisplay = ({ onNewValuation, user, firestore }: { onNewValuation: (
     }
 
     try {
-      // 1. Create Order on the server
       const orderResponse = await fetch('/api/razorpay', { method: 'POST' });
       if (!orderResponse.ok) {
         const errorData = await orderResponse.json();
@@ -90,9 +90,8 @@ const PaymentDisplay = ({ onNewValuation, user, firestore }: { onNewValuation: (
         throw new Error("Razorpay key was not returned from the server.");
       }
 
-      // 2. Open Razorpay Checkout
       const options = {
-        key: order.key, // Use the key from the server response
+        key: order.key,
         amount: order.amount,
         currency: order.currency,
         name: "mycarvalue.in",
@@ -138,7 +137,7 @@ const PaymentDisplay = ({ onNewValuation, user, firestore }: { onNewValuation: (
   };
 
   if (!isMounted) {
-    return null; // Don't render anything on the server or before hydration
+    return null;
   }
 
   return (
@@ -146,7 +145,7 @@ const PaymentDisplay = ({ onNewValuation, user, firestore }: { onNewValuation: (
       <Script
         id="razorpay-checkout-js"
         src="https://checkout.razorpay.com/v1/checkout.js"
-        strategy="lazyOnload" // Use lazyOnload for better performance
+        strategy="lazyOnload"
         onLoad={() => {
           setIsScriptLoaded(true);
         }}
@@ -195,7 +194,6 @@ export function ValuationForm() {
   const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileRef);
 
   const validationSchema = useMemo(() => {
-    // Define the schema conditionally using a ternary operator to avoid type inference issues on reassignment.
     const schema = userProfile?.role === 'Mechanic'
       ? CarValuationObjectSchema.omit({ vehicleNumber: true }).extend({
           vehicleNumber: z.string()
@@ -306,6 +304,7 @@ export function ValuationForm() {
         dashcam: undefined,
         fogLamps: undefined,
         gpsTracker: undefined,
+        images: [],
     },
   });
 
@@ -313,6 +312,7 @@ export function ValuationForm() {
   const watchedMake = watch("make");
   const watchedModel = watch("model");
   const watchedVariant = watch("variant");
+  const watchedImages = watch("images") || [];
 
   const models = useMemo(() => {
     if (watchedMake && carMakesAndModelsAndVariants[watchedMake]) {
@@ -334,6 +334,37 @@ export function ValuationForm() {
     }
   }, [user, setValue, form]);
 
+  const handleImageUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files) return;
+
+    const newImages: string[] = [...watchedImages];
+    const maxFiles = 6;
+    const filesToProcess = Array.from(files).slice(0, maxFiles - newImages.length);
+
+    if (newImages.length >= maxFiles) {
+        toast({ title: "Limit Reached", description: `You can upload a maximum of ${maxFiles} photos.` });
+        return;
+    }
+
+    filesToProcess.forEach(file => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            const base64String = reader.result as string;
+            // Simple compression check: If file is too large, we might want to warn or resize.
+            // For MVP, we'll just add it.
+            newImages.push(base64String);
+            setValue("images", newImages);
+        };
+        reader.readAsDataURL(file);
+    });
+  }, [watchedImages, setValue, toast]);
+
+  const removeImage = (index: number) => {
+    const updatedImages = watchedImages.filter((_, i) => i !== index);
+    setValue("images", updatedImages);
+  };
+
   const onSubmit = async (data: CarValuationFormInput) => {
     setLoading(true);
 
@@ -343,7 +374,6 @@ export function ValuationForm() {
         return;
     }
     
-    // Check if the user is an admin
     const isAdmin = userProfile?.role === 'Admin' || user.email === 'rajmycarvalue@gmail.com';
 
     try {
@@ -353,24 +383,23 @@ export function ValuationForm() {
         localStorage.setItem('valuationResult', JSON.stringify(fullResult));
 
         if (isAdmin) {
-            // Admin Flow: Skip payment and save directly
             try {
                 await saveValuation(firestore, user, {
-                    paymentId: 'admin_bypass', // Special ID for admin valuations
+                    paymentId: 'admin_bypass',
                     ...fullResult.formData,
                     valuationResult: fullResult.valuation,
-                    comparableListingsResult: null, // As per current flow
-                    imageQualityResult: null,     // As per current flow
+                    comparableListingsResult: null,
+                    imageQualityResult: null,
                 });
                 
-                localStorage.setItem("paymentSuccess", "true"); // Set this so the result page works
+                localStorage.setItem("paymentSuccess", "true");
                 
                 toast({
                     title: "Valuation Saved (Admin)",
                     description: "Admin valuation has been saved directly.",
                 });
 
-                router.push('/result'); // Redirect to the result page
+                router.push('/result');
 
             } catch (error: any) {
                 console.error("Failed to save admin valuation:", error);
@@ -386,7 +415,6 @@ export function ValuationForm() {
             }
 
         } else {
-            // Regular User Flow: Show payment screen
             setShowPayment(true);
         }
 
@@ -428,6 +456,7 @@ export function ValuationForm() {
   const sections = [
     { value: "contact", title: "Contact", icon: <UserIcon /> },
     { value: "basic", title: "Basic Info", icon: <Info /> },
+    { value: "photos", title: "Photos", icon: <Camera /> },
     { value: "history", title: "Usage", icon: <History /> },
     { value: "engine", title: "Engine", icon: <Wrench /> },
     { value: "fluids", title: "Fluids", icon: <Droplets /> },
@@ -639,6 +668,42 @@ export function ValuationForm() {
                         {renderRadioGroup("hypothecation", "Hypothecation", [{value: "yes", label: "Yes"}, {value: "no", label: "No"}])}
                         <FormField control={form.control} name="expectedPrice" render={({ field }) => ( <FormItem> <FormLabel>Expected Price</FormLabel> <FormControl><Input type="number" placeholder="e.g., 500000" value={field.value ?? ''} onChange={e => field.onChange(e.target.value === '' ? '' : Number(e.target.value))} /></FormControl> <FormMessage /> </FormItem> )} />
                       </div>
+                    </TabsContent>
+
+                    <TabsContent value="photos" className="mt-0">
+                        <h3 className="text-lg font-semibold mb-4">Inspection Photos</h3>
+                        <p className="text-sm text-muted-foreground mb-6">Upload up to 6 clear photos of the vehicle (exterior, interior, engine, etc.). These will be included in your PDF report.</p>
+                        
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6">
+                            {watchedImages.map((src, idx) => (
+                                <div key={idx} className="relative group aspect-square rounded-lg overflow-hidden border bg-muted">
+                                    <Image src={src} alt={`Car Photo ${idx + 1}`} fill className="object-cover" />
+                                    <Button 
+                                        type="button" 
+                                        variant="destructive" 
+                                        size="icon" 
+                                        className="absolute top-1 right-1 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
+                                        onClick={() => removeImage(idx)}
+                                    >
+                                        <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            ))}
+                            
+                            {watchedImages.length < 6 && (
+                                <label className="flex flex-col items-center justify-center aspect-square rounded-lg border-2 border-dashed border-muted-foreground/25 hover:border-primary/50 hover:bg-primary/5 cursor-pointer transition-all">
+                                    <ImageIcon className="h-8 w-8 text-muted-foreground mb-2" />
+                                    <span className="text-xs font-medium text-muted-foreground">Add Photo</span>
+                                    <input 
+                                        type="file" 
+                                        accept="image/*" 
+                                        multiple 
+                                        className="hidden" 
+                                        onChange={handleImageUpload} 
+                                    />
+                                </label>
+                            )}
+                        </div>
                     </TabsContent>
 
                     <TabsContent value="history" className="mt-0">

@@ -29,6 +29,7 @@ const BasicInfoSchema = z.object({
   insurance: z.enum(["comprehensive", "third_party", "none"]),
   hypothecation: z.enum(["yes", "no"]),
   expectedPrice: z.coerce.number().min(1, "Expected price is required"),
+  images: z.array(z.string()).optional(),
 });
 
 // Section 2: Engine & Mechanical
