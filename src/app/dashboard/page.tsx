@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useEffect, useState, useMemo } from 'react';
+import { Suspense, useEffect, useState, useMemo, useRef } from 'react';
 import { doc, collection, query, orderBy, limit, where, Timestamp, type FieldValue } from 'firebase/firestore';
 import { useUser, useFirestore, useDoc, useCollection } from '@/firebase';
 import type { UserProfile } from '@/lib/firebase/user-profile-service';
@@ -277,46 +277,24 @@ function WithdrawalDialog({ wallet, userProfile, isWithdrawalEnabled }: { wallet
     )
 }
 
-function CreditPackCard({ credits, price, userId, firestore }: { credits: number, price: number, userId: string, firestore: any }) {
-    const { toast } = useToast();
-    const [isProcessing, setIsProcessing] = useState(false);
+function CreditPackCard({ credits, price, buttonId }: { credits: number, price: number, buttonId: string }) {
+    const containerRef = useRef<HTMLDivElement>(null);
 
-    const handleBuy = async () => {
-        if (!window || !(window as any).Razorpay) {
-            toast({ variant: 'destructive', title: "Error", description: "Payment gateway not ready." });
-            return;
-        }
+    useEffect(() => {
+        if (!containerRef.current) return;
 
-        setIsProcessing(true);
-        try {
-            const res = await fetch('/api/razorpay', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ type: 'credits', amount: price })
-            });
-            const order = await res.json();
+        // Clear previous button if any (prevents duplicates on re-renders)
+        containerRef.current.innerHTML = '';
 
-            const options = {
-                key: order.key,
-                amount: order.amount,
-                currency: order.currency,
-                name: "mycarvalue.in",
-                description: `Purchase ${credits} Credits`,
-                order_id: order.id,
-                handler: async (response: any) => {
-                    await addCredits(firestore, userId, credits);
-                    toast({ title: "Success", description: `${credits} credits added to your account!` });
-                    setIsProcessing(false);
-                },
-                theme: { color: "#2A9D8F" },
-            };
-            const rzp = new (window as any).Razorpay(options);
-            rzp.open();
-        } catch (error) {
-            toast({ variant: 'destructive', title: "Error", description: "Failed to initiate payment." });
-            setIsProcessing(false);
-        }
-    };
+        const form = document.createElement('form');
+        const script = document.createElement('script');
+        script.src = "https://checkout.razorpay.com/v1/payment-button.js";
+        script.setAttribute('data-payment_button_id', buttonId);
+        script.async = true;
+        
+        form.appendChild(script);
+        containerRef.current.appendChild(form);
+    }, [buttonId]);
 
     return (
         <div className="flex items-center justify-between p-4 border rounded-lg bg-card hover:bg-muted/30 transition-colors">
@@ -324,9 +302,9 @@ function CreditPackCard({ credits, price, userId, firestore }: { credits: number
                 <p className="font-bold text-lg">{credits} Credits</p>
                 <p className="text-sm text-muted-foreground">Unlock {credits} hot listings</p>
             </div>
-            <Button onClick={handleBuy} disabled={isProcessing}>
-                {isProcessing ? '...' : `Buy for ₹${price}`}
-            </Button>
+            <div ref={containerRef} className="min-w-[120px] flex justify-end">
+                {/* Razorpay Button injects here */}
+            </div>
         </div>
     );
 }
@@ -650,7 +628,6 @@ function AgentOwnerDashboard({ user, userProfile }: { user: any, userProfile: Us
 
     return (
         <div className="container mx-auto py-8 px-4 md:px-6">
-            <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
             <header className="mb-8 flex flex-wrap justify-between items-end gap-4">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
@@ -776,12 +753,15 @@ function AgentOwnerDashboard({ user, userProfile }: { user: any, userProfile: Us
                             <CardDescription>Unlock owner contact details and photos in Hot Market Listings.</CardDescription>
                         </CardHeader>
                         <CardContent className="pt-6 space-y-4">
-                            <CreditPackCard credits={5} price={25} userId={user.uid} firestore={firestore} />
-                            <CreditPackCard credits={10} price={49} userId={user.uid} firestore={firestore} />
-                            <CreditPackCard credits={20} price={99} userId={user.uid} firestore={firestore} />
+                            <CreditPackCard credits={5} price={25} buttonId="pl_SIZ7sj4EqMt8sC" />
+                            <CreditPackCard credits={10} price={49} buttonId="pl_SIZ9qgkxZGmTZI" />
+                            <CreditPackCard credits={20} price={99} buttonId="pl_SIZB3AEJN73mLw" />
                             <div className="pt-2 text-center">
                                 <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">
                                     Secure Payments via Razorpay
+                                </p>
+                                <p className="text-[9px] text-muted-foreground mt-1 italic">
+                                    Note: Credits will be added to your account after payment verification.
                                 </p>
                             </div>
                         </CardContent>
