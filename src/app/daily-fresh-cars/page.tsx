@@ -39,7 +39,11 @@ interface DailyFreshCar {
 export default function DailyFreshCarsPage() {
     const firestore = useFirestore();
     const { user, isUserLoading } = useUser();
-    const router = useRouter();
+    const [hasMounted, setHasMounted] = useState(false);
+
+    useEffect(() => {
+        setHasMounted(true);
+    }, []);
 
     const [stateFilter, setStateFilter] = useState<string>('all');
     const [cityFilter, setCityFilter] = useState<string>('');
@@ -66,7 +70,35 @@ export default function DailyFreshCarsPage() {
         });
     }, [rawCars, stateFilter, cityFilter, areaFilter, typeFilter]);
 
-    if (!isUserLoading && !user) {
+    // Defer rendering until hydration is complete to prevent mismatches
+    // between server-rendered empty state and client-rendered auth state.
+    if (!hasMounted || isUserLoading) {
+        return (
+            <div className="container mx-auto py-12 px-4 md:px-6 bg-background">
+                <div className="text-center mb-12">
+                    <Skeleton className="h-12 w-64 mb-4 mx-auto" />
+                    <Skeleton className="h-6 w-96 mx-auto" />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    {[1, 2, 3].map(i => (
+                        <Card key={i} className="overflow-hidden h-[500px]">
+                            <Skeleton className="h-48 w-full" />
+                            <CardHeader className="space-y-2 p-5">
+                                <Skeleton className="h-6 w-3/4" />
+                                <Skeleton className="h-4 w-1/2" />
+                            </CardHeader>
+                            <CardContent className="px-5 space-y-4">
+                                <Skeleton className="h-20 w-full" />
+                                <Skeleton className="h-10 w-full" />
+                            </CardContent>
+                        </Card>
+                    ))}
+                </div>
+            </div>
+        );
+    }
+
+    if (!user) {
         return (
             <div className="container mx-auto py-20 px-4 flex flex-col items-center justify-center text-center">
                 <div className="h-20 w-20 bg-primary/10 rounded-full flex items-center justify-center mb-6">
@@ -163,7 +195,7 @@ export default function DailyFreshCarsPage() {
                     </Card>
                 </header>
 
-                {isLoading || isUserLoading ? (
+                {isLoading ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                         {[1, 2, 3].map(i => <Skeleton key={i} className="h-[500px] w-full rounded-xl" />)}
                     </div>
