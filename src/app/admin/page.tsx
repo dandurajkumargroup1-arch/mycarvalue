@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Suspense, useEffect, useState, useMemo } from 'react';
@@ -23,7 +22,7 @@ import Papa from 'papaparse';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/table';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from '@/components/ui/dialog';
@@ -32,7 +31,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
-import { AlertTriangle, CheckCircle, Shield, Users, Wallet, XCircle, Calendar as CalendarIcon, Download, Trash2, Plus, Flame, Edit, Car, History } from 'lucide-react';
+import { AlertTriangle, CheckCircle, Shield, Users, Wallet, XCircle, Calendar as CalendarIcon, Download, Trash2, Plus, Flame, Edit, Car, History, MessageCircle } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -63,6 +62,8 @@ const FreshCarSchema = z.object({
     area: z.string().min(2, "Area is required"),
     ownerName: z.string().min(2, "Owner name is required"),
     ownerPhone: z.string().regex(/^\d{10}$/, "10-digit phone number required"),
+    ownerWhatsapp: z.string().regex(/^\d{10}$/, "10-digit WhatsApp number required"),
+    ownership: z.string().min(1, "Ownership is required"),
     isDirectOwner: z.boolean().default(true),
     year: z.coerce.number().min(1980, "Year must be 1980 or later"),
     km: z.coerce.number().min(0, "KM is required"),
@@ -90,6 +91,8 @@ function FreshCarDialog({ car }: { car?: any }) {
             area: car.area || '',
             ownerName: car.ownerName || '',
             ownerPhone: car.ownerPhone || '',
+            ownerWhatsapp: car.ownerWhatsapp || '',
+            ownership: car.ownership || '1st',
             isDirectOwner: car.isDirectOwner ?? true,
             year: car.year,
             km: car.km,
@@ -105,6 +108,8 @@ function FreshCarDialog({ car }: { car?: any }) {
             area: '',
             ownerName: '',
             ownerPhone: '',
+            ownerWhatsapp: '',
+            ownership: '1st',
             isDirectOwner: true,
             year: new Date().getFullYear(),
             km: 50000,
@@ -169,12 +174,9 @@ function FreshCarDialog({ car }: { car?: any }) {
                                 )} />
                             </div>
 
-                            <div className="col-span-full grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-primary/5 rounded-lg border border-primary/10">
+                            <div className="col-span-full grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-primary/5 rounded-lg border border-primary/10">
                                 <FormField control={form.control} name="ownerName" render={({ field }) => (
                                     <FormItem><FormLabel>Owner Name</FormLabel><FormControl><Input placeholder="Name" {...field} /></FormControl><FormMessage /></FormItem>
-                                )} />
-                                <FormField control={form.control} name="ownerPhone" render={({ field }) => (
-                                    <FormItem><FormLabel>Owner Phone</FormLabel><FormControl><Input placeholder="10 digits" {...field} /></FormControl><FormMessage /></FormItem>
                                 )} />
                                 <FormField control={form.control} name="isDirectOwner" render={({ field }) => (
                                     <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 bg-background">
@@ -186,6 +188,12 @@ function FreshCarDialog({ car }: { car?: any }) {
                                         </FormControl>
                                     </FormItem>
                                 )} />
+                                <FormField control={form.control} name="ownerPhone" render={({ field }) => (
+                                    <FormItem><FormLabel>Owner Phone</FormLabel><FormControl><Input placeholder="10 digits" {...field} /></FormControl><FormMessage /></FormItem>
+                                )} />
+                                <FormField control={form.control} name="ownerWhatsapp" render={({ field }) => (
+                                    <FormItem><FormLabel>WhatsApp Number</FormLabel><FormControl><Input placeholder="10 digits" {...field} /></FormControl><FormMessage /></FormItem>
+                                )} />
                             </div>
 
                             <FormField control={form.control} name="price" render={({ field }) => (
@@ -196,6 +204,20 @@ function FreshCarDialog({ car }: { car?: any }) {
                             )} />
                             <FormField control={form.control} name="km" render={({ field }) => (
                                 <FormItem><FormLabel>KM Driven</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                            )} />
+                            <FormField control={form.control} name="ownership" render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Ownership</FormLabel>
+                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                        <FormControl><SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger></FormControl>
+                                        <SelectContent>
+                                            <SelectItem value="1st">1st Owner</SelectItem>
+                                            <SelectItem value="2nd">2nd Owner</SelectItem>
+                                            <SelectItem value="3rd">3rd Owner</SelectItem>
+                                            <SelectItem value="4th+">4th+ Owner</SelectItem>
+                                        </SelectContent>
+                                    </Select><FormMessage />
+                                </FormItem>
                             )} />
                             <FormField control={form.control} name="fuelType" render={({ field }) => (
                                 <FormItem>

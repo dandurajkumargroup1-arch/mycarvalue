@@ -14,7 +14,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Flame, MapPin, Calendar as CalendarIcon, Gauge, Fuel, Zap, Sparkles, User, Phone, Search, LogIn, Lock, Image as ImageIcon, ExternalLink } from 'lucide-react';
+import { Flame, MapPin, Calendar as CalendarIcon, Gauge, Fuel, Zap, Sparkles, User, Phone, Search, LogIn, Lock, Image as ImageIcon, ExternalLink, MessageCircle } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { DateRange } from "react-day-picker";
@@ -31,6 +31,8 @@ interface DailyFreshCar {
     area: string;
     ownerName: string;
     ownerPhone: string;
+    ownerWhatsapp: string;
+    ownership: string;
     isDirectOwner: boolean;
     year: number;
     km: number;
@@ -270,7 +272,7 @@ export default function DailyFreshCarsPage() {
                                             </div>
                                         </div>
 
-                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm bg-secondary/30 p-3 rounded-lg border border-secondary/50">
+                                        <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 text-sm bg-secondary/30 p-3 rounded-lg border border-secondary/50">
                                             <div className="flex flex-col">
                                                 <span className="text-[10px] uppercase font-bold text-muted-foreground mb-1">Year</span>
                                                 <div className="flex items-center gap-2">
@@ -283,6 +285,13 @@ export default function DailyFreshCarsPage() {
                                                 <div className="flex items-center gap-2">
                                                     <Gauge className="h-3.5 w-3.5 text-primary" />
                                                     <span className="font-medium">{car.km.toLocaleString()} km</span>
+                                                </div>
+                                            </div>
+                                            <div className="flex flex-col">
+                                                <span className="text-[10px] uppercase font-bold text-muted-foreground mb-1">Ownership</span>
+                                                <div className="flex items-center gap-2">
+                                                    <User className="h-3.5 w-3.5 text-primary" />
+                                                    <span className="font-medium">{car.ownership} Owner</span>
                                                 </div>
                                             </div>
                                             <div className="flex flex-col">
@@ -309,11 +318,18 @@ export default function DailyFreshCarsPage() {
                                                     </div>
                                                     <span className="font-semibold text-sm">{car.ownerName}</span>
                                                 </div>
-                                                <Button variant="outline" size="sm" asChild className="h-8 border-primary/20 hover:bg-primary/10 hover:text-primary">
-                                                    <a href={`tel:${car.ownerPhone}`}>
-                                                        <Phone className="mr-2 h-3.5 w-3.5" /> {car.ownerPhone}
-                                                    </a>
-                                                </Button>
+                                                <div className="flex gap-2">
+                                                    <Button variant="outline" size="sm" asChild className="h-8 border-primary/20 hover:bg-primary/10 hover:text-primary">
+                                                        <a href={`tel:${car.ownerPhone}`}>
+                                                            <Phone className="mr-2 h-3.5 w-3.5" /> {car.ownerPhone}
+                                                        </a>
+                                                    </Button>
+                                                    <Button variant="outline" size="sm" asChild className="h-8 border-green-600/20 text-green-600 hover:bg-green-600/10 hover:text-green-600">
+                                                        <a href={`https://wa.me/91${car.ownerWhatsapp}?text=Hi, I am interested in your ${car.title} listed on mycarvalue.in`} target="_blank" rel="noopener noreferrer">
+                                                            <MessageCircle className="mr-2 h-3.5 w-3.5" /> WhatsApp
+                                                        </a>
+                                                    </Button>
+                                                </div>
                                             </div>
                                             <span className="text-[10px] text-muted-foreground">
                                                 Updated {formatDateTime(car.createdAt)}
@@ -326,7 +342,7 @@ export default function DailyFreshCarsPage() {
                                                     <Sparkles className="h-3 w-3 text-primary/30" />
                                                 </div>
                                                 <p className="text-[10px] font-bold text-primary mb-1 uppercase tracking-tight">
-                                                    AI Performance Insight
+                                                    Market Insight
                                                 </p>
                                                 <p className="text-xs italic leading-snug text-foreground/80">
                                                     "{car.aiInsight}"

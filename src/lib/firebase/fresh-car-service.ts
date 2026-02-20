@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -22,6 +21,8 @@ export interface FreshCarData {
   area: string;
   ownerName: string;
   ownerPhone: string;
+  ownerWhatsapp: string;
+  ownership: string;
   isDirectOwner: boolean;
   year: number;
   km: number;
