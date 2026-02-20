@@ -3,7 +3,7 @@
 import { useMemo, useState, useEffect } from 'react';
 import { collection, query, orderBy } from 'firebase/firestore';
 import { useFirestore, useCollection, useUser } from '@/firebase';
-import { formatCurrency, formatDateTime } from '@/lib/utils';
+import { formatCurrency, formatDateTime, toDate } from '@/lib/utils';
 import { indianStates } from '@/lib/variants';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -14,7 +14,12 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Flame, MapPin, Calendar, Gauge, Fuel, Zap, Sparkles, User, Phone, Search, LogIn, Lock, Image as ImageIcon, ExternalLink } from 'lucide-react';
+import { Flame, MapPin, Calendar as CalendarIcon, Gauge, Fuel, Zap, Sparkles, User, Phone, Search, LogIn, Lock, Image as ImageIcon, ExternalLink } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { DateRange } from "react-day-picker";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 interface DailyFreshCar {
     id: string;
@@ -48,6 +53,7 @@ export default function DailyFreshCarsPage() {
     const [cityFilter, setCityFilter] = useState<string>('');
     const [areaFilter, setAreaFilter] = useState<string>('');
     const [typeFilter, setTypeFilter] = useState<string>('all');
+    const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
     const freshCarsQuery = useMemo(() => {
         if (!firestore) return null;
@@ -65,9 +71,19 @@ export default function DailyFreshCarsPage() {
             const matchesType = typeFilter === 'all' || 
                                (typeFilter === 'direct' && car.isDirectOwner) ||
                                (typeFilter === 'dealer' && !car.isDirectOwner);
-            return matchesState && matchesCity && matchesArea && matchesType;
+            
+            const matchesDate = !dateRange?.from || (() => {
+                const carDate = toDate(car.createdAt);
+                if (!carDate) return false;
+                const from = dateRange.from;
+                const to = dateRange.to ? new Date(dateRange.to) : new Date(from);
+                to.setHours(23, 59, 59, 999);
+                return carDate >= from && carDate <= to;
+            })();
+
+            return matchesState && matchesCity && matchesArea && matchesType && matchesDate;
         });
-    }, [rawCars, stateFilter, cityFilter, areaFilter, typeFilter]);
+    }, [rawCars, stateFilter, cityFilter, areaFilter, typeFilter, dateRange]);
 
     if (!hasMounted || isUserLoading) {
         return (
@@ -139,8 +155,8 @@ export default function DailyFreshCarsPage() {
                         Hand-picked vehicles listed within the last 24 hours. Metadata-focused for fast browsing.
                     </p>
 
-                    <Card className="max-w-5xl mx-auto p-4 md:p-6 bg-muted/20 border-secondary/50">
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+                    <Card className="max-w-6xl mx-auto p-4 md:p-6 bg-muted/20 border-secondary/50">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
                             <div className="space-y-2 text-left">
                                 <label className="text-xs font-semibold uppercase text-muted-foreground">State</label>
                                 <Select value={stateFilter} onValueChange={setStateFilter}>
@@ -186,6 +202,44 @@ export default function DailyFreshCarsPage() {
                                     </SelectContent>
                                 </Select>
                             </div>
+                            <div className="space-y-2 text-left">
+                                <label className="text-xs font-semibold uppercase text-muted-foreground">Listing Date</label>
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <Button
+                                            variant={"outline"}
+                                            className={cn(
+                                                "w-full justify-start text-left font-normal",
+                                                !dateRange && "text-muted-foreground"
+                                            )}
+                                        >
+                                            <CalendarIcon className="mr-2 h-4 w-4" />
+                                            {dateRange?.from ? (
+                                                dateRange.to ? (
+                                                    <>
+                                                        {format(dateRange.from, "LLL dd, y")} -{" "}
+                                                        {format(dateRange.to, "LLL dd, y")}
+                                                    </>
+                                                ) : (
+                                                    format(dateRange.from, "LLL dd, y")
+                                                )
+                                            ) : (
+                                                <span>Pick a date range</span>
+                                            )}
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0" align="start">
+                                        <Calendar
+                                            initialFocus
+                                            mode="range"
+                                            defaultMonth={dateRange?.from}
+                                            selected={dateRange}
+                                            onSelect={setDateRange}
+                                            numberOfMonths={2}
+                                        />
+                                    </PopoverContent>
+                                </Popover>
+                            </div>
                         </div>
                     </Card>
                 </header>
@@ -220,7 +274,7 @@ export default function DailyFreshCarsPage() {
                                             <div className="flex flex-col">
                                                 <span className="text-[10px] uppercase font-bold text-muted-foreground mb-1">Year</span>
                                                 <div className="flex items-center gap-2">
-                                                    <Calendar className="h-3.5 w-3.5 text-primary" />
+                                                    <CalendarIcon className="h-3.5 w-3.5 text-primary" />
                                                     <span className="font-medium">{car.year}</span>
                                                 </div>
                                             </div>
@@ -317,6 +371,7 @@ export default function DailyFreshCarsPage() {
                                 setCityFilter('');
                                 setAreaFilter('');
                                 setTypeFilter('all');
+                                setDateRange(undefined);
                             }}
                         >
                             Reset all filters
