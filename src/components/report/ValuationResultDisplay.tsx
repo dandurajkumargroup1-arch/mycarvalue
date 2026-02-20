@@ -4,11 +4,10 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Car, Download, ShieldCheck, TrendingUp, Tag, Target, Info, Camera } from "lucide-react";
+import { Car, Download, ShieldCheck, TrendingUp, Tag, Target, Info } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
-import Image from "next/image";
 
 // Helper component for displaying a single detail item in the report
 const DetailItem = ({ label, value }: { label: string, value: string | number | undefined | null }) => {
@@ -119,7 +118,6 @@ export const ValuationResultDisplay = ({ result, onNewValuation }: { result: { v
       usageType, cityDriven, floodDamage, accident, serviceCenter,
       musicSystem, reverseParkingSensor, dashcam, fogLamps, gpsTracker,
       engineOil, coolant, brakeFluid, washerFluid,
-      images,
   } = formData || {};
 
   const finalVariant = variant === 'Other' && otherVariant ? otherVariant : variant;
@@ -227,21 +225,6 @@ export const ValuationResultDisplay = ({ result, onNewValuation }: { result: { v
                     <span className="text-sm text-primary">{valuation.buyerPsychologyTip}</span>
                 </div>
             </section>
-
-            {images && images.length > 0 && (
-                <section className="my-8 break-inside-avoid">
-                    <h2 className="text-base font-semibold text-foreground pb-2 border-b mb-4 flex items-center gap-2">
-                        <Camera className="h-4 w-4" /> Inspection Gallery
-                    </h2>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                        {images.map((src: string, idx: number) => (
-                            <div key={idx} className="relative aspect-video rounded border overflow-hidden bg-muted">
-                                <Image src={src} alt={`Inspection Photo ${idx + 1}`} fill className="object-cover" />
-                            </div>
-                        ))}
-                    </div>
-                </section>
-            )}
 
             <section className="my-8 break-inside-avoid">
                 <div className="max-w-md mx-auto">

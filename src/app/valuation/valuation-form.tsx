@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Script from "next/script";
@@ -27,8 +27,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import { Sparkles, User as UserIcon, Lock, CreditCard, Info, Wrench, Car, Package, Power, Disc, Shield, FileText, History, PlusSquare, Droplets, ChevronRight, Image as ImageIcon, Trash2, Camera } from "lucide-react";
-import Image from "next/image";
+import { Sparkles, User as UserIcon, Lock, CreditCard, Info, Wrench, Car, Package, Power, Disc, Shield, FileText, History, PlusSquare, Droplets, ChevronRight } from "lucide-react";
 
 
 const ValuationLoadingScreen = () => (
@@ -304,7 +303,6 @@ export function ValuationForm() {
         dashcam: undefined,
         fogLamps: undefined,
         gpsTracker: undefined,
-        images: [],
     },
   });
 
@@ -312,7 +310,6 @@ export function ValuationForm() {
   const watchedMake = watch("make");
   const watchedModel = watch("model");
   const watchedVariant = watch("variant");
-  const watchedImages = watch("images") || [];
 
   const models = useMemo(() => {
     if (watchedMake && carMakesAndModelsAndVariants[watchedMake]) {
@@ -333,37 +330,6 @@ export function ValuationForm() {
       setValue('displayName', user.displayName || '');
     }
   }, [user, setValue, form]);
-
-  const handleImageUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
-    if (!files) return;
-
-    const newImages: string[] = [...watchedImages];
-    const maxFiles = 6;
-    const filesToProcess = Array.from(files).slice(0, maxFiles - newImages.length);
-
-    if (newImages.length >= maxFiles) {
-        toast({ title: "Limit Reached", description: `You can upload a maximum of ${maxFiles} photos.` });
-        return;
-    }
-
-    filesToProcess.forEach(file => {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-            const base64String = reader.result as string;
-            // Simple compression check: If file is too large, we might want to warn or resize.
-            // For MVP, we'll just add it.
-            newImages.push(base64String);
-            setValue("images", newImages);
-        };
-        reader.readAsDataURL(file);
-    });
-  }, [watchedImages, setValue, toast]);
-
-  const removeImage = (index: number) => {
-    const updatedImages = watchedImages.filter((_, i) => i !== index);
-    setValue("images", updatedImages);
-  };
 
   const onSubmit = async (data: CarValuationFormInput) => {
     setLoading(true);
@@ -456,7 +422,6 @@ export function ValuationForm() {
   const sections = [
     { value: "contact", title: "Contact", icon: <UserIcon /> },
     { value: "basic", title: "Basic Info", icon: <Info /> },
-    { value: "photos", title: "Photos", icon: <Camera /> },
     { value: "history", title: "Usage", icon: <History /> },
     { value: "engine", title: "Engine", icon: <Wrench /> },
     { value: "fluids", title: "Fluids", icon: <Droplets /> },
@@ -670,42 +635,6 @@ export function ValuationForm() {
                       </div>
                     </TabsContent>
 
-                    <TabsContent value="photos" className="mt-0">
-                        <h3 className="text-lg font-semibold mb-4">Inspection Photos</h3>
-                        <p className="text-sm text-muted-foreground mb-6">Upload up to 6 clear photos of the vehicle (exterior, interior, engine, etc.). These will be included in your PDF report.</p>
-                        
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6">
-                            {watchedImages.map((src, idx) => (
-                                <div key={idx} className="relative group aspect-square rounded-lg overflow-hidden border bg-muted">
-                                    <Image src={src} alt={`Car Photo ${idx + 1}`} fill className="object-cover" />
-                                    <Button 
-                                        type="button" 
-                                        variant="destructive" 
-                                        size="icon" 
-                                        className="absolute top-1 right-1 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
-                                        onClick={() => removeImage(idx)}
-                                    >
-                                        <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                </div>
-                            ))}
-                            
-                            {watchedImages.length < 6 && (
-                                <label className="flex flex-col items-center justify-center aspect-square rounded-lg border-2 border-dashed border-muted-foreground/25 hover:border-primary/50 hover:bg-primary/5 cursor-pointer transition-all">
-                                    <ImageIcon className="h-8 w-8 text-muted-foreground mb-2" />
-                                    <span className="text-xs font-medium text-muted-foreground">Add Photo</span>
-                                    <input 
-                                        type="file" 
-                                        accept="image/*" 
-                                        multiple 
-                                        className="hidden" 
-                                        onChange={handleImageUpload} 
-                                    />
-                                </label>
-                            )}
-                        </div>
-                    </TabsContent>
-
                     <TabsContent value="history" className="mt-0">
                         <h3 className="text-lg font-semibold mb-4">Usage &amp; History</h3>
                         <div className="space-y-4 grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -829,7 +758,7 @@ export function ValuationForm() {
                         <div className="space-y-4 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
                             {renderRadioGroup("musicSystem", "Music System", [{value: "yes", label: "Yes"}, {value: "no", label: "No"}])}
                             {renderRadioGroup("reverseParkingSensor", "Reverse Parking Sensor", [{value: "yes", label: "Yes"}, {value: "no", label: "No"}])}
-                            {renderRadioGroup("dashcam", "Dashcam", [{value: "yes", label: "Yes"}, {value: "no", "label": "No"}])}
+                            {renderRadioGroup("dashcam", "Dashcam", [{value: "yes", label: "Yes"}, {value: "no", label: "No"}])}
                             {renderRadioGroup("fogLamps", "Fog Lamps", [{value: "yes", label: "Yes"}, {value: "no", label: "No"}])}
                             {renderRadioGroup("gpsTracker", "GPS Tracker", [{value: "yes", label: "Yes"}, {value: "no", label: "No"}])}
                         </div>

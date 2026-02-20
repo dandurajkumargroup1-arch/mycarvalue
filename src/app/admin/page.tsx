@@ -9,7 +9,6 @@ import type { UserProfile } from '@/lib/firebase/user-profile-service';
 import { approveWithdrawal, rejectWithdrawal } from '@/lib/firebase/withdrawal-service';
 import { deleteUser } from '@/lib/firebase/user-profile-service';
 import { upsertFreshCar, deleteFreshCar, type FreshCarData } from '@/lib/firebase/fresh-car-service';
-import { deleteValuation } from '@/lib/firebase/valuation-service';
 import { useRouter } from 'next/navigation';
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -20,7 +19,6 @@ import { format } from "date-fns";
 import { cn, toDate, formatCurrency, formatDateTime, formatDateOnly } from "@/lib/utils";
 import { indianStates } from "@/lib/variants";
 import Papa from 'papaparse';
-import { ValuationResultDisplay } from '@/components/report/ValuationResultDisplay';
 
 
 import { Button } from '@/components/ui/button';
@@ -34,7 +32,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
-import { AlertTriangle, CheckCircle, Shield, Users, Wallet, XCircle, Calendar as CalendarIcon, Download, Trash2, Plus, Flame, Edit, Sparkles, User, Phone, Eye, FileText, Camera } from 'lucide-react';
+import { AlertTriangle, CheckCircle, Shield, Users, Wallet, XCircle, Calendar as CalendarIcon, Download, Trash2, Plus, Flame, Edit } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -361,12 +359,8 @@ function AdminDashboard({ user }: { user: any }) {
   const { toast } = useToast();
   const [usersDateRange, setUsersDateRange] = useState<DateRange | undefined>();
   const [withdrawalDateRange, setWithdrawalDateRange] = useState<DateRange | undefined>();
-  const [valuationDateRange, setValuationDateRange] = useState<DateRange | undefined>();
   const [roleFilter, setRoleFilter] = useState<string>('All');
   const [activeTab, setActiveTab] = useState('pending');
-  
-  const [selectedValuation, setSelectedValuation] = useState<any>(null);
-  const [isViewReportOpen, setIsViewReportOpen] = useState(false);
 
   // --- Data Fetching & Processing ---
   
@@ -408,15 +402,6 @@ function AdminDashboard({ user }: { user: any }) {
     return query(collection(firestore, 'dailyFreshCars'), orderBy('createdAt', 'desc'));
   }, [firestore, user]);
   const { data: freshCars, isLoading: isFreshCarsLoading } = useCollection<any>(freshCarsQuery);
-  
-  const allValuationsQuery = useMemo(() => {
-    if (!firestore || !user) return null;
-    // Note: This requires a composite index if filtered/sorted by complex fields.
-    // For simplicity, we just fetch and handle filtering in memory if small, or use a basic query.
-    return query(collectionGroup(firestore, 'carValuations'), orderBy('createdAt', 'desc'));
-  }, [firestore, user]);
-  
-  const { data: rawAllValuations, isLoading: isValuationsLoading } = useCollection<any>(allValuationsQuery);
 
   // --- Derived Data ---
 
@@ -461,18 +446,6 @@ function AdminDashboard({ user }: { user: any }) {
     return history.sort((a, b) => (b.processedAt?.getTime() ?? 0) - (a.processedAt?.getTime() ?? 0));
   }, [allRequestsData, withdrawalDateRange]);
 
-  const valuations = useMemo(() => {
-    if (!rawAllValuations) return [];
-    let data = rawAllValuations.map(v => ({ ...v, createdAt: toDate(v.createdAt) }));
-    if (valuationDateRange?.from) {
-        const from = valuationDateRange.from;
-        const to = valuationDateRange.to ? new Date(valuationDateRange.to) : new Date(from);
-        to.setHours(23, 59, 59, 999);
-        data = data.filter(v => v.createdAt && v.createdAt >= from && v.createdAt <= to);
-    }
-    return data;
-  }, [rawAllValuations, valuationDateRange]);
-
 
   const handleDownloadCsv = () => {
     if (!withdrawalHistory || withdrawalHistory.length === 0) {
@@ -506,18 +479,6 @@ function AdminDashboard({ user }: { user: any }) {
     }
   };
 
-  const handleDeleteValuation = async (userId: string, valuationId: string) => {
-    if (!firestore) return;
-    try {
-        // Need a modified service or direct doc deletion since valuations are user-nested
-        const vRef = doc(firestore, 'users', userId, 'carValuations', valuationId);
-        await deleteValuation(firestore, { uid: userId } as any, valuationId);
-        toast({ title: "Valuation Deleted" });
-    } catch (e) {
-        toast({ variant: 'destructive', title: "Error" });
-    }
-  }
-
   const handleDeleteFreshCar = async (carId: string) => {
     if (!firestore) return;
     try {
@@ -532,7 +493,6 @@ function AdminDashboard({ user }: { user: any }) {
     pending: 'Review pending requests for withdrawals.',
     history: 'Browse historical withdrawals.',
     freshCars: 'Manage featured Hot Listings for the public feed.',
-    valuations: 'Master list of all car valuation reports generated.',
   };
 
   return (
@@ -552,7 +512,6 @@ function AdminDashboard({ user }: { user: any }) {
                                     <CardTitle className="flex items-center gap-2"><Shield/> Management</CardTitle>
                                     <TabsList>
                                         <TabsTrigger value="pending">Withdrawals</TabsTrigger>
-                                        <TabsTrigger value="valuations">All Reports</TabsTrigger>
                                         <TabsTrigger value="freshCars">Hot Listings</TabsTrigger>
                                         <TabsTrigger value="history">History</TabsTrigger>
                                     </TabsList>
@@ -560,60 +519,6 @@ function AdminDashboard({ user }: { user: any }) {
                                 <CardDescription>{cardDescriptions[activeTab]}</CardDescription>
                             </CardHeader>
                             
-                            <TabsContent value="valuations">
-                                <div className="px-6 pb-4">
-                                    <Popover>
-                                        <PopoverTrigger asChild>
-                                            <Button variant="outline" size="sm" className="w-full sm:w-auto">
-                                                <CalendarIcon className="mr-2 h-4 w-4" />
-                                                {valuationDateRange?.from ? (valuationDateRange.to ? `${format(valuationDateRange.from, "PP")} - ${format(valuationDateRange.to, "PP")}` : format(valuationDateRange.from, "PP")) : "Filter by date"}
-                                            </Button>
-                                        </PopoverTrigger>
-                                        <PopoverContent className="w-auto p-0" align="start">
-                                            <Calendar mode="range" selected={valuationDateRange} onSelect={setValuationDateRange} numberOfMonths={2} />
-                                        </PopoverContent>
-                                    </Popover>
-                                </div>
-                                <CardContent>
-                                    <Table>
-                                        <TableHeader>
-                                            <TableRow>
-                                                <TableHead>Car / Report</TableHead>
-                                                <TableHead>User</TableHead>
-                                                <TableHead>Date</TableHead>
-                                                <TableHead className="text-right">Actions</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {isValuationsLoading ? (
-                                                <TableRow><TableCell colSpan={4}><Skeleton className="h-8 w-full" /></TableCell></TableRow>
-                                            ) : valuations.length > 0 ? (
-                                                valuations.map(v => (
-                                                    <TableRow key={v.id}>
-                                                        <TableCell>
-                                                            <div className="font-medium">{v.make} {v.model}</div>
-                                                            <div className="text-xs text-muted-foreground uppercase font-mono">{v.vehicleNumber || 'No Plate'}</div>
-                                                            {v.images && v.images.length > 0 && <Badge variant="outline" className="mt-1 h-4 text-[9px] gap-1"><Camera className="h-2 w-2"/> {v.images.length} Photos</Badge>}
-                                                        </TableCell>
-                                                        <TableCell className="text-xs">
-                                                            <div className="font-medium">{userMap[v.userId]?.displayName || 'System'}</div>
-                                                            <div className="text-muted-foreground">{userMap[v.userId]?.role || 'User'}</div>
-                                                        </TableCell>
-                                                        <TableCell className="text-xs">{formatDateOnly(v.createdAt)}</TableCell>
-                                                        <TableCell className="text-right">
-                                                            <div className="flex justify-end gap-1">
-                                                                <Button size="icon" variant="ghost" onClick={() => { setSelectedValuation(v); setIsViewReportOpen(true); }}><Eye className="h-4 w-4"/></Button>
-                                                                <Button size="icon" variant="ghost" onClick={() => handleDeleteValuation(v.userId, v.id)}><Trash2 className="h-4 w-4 text-destructive"/></Button>
-                                                            </div>
-                                                        </TableCell>
-                                                    </TableRow>
-                                                ))
-                                            ) : <TableRow><TableCell colSpan={4} className="text-center py-8 text-muted-foreground">No reports found.</TableCell></TableRow>}
-                                        </TableBody>
-                                    </Table>
-                                </CardContent>
-                            </TabsContent>
-
                             <TabsContent value="pending">
                                 <CardContent>
                                     <Table>
@@ -745,10 +650,6 @@ function AdminDashboard({ user }: { user: any }) {
                                 <span className="font-bold">{allUsersData?.length || 0}</span>
                             </div>
                             <div className="flex justify-between items-center text-sm">
-                                <span className="text-muted-foreground">Total Reports</span>
-                                <span className="font-bold">{rawAllValuations?.length || 0}</span>
-                            </div>
-                            <div className="flex justify-between items-center text-sm">
                                 <span className="text-muted-foreground">Withdrawal Volume</span>
                                 <span className="font-bold">{formatCurrency(withdrawalHistory.reduce((acc, r) => acc + (r.status === 'paid' ? r.amount : 0), 0))}</span>
                             </div>
@@ -835,20 +736,6 @@ function AdminDashboard({ user }: { user: any }) {
                 </CardContent>
             </Card>
         </main>
-
-        <Dialog open={isViewReportOpen} onOpenChange={setIsViewReportOpen}>
-            <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                    <DialogTitle>Admin Review: Valuation Report</DialogTitle>
-                </DialogHeader>
-                {selectedValuation && (
-                    <ValuationResultDisplay 
-                        result={{ valuation: selectedValuation.valuationResult, formData: selectedValuation }} 
-                        onNewValuation={() => setIsViewReportOpen(false)}
-                    />
-                )}
-            </DialogContent>
-        </Dialog>
     </div>
   );
 }
