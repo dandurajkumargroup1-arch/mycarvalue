@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
@@ -70,8 +69,6 @@ export default function DailyFreshCarsPage() {
         });
     }, [rawCars, stateFilter, cityFilter, areaFilter, typeFilter]);
 
-    // Defer rendering until hydration is complete to prevent mismatches
-    // between server-rendered empty state and client-rendered auth state.
     if (!hasMounted || isUserLoading) {
         return (
             <div className="container mx-auto py-12 px-4 md:px-6 bg-background">
@@ -83,12 +80,12 @@ export default function DailyFreshCarsPage() {
                     {[1, 2, 3].map(i => (
                         <Card key={i} className="overflow-hidden">
                             <div className="flex flex-col md:flex-row p-5 gap-6">
-                                <Skeleton className="h-32 w-full md:w-48 rounded" />
                                 <div className="flex-grow space-y-4">
                                     <Skeleton className="h-6 w-3/4" />
                                     <Skeleton className="h-4 w-1/2" />
                                     <Skeleton className="h-12 w-full" />
                                 </div>
+                                <Skeleton className="h-32 w-full md:w-48 rounded" />
                             </div>
                         </Card>
                     ))}
@@ -142,7 +139,6 @@ export default function DailyFreshCarsPage() {
                         Hand-picked vehicles listed within the last 24 hours. Metadata-focused for fast browsing.
                     </p>
 
-                    {/* Filters */}
                     <Card className="max-w-5xl mx-auto p-4 md:p-6 bg-muted/20 border-secondary/50">
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
                             <div className="space-y-2 text-left">
@@ -203,28 +199,8 @@ export default function DailyFreshCarsPage() {
                         {filteredCars.map((car) => (
                             <Card key={car.id} className="overflow-hidden group hover:shadow-md transition-all border-secondary/50">
                                 <div className="flex flex-col md:flex-row p-5 gap-6">
-                                    {/* Image Link Box */}
-                                    <div className="flex-shrink-0 w-full md:w-48 space-y-3">
-                                        <div className="aspect-video relative rounded border bg-muted/50 flex flex-col items-center justify-center p-4 text-center group-hover:bg-muted transition-colors">
-                                            <ImageIcon className="h-8 w-8 text-muted-foreground mb-2" />
-                                            <a 
-                                                href={car.imageUrl} 
-                                                target="_blank" 
-                                                rel="noopener noreferrer" 
-                                                className="text-primary font-semibold text-xs flex items-center gap-1 hover:underline"
-                                            >
-                                                View Vehicle Photo <ExternalLink className="h-3 w-3" />
-                                            </a>
-                                        </div>
-                                        {car.isDirectOwner && (
-                                            <Badge className="w-full justify-center bg-green-600/10 text-green-600 border-green-600/20 font-bold uppercase py-1">
-                                                Direct Owner
-                                            </Badge>
-                                        )}
-                                    </div>
-
                                     {/* Metadata Section */}
-                                    <div className="flex-grow space-y-4">
+                                    <div className="flex-grow space-y-4 order-2 md:order-1">
                                         <div className="flex flex-wrap justify-between items-start gap-4">
                                             <div>
                                                 <CardTitle className="text-xl mb-1">{car.title}</CardTitle>
@@ -302,6 +278,26 @@ export default function DailyFreshCarsPage() {
                                                     "{car.aiInsight}"
                                                 </p>
                                             </div>
+                                        )}
+                                    </div>
+
+                                    {/* Image Link Box - Moved to Right */}
+                                    <div className="flex-shrink-0 w-full md:w-48 space-y-3 order-1 md:order-2">
+                                        <div className="aspect-video relative rounded border bg-muted/50 flex flex-col items-center justify-center p-4 text-center group-hover:bg-muted transition-colors">
+                                            <ImageIcon className="h-8 w-8 text-muted-foreground mb-2" />
+                                            <a 
+                                                href={car.imageUrl} 
+                                                target="_blank" 
+                                                rel="noopener noreferrer" 
+                                                className="text-primary font-semibold text-xs flex items-center gap-1 hover:underline"
+                                            >
+                                                View Vehicle Photo <ExternalLink className="h-3 w-3" />
+                                            </a>
+                                        </div>
+                                        {car.isDirectOwner && (
+                                            <Badge className="w-full justify-center bg-green-600/10 text-green-600 border-green-600/20 font-bold uppercase py-1">
+                                                Direct Owner
+                                            </Badge>
                                         )}
                                     </div>
                                 </div>
