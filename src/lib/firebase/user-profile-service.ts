@@ -15,6 +15,9 @@ import {
   where,
   getDocs,
   writeBatch,
+  increment,
+  arrayUnion,
+  runTransaction,
 } from 'firebase/firestore';
 import type { User } from 'firebase/auth';
 
@@ -35,6 +38,8 @@ export interface UserProfile {
   upiId?: string;
   bankAccountNumber?: string;
   bankIfscCode?: string;
+  credits: number;
+  unlockedCars?: string[];
   createdAt?: Timestamp | FieldValue | Date | null;
   lastUpdatedAt?: Timestamp | FieldValue | Date | null;
 }
@@ -91,6 +96,8 @@ export async function upsertUserProfile(
         throw new Error("Role is required for new user profile creation.");
       }
       profileData.createdAt = serverTimestamp();
+      profileData.credits = 0;
+      profileData.unlockedCars = [];
       await setDoc(userDocRef, profileData);
     } else {
       // Existing user, merge data to avoid overwriting createdAt.
@@ -100,6 +107,46 @@ export async function upsertUserProfile(
     console.error('Error upserting user profile:', error);
     throw error;
   }
+}
+
+/**
+ * Adds credits to a user's account.
+ */
+export async function addCredits(
+  firestore: Firestore,
+  userId: string,
+  amount: number
+): Promise<void> {
+  const userRef = doc(firestore, 'users', userId);
+  await setDoc(userRef, {
+    credits: increment(amount),
+    lastUpdatedAt: serverTimestamp(),
+  }, { merge: true });
+}
+
+/**
+ * Unlocks a car listing for a user by spending 1 credit.
+ */
+export async function unlockCarListing(
+  firestore: Firestore,
+  userId: string,
+  carId: string
+): Promise<void> {
+  const userRef = doc(firestore, 'users', userId);
+
+  await runTransaction(firestore, async (transaction) => {
+    const userDoc = await transaction.get(userRef);
+    if (!userDoc.exists()) throw new Error("User not found");
+
+    const userData = userDoc.data() as UserProfile;
+    if (userData.credits < 1) throw new Error("Insufficient credits");
+
+    transaction.update(userRef, {
+      credits: increment(-1),
+      unlockedCars: arrayUnion(carId),
+      lastUpdatedAt: serverTimestamp(),
+    });
+  });
 }
 
 

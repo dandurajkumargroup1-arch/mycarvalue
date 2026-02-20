@@ -45,6 +45,16 @@
           "description": "The role of the user, defining their permissions and experience.",
           "enum": ["Owner", "Agent", "Mechanic", "Admin"]
         },
+        "credits": {
+          "type": "number",
+          "description": "The user's remaining credits for unlocking listings.",
+          "default": 0
+        },
+        "unlockedCars": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "List of listing IDs the user has paid to unlock."
+        },
         "upiId": {
           "type": "string",
           "description": "The user's UPI ID for payments."

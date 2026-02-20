@@ -7,7 +7,7 @@ import { useUser, useFirestore, useDoc, useCollection } from '@/firebase';
 import type { UserProfile } from '@/lib/firebase/user-profile-service';
 import { requestWithdrawal, type WithdrawalRequestPayload } from '@/lib/firebase/withdrawal-service';
 import { deleteValuation } from '@/lib/firebase/valuation-service';
-import { upsertUserProfile } from '@/lib/firebase/user-profile-service';
+import { upsertUserProfile, addCredits } from '@/lib/firebase/user-profile-service';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useForm } from "react-hook-form";
@@ -18,6 +18,7 @@ import { ValuationResultDisplay } from '@/components/report/ValuationResultDispl
 import { DateRange } from "react-day-picker";
 import { format } from "date-fns";
 import { cn, toDate, formatCurrency, formatDateOnly } from "@/lib/utils";
+import Script from "next/script";
 
 
 import { Button } from '@/components/ui/button';
@@ -27,7 +28,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Wallet, ArrowDown, Ban, Check, Clock, IndianRupee, Info, AlertTriangle, Car, Trash2, Eye, Calendar as CalendarIcon } from 'lucide-react';
+import { Wallet, ArrowDown, Ban, Check, Clock, IndianRupee, Info, AlertTriangle, Car, Trash2, Eye, Calendar as CalendarIcon, Coins, CreditCard, Sparkles } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -275,6 +276,60 @@ function WithdrawalDialog({ wallet, userProfile, isWithdrawalEnabled }: { wallet
             </DialogContent>
         </Dialog>
     )
+}
+
+function CreditPackCard({ credits, price, userId, firestore }: { credits: number, price: number, userId: string, firestore: any }) {
+    const { toast } = useToast();
+    const [isProcessing, setIsProcessing] = useState(false);
+
+    const handleBuy = async () => {
+        if (!window || !(window as any).Razorpay) {
+            toast({ variant: 'destructive', title: "Error", description: "Payment gateway not ready." });
+            return;
+        }
+
+        setIsProcessing(true);
+        try {
+            const res = await fetch('/api/razorpay', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ type: 'credits', amount: price })
+            });
+            const order = await res.json();
+
+            const options = {
+                key: order.key,
+                amount: order.amount,
+                currency: order.currency,
+                name: "mycarvalue.in",
+                description: `Purchase ${credits} Credits`,
+                order_id: order.id,
+                handler: async (response: any) => {
+                    await addCredits(firestore, userId, credits);
+                    toast({ title: "Success", description: `${credits} credits added to your account!` });
+                    setIsProcessing(false);
+                },
+                theme: { color: "#2A9D8F" },
+            };
+            const rzp = new (window as any).Razorpay(options);
+            rzp.open();
+        } catch (error) {
+            toast({ variant: 'destructive', title: "Error", description: "Failed to initiate payment." });
+            setIsProcessing(false);
+        }
+    };
+
+    return (
+        <div className="flex items-center justify-between p-4 border rounded-lg bg-card hover:bg-muted/30 transition-colors">
+            <div>
+                <p className="font-bold text-lg">{credits} Credits</p>
+                <p className="text-sm text-muted-foreground">Unlock {credits} hot listings</p>
+            </div>
+            <Button onClick={handleBuy} disabled={isProcessing}>
+                {isProcessing ? '...' : `Buy for ₹${price}`}
+            </Button>
+        </div>
+    );
 }
 
 function MechanicDashboard({ user, userProfile }: { user: any, userProfile: UserProfile }) {
@@ -596,109 +651,158 @@ function AgentOwnerDashboard({ user, userProfile }: { user: any, userProfile: Us
 
     return (
         <div className="container mx-auto py-8 px-4 md:px-6">
-            <header className="mb-8">
-                <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-                <p className="text-muted-foreground">Welcome back, {userProfile.displayName}! Here are your valuation reports.</p>
-            </header>
-            
-            <Card>
-                <CardHeader className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-                    <div>
-                        <CardTitle>My Valuation Reports</CardTitle>
-                        <CardDescription>View, filter, and manage your past reports.</CardDescription>
+            <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
+            <header className="mb-8 flex flex-wrap justify-between items-end gap-4">
+                <div>
+                    <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+                    <p className="text-muted-foreground">Welcome back, {userProfile.displayName}!</p>
+                </div>
+                <div className="flex items-center gap-3 bg-primary/10 border border-primary/20 px-4 py-2 rounded-lg">
+                    <Coins className="h-5 w-5 text-primary" />
+                    <div className="text-sm">
+                        <p className="font-bold text-primary">{userProfile.credits || 0} Credits</p>
+                        <p className="text-[10px] uppercase font-bold text-muted-foreground">Available to unlock listings</p>
                     </div>
-                     <Popover>
-                        <PopoverTrigger asChild>
-                            <Button
-                                id="date"
-                                variant={"outline"}
-                                className={cn(
-                                    "w-full sm:w-auto sm:min-w-[260px] justify-start text-left font-normal",
-                                    !valuationDateRange && "text-muted-foreground"
-                                )}
-                            >
-                                <CalendarIcon className="mr-2 h-4 w-4" />
-                                {valuationDateRange?.from ? (
-                                    valuationDateRange.to ? (
-                                        <>
-                                            {format(valuationDateRange.from, "LLL dd, y")} -{" "}
-                                            {format(valuationDateRange.to, "LLL dd, y")}
-                                        </>
-                                    ) : (
-                                        format(valuationDateRange.from, "LLL dd, y")
-                                    )
-                                ) : (
-                                    <span>Pick a date range</span>
-                                )}
-                            </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="end">
-                            <Calendar
-                                initialFocus
-                                mode="range"
-                                defaultMonth={valuationDateRange?.from}
-                                selected={valuationDateRange}
-                                onSelect={setValuationDateRange}
-                                numberOfMonths={2}
-                            />
-                        </PopoverContent>
-                    </Popover>
-                </CardHeader>
-                <CardContent>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead><Car className="inline-block mr-2"/>Car</TableHead>
-                                <TableHead>Vehicle Number</TableHead>
-                                <TableHead>Date</TableHead>
-                                <TableHead className="text-right">Actions</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {isLoading && (
-                                <TableRow>
-                                    <TableCell colSpan={4} className="h-24 text-center">
-                                        <Skeleton className="w-full h-8" />
-                                    </TableCell>
-                                </TableRow>
-                            )}
-                            {error && (
-                                <TableRow>
-                                    <TableCell colSpan={4} className="h-24 text-center text-destructive">
-                                        An error occurred while loading your reports. Please try again later.
-                                    </TableCell>
-                                </TableRow>
-                            )}
-                            {!isLoading && !error && filteredValuations && filteredValuations.length > 0 ? (
-                                filteredValuations.map((valuation) => (
-                                    <TableRow key={valuation.id}>
-                                        <TableCell className="font-medium">{valuation.make} {valuation.model}</TableCell>
-                                        <TableCell className="text-muted-foreground font-mono uppercase">{valuation.vehicleNumber || 'N/A'}</TableCell>
-                                        <TableCell>{formatDateOnly(valuation.createdAt)}</TableCell>
-                                        <TableCell className="text-right space-x-2">
-                                            <Button variant="outline" size="sm" onClick={() => { setSelectedValuation(valuation); setIsViewReportOpen(true); }}>
-                                                <Eye className="mr-2 h-4 w-4"/> View / Download
-                                            </Button>
-                                            <Button variant="destructive" size="sm" onClick={() => { setSelectedValuation(valuation); setIsDeleteAlertOpen(true); }}>
-                                                <Trash2 className="mr-2 h-4 w-4"/> Delete
-                                            </Button>
-                                        </TableCell>
-                                    </TableRow>
-                                ))
-                            ) : (
-                                !isLoading && !error && (
+                </div>
+            </header>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div className="lg:col-span-2 space-y-8">
+                    <Card>
+                        <CardHeader className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                            <div>
+                                <CardTitle>My Valuation Reports</CardTitle>
+                                <CardDescription>View, filter, and manage your past reports.</CardDescription>
+                            </div>
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <Button
+                                        id="date"
+                                        variant={"outline"}
+                                        className={cn(
+                                            "w-full sm:w-auto sm:min-w-[260px] justify-start text-left font-normal",
+                                            !valuationDateRange && "text-muted-foreground"
+                                        )}
+                                    >
+                                        <CalendarIcon className="mr-2 h-4 w-4" />
+                                        {valuationDateRange?.from ? (
+                                            valuationDateRange.to ? (
+                                                <>
+                                                    {format(valuationDateRange.from, "LLL dd, y")} -{" "}
+                                                    {format(valuationDateRange.to, "LLL dd, y")}
+                                                </>
+                                            ) : (
+                                                format(valuationDateRange.from, "LLL dd, y")
+                                            )
+                                        ) : (
+                                            <span>Pick a date range</span>
+                                        )}
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0" align="end">
+                                    <Calendar
+                                        initialFocus
+                                        mode="range"
+                                        defaultMonth={valuationDateRange?.from}
+                                        selected={valuationDateRange}
+                                        onSelect={setValuationDateRange}
+                                        numberOfMonths={2}
+                                    />
+                                </PopoverContent>
+                            </Popover>
+                        </CardHeader>
+                        <CardContent>
+                            <Table>
+                                <TableHeader>
                                     <TableRow>
-                                        <TableCell colSpan={4} className="h-24 text-center">
-                                            No valuation reports found for the selected period.
-                                            <Button asChild variant="link"><Link href="/valuation">Create a new one</Link></Button>
-                                        </TableCell>
+                                        <TableHead><Car className="inline-block mr-2"/>Car</TableHead>
+                                        <TableHead>Vehicle Number</TableHead>
+                                        <TableHead>Date</TableHead>
+                                        <TableHead className="text-right">Actions</TableHead>
                                     </TableRow>
-                                )
-                            )}
-                        </TableBody>
-                    </Table>
-                </CardContent>
-            </Card>
+                                </TableHeader>
+                                <TableBody>
+                                    {isLoading && (
+                                        <TableRow>
+                                            <TableCell colSpan={4} className="h-24 text-center">
+                                                <Skeleton className="w-full h-8" />
+                                            </TableCell>
+                                        </TableRow>
+                                    )}
+                                    {error && (
+                                        <TableRow>
+                                            <TableCell colSpan={4} className="h-24 text-center text-destructive">
+                                                An error occurred while loading your reports. Please try again later.
+                                            </TableCell>
+                                        </TableRow>
+                                    )}
+                                    {!isLoading && !error && filteredValuations && filteredValuations.length > 0 ? (
+                                        filteredValuations.map((valuation) => (
+                                            <TableRow key={valuation.id}>
+                                                <TableCell className="font-medium">{valuation.make} {valuation.model}</TableCell>
+                                                <TableCell className="text-muted-foreground font-mono uppercase">{valuation.vehicleNumber || 'N/A'}</TableCell>
+                                                <TableCell>{formatDateOnly(valuation.createdAt)}</TableCell>
+                                                <TableCell className="text-right space-x-2">
+                                                    <Button variant="outline" size="sm" onClick={() => { setSelectedValuation(valuation); setIsViewReportOpen(true); }}>
+                                                        <Eye className="mr-2 h-4 w-4"/> View
+                                                    </Button>
+                                                    <Button variant="destructive" size="sm" onClick={() => { setSelectedValuation(valuation); setIsDeleteAlertOpen(true); }}>
+                                                        <Trash2 className="h-4 w-4"/>
+                                                    </Button>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))
+                                    ) : (
+                                        !isLoading && !error && (
+                                            <TableRow>
+                                                <TableCell colSpan={4} className="h-24 text-center">
+                                                    No valuation reports found.
+                                                    <Button asChild variant="link"><Link href="/valuation">Create a new one</Link></Button>
+                                                </TableCell>
+                                            </TableRow>
+                                        )
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </CardContent>
+                    </Card>
+                </div>
+
+                <div className="space-y-8">
+                    <Card className="border-primary/20 shadow-lg">
+                        <CardHeader className="bg-primary/5">
+                            <CardTitle className="flex items-center gap-2">
+                                <Sparkles className="h-5 w-5 text-primary" /> Buy Credits
+                            </CardTitle>
+                            <CardDescription>Unlock owner contact details and photos in Hot Market Listings.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="pt-6 space-y-4">
+                            <CreditPackCard credits={5} price={199} userId={user.uid} firestore={firestore} />
+                            <CreditPackCard credits={15} price={499} userId={user.uid} firestore={firestore} />
+                            <CreditPackCard credits={40} price={999} userId={user.uid} firestore={firestore} />
+                            <div className="pt-2 text-center">
+                                <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">
+                                    Secure Payments via Razorpay
+                                </p>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="text-sm">Quick Links</CardTitle>
+                        </CardHeader>
+                        <CardContent className="flex flex-col gap-2">
+                            <Button asChild variant="outline" className="justify-start">
+                                <Link href="/valuation"><Sparkles className="mr-2 h-4 w-4" /> New AI Valuation</Link>
+                            </Button>
+                            <Button asChild variant="outline" className="justify-start">
+                                <Link href="/daily-fresh-cars"><Car className="mr-2 h-4 w-4" /> Browse Hot Listings</Link>
+                            </Button>
+                        </CardContent>
+                    </Card>
+                </div>
+            </div>
 
             {/* View Report Dialog */}
             <Dialog open={isViewReportOpen} onOpenChange={setIsViewReportOpen}>
@@ -706,7 +810,7 @@ function AgentOwnerDashboard({ user, userProfile }: { user: any, userProfile: Us
                     <DialogHeader>
                         <DialogTitle>Valuation Report</DialogTitle>
                         <DialogDescription>
-                            Report for {selectedValuation?.make} {selectedValuation?.model}. You can download this report as a PDF.
+                            Report for {selectedValuation?.make} {selectedValuation?.model}.
                         </DialogDescription>
                     </DialogHeader>
                     {selectedValuation && (

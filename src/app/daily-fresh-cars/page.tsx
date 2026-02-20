@@ -1,8 +1,9 @@
+
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
-import { collection, query, orderBy } from 'firebase/firestore';
-import { useFirestore, useCollection, useUser } from '@/firebase';
+import { doc, collection, query, orderBy } from 'firebase/firestore';
+import { useFirestore, useCollection, useUser, useDoc } from '@/firebase';
 import { formatCurrency, formatDateTime, toDate } from '@/lib/utils';
 import { indianStates } from '@/lib/variants';
 import Image from 'next/image';
@@ -14,12 +15,15 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Flame, MapPin, Calendar as CalendarIcon, Gauge, Fuel, Zap, Sparkles, User, Phone, Search, LogIn, Lock, Image as ImageIcon, ExternalLink, MessageCircle } from 'lucide-react';
+import { Flame, MapPin, Calendar as CalendarIcon, Gauge, Fuel, Zap, Sparkles, User, Phone, Search, LogIn, Lock, Image as ImageIcon, ExternalLink, MessageCircle, Coins } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { DateRange } from "react-day-picker";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import type { UserProfile } from '@/lib/firebase/user-profile-service';
+import { unlockCarListing } from '@/lib/firebase/user-profile-service';
+import { useToast } from '@/hooks/use-toast';
 
 interface DailyFreshCar {
     id: string;
@@ -45,11 +49,20 @@ interface DailyFreshCar {
 export default function DailyFreshCarsPage() {
     const firestore = useFirestore();
     const { user, isUserLoading } = useUser();
+    const { toast } = useToast();
+    const router = useRouter();
     const [hasMounted, setHasMounted] = useState(false);
+    const [unlockingId, setUnlockingId] = useState<string | null>(null);
 
     useEffect(() => {
         setHasMounted(true);
     }, []);
+
+    const userProfileRef = useMemo(() => {
+        if (!firestore || !user) return null;
+        return doc(firestore, 'users', user.uid);
+    }, [firestore, user]);
+    const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileRef);
 
     const [stateFilter, setStateFilter] = useState<string>('all');
     const [cityFilter, setCityFilter] = useState<string>('');
@@ -86,6 +99,30 @@ export default function DailyFreshCarsPage() {
             return matchesState && matchesCity && matchesArea && matchesType && matchesDate;
         });
     }, [rawCars, stateFilter, cityFilter, areaFilter, typeFilter, dateRange]);
+
+    const handleUnlock = async (carId: string) => {
+        if (!firestore || !user || !userProfile) return;
+        
+        if ((userProfile.credits || 0) < 1) {
+            toast({
+                variant: "destructive",
+                title: "Insufficient Credits",
+                description: "You need 1 credit to unlock this listing. Please top up in your dashboard.",
+                action: <Button asChild size="sm" variant="outline"><Link href="/dashboard">Buy Credits</Link></Button>
+            });
+            return;
+        }
+
+        setUnlockingId(carId);
+        try {
+            await unlockCarListing(firestore, user.uid, carId);
+            toast({ title: "Unlocked!", description: "Listing details are now visible." });
+        } catch (err) {
+            toast({ variant: "destructive", title: "Error", description: "Failed to unlock listing." });
+        } finally {
+            setUnlockingId(null);
+        }
+    };
 
     if (!hasMounted || isUserLoading) {
         return (
@@ -146,6 +183,12 @@ export default function DailyFreshCarsPage() {
         <div className="bg-background min-h-screen">
             <div className="container mx-auto py-12 px-4 md:px-6">
                 <header className="mb-12 text-center">
+                    <div className="flex justify-center mb-4">
+                        <div className="inline-flex items-center gap-2 bg-primary/10 px-4 py-2 rounded-full">
+                            <Coins className="h-4 w-4 text-primary" />
+                            <span className="text-sm font-bold text-primary">{userProfile?.credits || 0} Credits Available</span>
+                        </div>
+                    </div>
                     <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-1 text-sm font-medium text-primary mb-4">
                         <Flame className="h-4 w-4" />
                         Hot Deals
@@ -252,127 +295,173 @@ export default function DailyFreshCarsPage() {
                     </div>
                 ) : filteredCars.length > 0 ? (
                     <div className="space-y-4 max-w-4xl mx-auto">
-                        {filteredCars.map((car) => (
-                            <Card key={car.id} className="overflow-hidden group hover:shadow-md transition-all border-secondary/50">
-                                <div className="flex flex-col md:flex-row p-5 gap-6">
-                                    {/* Metadata Section */}
-                                    <div className="flex-grow space-y-4 order-2 md:order-1">
-                                        <div className="flex flex-wrap justify-between items-start gap-4">
-                                            <div>
-                                                <CardTitle className="text-xl mb-1">{car.title}</CardTitle>
-                                                <div className="flex items-center text-sm text-muted-foreground gap-1">
-                                                    <MapPin className="h-3 w-3" /> {car.area}, {car.city}, {car.state}
+                        {filteredCars.map((car) => {
+                            const isUnlocked = userProfile?.unlockedCars?.includes(car.id) || userProfile?.role === 'Admin';
+                            
+                            return (
+                                <Card key={car.id} className="overflow-hidden group hover:shadow-md transition-all border-secondary/50">
+                                    <div className="flex flex-col md:flex-row p-5 gap-6">
+                                        {/* Metadata Section */}
+                                        <div className="flex-grow space-y-4 order-2 md:order-1">
+                                            <div className="flex flex-wrap justify-between items-start gap-4">
+                                                <div>
+                                                    <CardTitle className="text-xl mb-1">{car.title}</CardTitle>
+                                                    <div className="flex items-center text-sm text-muted-foreground gap-1">
+                                                        <MapPin className="h-3 w-3" /> {car.area}, {car.city}, {car.state}
+                                                    </div>
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className="text-2xl font-bold text-primary">{formatCurrency(car.price)}</p>
+                                                    <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">
+                                                        Best Market Value
+                                                    </span>
                                                 </div>
                                             </div>
-                                            <div className="text-right">
-                                                <p className="text-2xl font-bold text-primary">{formatCurrency(car.price)}</p>
-                                                <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">
-                                                    Best Market Value
+
+                                            <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 text-sm bg-secondary/30 p-3 rounded-lg border border-secondary/50">
+                                                <div className="flex flex-col">
+                                                    <span className="text-[10px] uppercase font-bold text-muted-foreground mb-1">Year</span>
+                                                    <div className="flex items-center gap-2">
+                                                        <CalendarIcon className="h-3.5 w-3.5 text-primary" />
+                                                        <span className="font-medium">{car.year}</span>
+                                                    </div>
+                                                </div>
+                                                <div className="flex flex-col">
+                                                    <span className="text-[10px] uppercase font-bold text-muted-foreground mb-1">Kilometers</span>
+                                                    <div className="flex items-center gap-2">
+                                                        <Gauge className="h-3.5 w-3.5 text-primary" />
+                                                        <span className="font-medium">{car.km.toLocaleString()} km</span>
+                                                    </div>
+                                                </div>
+                                                <div className="flex flex-col">
+                                                    <span className="text-[10px] uppercase font-bold text-muted-foreground mb-1">Ownership</span>
+                                                    <div className="flex items-center gap-2">
+                                                        <User className="h-3.5 w-3.5 text-primary" />
+                                                        <span className="font-medium">{car.ownership} Owner</span>
+                                                    </div>
+                                                </div>
+                                                <div className="flex flex-col">
+                                                    <span className="text-[10px] uppercase font-bold text-muted-foreground mb-1">Fuel</span>
+                                                    <div className="flex items-center gap-2">
+                                                        <Fuel className="h-3.5 w-3.5 text-primary" />
+                                                        <span className="font-medium capitalize">{car.fuelType}</span>
+                                                    </div>
+                                                </div>
+                                                <div className="flex flex-col">
+                                                    <span className="text-[10px] uppercase font-bold text-muted-foreground mb-1">Gearbox</span>
+                                                    <div className="flex items-center gap-2">
+                                                        <Zap className="h-3.5 w-3.5 text-primary" />
+                                                        <span className="font-medium capitalize">{car.transmission}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="flex flex-wrap items-center justify-between gap-4 pt-2">
+                                                {isUnlocked ? (
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                                                                <User className="h-4 w-4" />
+                                                            </div>
+                                                            <span className="font-semibold text-sm">{car.ownerName}</span>
+                                                        </div>
+                                                        <div className="flex gap-2">
+                                                            <Button variant="outline" size="sm" asChild className="h-8 border-primary/20 hover:bg-primary/10 hover:text-primary">
+                                                                <a href={`tel:${car.ownerPhone}`}>
+                                                                    <Phone className="mr-2 h-3.5 w-3.5" /> {car.ownerPhone}
+                                                                </a>
+                                                            </Button>
+                                                            <Button variant="outline" size="sm" asChild className="h-8 border-green-600/20 text-green-600 hover:bg-green-600/10 hover:text-green-600">
+                                                                <a href={`https://wa.me/91${car.ownerWhatsapp}?text=Hi, I am interested in your ${car.title} listed on mycarvalue.in`} target="_blank" rel="noopener noreferrer">
+                                                                    <MessageCircle className="mr-2 h-3.5 w-3.5" /> WhatsApp
+                                                                </a>
+                                                            </Button>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <div className="flex items-center gap-3 p-2 bg-muted/50 rounded-lg border border-dashed">
+                                                        <Lock className="h-4 w-4 text-muted-foreground" />
+                                                        <div className="text-xs text-muted-foreground">
+                                                            <p className="font-bold text-foreground">Contact Details Locked</p>
+                                                            <p>Unlock to see name and phone number.</p>
+                                                        </div>
+                                                        <Button 
+                                                            size="sm" 
+                                                            className="ml-auto gap-2"
+                                                            onClick={() => handleUnlock(car.id)}
+                                                            disabled={unlockingId === car.id}
+                                                        >
+                                                            <Sparkles className="h-3.5 w-3.5" /> {unlockingId === car.id ? 'Unlocking...' : 'Unlock (1 Credit)'}
+                                                        </Button>
+                                                    </div>
+                                                )}
+                                                <span className="text-[10px] text-muted-foreground">
+                                                    Updated {formatDateTime(car.createdAt)}
                                                 </span>
                                             </div>
-                                        </div>
 
-                                        <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 text-sm bg-secondary/30 p-3 rounded-lg border border-secondary/50">
-                                            <div className="flex flex-col">
-                                                <span className="text-[10px] uppercase font-bold text-muted-foreground mb-1">Year</span>
-                                                <div className="flex items-center gap-2">
-                                                    <CalendarIcon className="h-3.5 w-3.5 text-primary" />
-                                                    <span className="font-medium">{car.year}</span>
-                                                </div>
-                                            </div>
-                                            <div className="flex flex-col">
-                                                <span className="text-[10px] uppercase font-bold text-muted-foreground mb-1">Kilometers</span>
-                                                <div className="flex items-center gap-2">
-                                                    <Gauge className="h-3.5 w-3.5 text-primary" />
-                                                    <span className="font-medium">{car.km.toLocaleString()} km</span>
-                                                </div>
-                                            </div>
-                                            <div className="flex flex-col">
-                                                <span className="text-[10px] uppercase font-bold text-muted-foreground mb-1">Ownership</span>
-                                                <div className="flex items-center gap-2">
-                                                    <User className="h-3.5 w-3.5 text-primary" />
-                                                    <span className="font-medium">{car.ownership} Owner</span>
-                                                </div>
-                                            </div>
-                                            <div className="flex flex-col">
-                                                <span className="text-[10px] uppercase font-bold text-muted-foreground mb-1">Fuel</span>
-                                                <div className="flex items-center gap-2">
-                                                    <Fuel className="h-3.5 w-3.5 text-primary" />
-                                                    <span className="font-medium capitalize">{car.fuelType}</span>
-                                                </div>
-                                            </div>
-                                            <div className="flex flex-col">
-                                                <span className="text-[10px] uppercase font-bold text-muted-foreground mb-1">Gearbox</span>
-                                                <div className="flex items-center gap-2">
-                                                    <Zap className="h-3.5 w-3.5 text-primary" />
-                                                    <span className="font-medium capitalize">{car.transmission}</span>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div className="flex flex-wrap items-center justify-between gap-4 pt-2">
-                                            <div className="flex items-center gap-4">
-                                                <div className="flex items-center gap-2">
-                                                    <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                                                        <User className="h-4 w-4" />
+                                            {car.aiInsight && (
+                                                <div className="p-3 bg-primary/5 rounded-lg border border-primary/10 relative overflow-hidden">
+                                                    <div className="absolute top-0 right-0 p-1">
+                                                        <Sparkles className="h-3 w-3 text-primary/30" />
                                                     </div>
-                                                    <span className="font-semibold text-sm">{car.ownerName}</span>
+                                                    <p className="text-[10px] font-bold text-primary mb-1 uppercase tracking-tight">
+                                                        Market Insight
+                                                    </p>
+                                                    <p className="text-xs italic leading-snug text-foreground/80">
+                                                        "{car.aiInsight}"
+                                                    </p>
                                                 </div>
-                                                <div className="flex gap-2">
-                                                    <Button variant="outline" size="sm" asChild className="h-8 border-primary/20 hover:bg-primary/10 hover:text-primary">
-                                                        <a href={`tel:${car.ownerPhone}`}>
-                                                            <Phone className="mr-2 h-3.5 w-3.5" /> {car.ownerPhone}
-                                                        </a>
-                                                    </Button>
-                                                    <Button variant="outline" size="sm" asChild className="h-8 border-green-600/20 text-green-600 hover:bg-green-600/10 hover:text-green-600">
-                                                        <a href={`https://wa.me/91${car.ownerWhatsapp}?text=Hi, I am interested in your ${car.title} listed on mycarvalue.in`} target="_blank" rel="noopener noreferrer">
-                                                            <MessageCircle className="mr-2 h-3.5 w-3.5" /> WhatsApp
-                                                        </a>
-                                                    </Button>
-                                                </div>
-                                            </div>
-                                            <span className="text-[10px] text-muted-foreground">
-                                                Updated {formatDateTime(car.createdAt)}
-                                            </span>
+                                            )}
                                         </div>
 
-                                        {car.aiInsight && (
-                                            <div className="p-3 bg-primary/5 rounded-lg border border-primary/10 relative overflow-hidden">
-                                                <div className="absolute top-0 right-0 p-1">
-                                                    <Sparkles className="h-3 w-3 text-primary/30" />
-                                                </div>
-                                                <p className="text-[10px] font-bold text-primary mb-1 uppercase tracking-tight">
-                                                    Market Insight
-                                                </p>
-                                                <p className="text-xs italic leading-snug text-foreground/80">
-                                                    "{car.aiInsight}"
-                                                </p>
+                                        {/* Image Link Box */}
+                                        <div className="flex-shrink-0 w-full md:w-48 space-y-3 order-1 md:order-2">
+                                            <div className="relative aspect-video rounded border bg-muted/50 overflow-hidden flex flex-col items-center justify-center p-4 text-center">
+                                                {isUnlocked ? (
+                                                    <>
+                                                        <Image 
+                                                            src={car.imageUrl} 
+                                                            alt={car.title} 
+                                                            fill 
+                                                            className="object-cover"
+                                                        />
+                                                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                                            <a 
+                                                                href={car.imageUrl} 
+                                                                target="_blank" 
+                                                                rel="noopener noreferrer" 
+                                                                className="text-white font-bold text-xs flex items-center gap-1 hover:underline"
+                                                            >
+                                                                View Full Photo <ExternalLink className="h-3 w-3" />
+                                                            </a>
+                                                        </div>
+                                                    </>
+                                                ) : (
+                                                    <div className="relative w-full h-full flex flex-col items-center justify-center">
+                                                        <Image 
+                                                            src={car.imageUrl} 
+                                                            alt={car.title} 
+                                                            fill 
+                                                            className="object-cover blur-xl grayscale"
+                                                        />
+                                                        <div className="relative z-10 space-y-1">
+                                                            <ImageIcon className="h-6 w-6 text-white mx-auto drop-shadow-md" />
+                                                            <p className="text-[10px] font-bold text-white uppercase drop-shadow-md">Photo Blurred</p>
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
-                                        )}
-                                    </div>
-
-                                    {/* Image Link Box */}
-                                    <div className="flex-shrink-0 w-full md:w-48 space-y-3 order-1 md:order-2">
-                                        <div className="aspect-video relative rounded border bg-muted/50 flex flex-col items-center justify-center p-4 text-center group-hover:bg-muted transition-colors">
-                                            <ImageIcon className="h-8 w-8 text-muted-foreground mb-2" />
-                                            <a 
-                                                href={car.imageUrl} 
-                                                target="_blank" 
-                                                rel="noopener noreferrer" 
-                                                className="text-primary font-semibold text-xs flex items-center gap-1 hover:underline"
-                                            >
-                                                View Vehicle Photo <ExternalLink className="h-3 w-3" />
-                                            </a>
+                                            {car.isDirectOwner && (
+                                                <Badge className="w-full justify-center bg-green-600/10 text-green-600 border-green-600/20 font-bold uppercase py-1">
+                                                    Direct Owner
+                                                </Badge>
+                                            )}
                                         </div>
-                                        {car.isDirectOwner && (
-                                            <Badge className="w-full justify-center bg-green-600/10 text-green-600 border-green-600/20 font-bold uppercase py-1">
-                                                Direct Owner
-                                            </Badge>
-                                        )}
                                     </div>
-                                </div>
-                            </Card>
-                        ))}
+                                </Card>
+                            );
+                        })}
                     </div>
                 ) : (
                     <div className="text-center py-20 bg-secondary/20 rounded-xl border border-dashed">

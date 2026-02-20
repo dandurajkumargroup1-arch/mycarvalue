@@ -1,8 +1,9 @@
+
 import { NextResponse } from 'next/server';
 import Razorpay from 'razorpay';
 import { randomBytes } from 'crypto';
 
-export async function POST() {
+export async function POST(request: Request) {
   const keyId = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
   const keySecret = process.env.RAZORPAY_KEY_SECRET;
 
@@ -16,13 +17,23 @@ export async function POST() {
     key_secret: keySecret,
   });
   
-  const amount = 149; // Amount in INR
-  const currency = 'INR';
+  let amount = 149; // Default for Valuation
+  let currency = 'INR';
+  let receiptId = `receipt_order_${randomBytes(8).toString('hex')}`;
+
+  try {
+    const body = await request.json();
+    if (body.type === 'credits') {
+      amount = body.amount; // Use the specific credit pack amount
+    }
+  } catch (e) {
+    // No body or invalid JSON, fallback to default valuation price
+  }
 
   const options = {
-    amount: amount * 100, // Amount in the smallest currency unit (paise)
+    amount: amount * 100, // Amount in paise
     currency,
-    receipt: `receipt_order_${randomBytes(8).toString('hex')}`, // Unique receipt ID
+    receipt: receiptId,
   };
 
   try {
@@ -30,7 +41,6 @@ export async function POST() {
     if (!order) {
         return NextResponse.json({ error: 'Failed to create order' }, { status: 500 });
     }
-    // Return the keyId along with the order
     return NextResponse.json({ ...order, key: keyId });
   } catch (error) {
     console.error('Error creating Razorpay order:', error);
