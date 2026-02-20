@@ -15,7 +15,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Flame, MapPin, Calendar as CalendarIcon, Gauge, Fuel, Zap, Sparkles, User, Phone, Search, LogIn, Lock, Image as ImageIcon, ExternalLink, MessageCircle, Coins } from 'lucide-react';
+import { Flame, MapPin, Calendar as CalendarIcon, Gauge, Fuel, Zap, Sparkles, User, Phone, Search, LogIn, Lock, Image as ImageIcon, ExternalLink, MessageCircle, Coins, Share2 } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { DateRange } from "react-day-picker";
@@ -100,6 +100,23 @@ export default function DailyFreshCarsPage() {
         });
     }, [rawCars, stateFilter, cityFilter, areaFilter, typeFilter, dateRange]);
 
+    useEffect(() => {
+        if (hasMounted && !isLoading && rawCars) {
+            const params = new URLSearchParams(window.location.search);
+            const carId = params.get('id');
+            if (carId) {
+                const element = document.getElementById(`car-${carId}`);
+                if (element) {
+                    setTimeout(() => {
+                        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        element.classList.add('ring-2', 'ring-primary', 'ring-offset-4', 'transition-all');
+                        setTimeout(() => element.classList.remove('ring-2', 'ring-primary', 'ring-offset-4'), 3000);
+                    }, 500);
+                }
+            }
+        }
+    }, [hasMounted, isLoading, rawCars]);
+
     const handleUnlock = async (carId: string) => {
         if (!firestore || !user || !userProfile) return;
         
@@ -121,6 +138,26 @@ export default function DailyFreshCarsPage() {
             toast({ variant: "destructive", title: "Error", description: "Failed to unlock listing." });
         } finally {
             setUnlockingId(null);
+        }
+    };
+
+    const handleShare = (car: DailyFreshCar) => {
+        const shareUrl = `${window.location.origin}/daily-fresh-cars?id=${car.id}`;
+        const shareText = `Check out this ${car.year} ${car.title} for ${formatCurrency(car.price)} on mycarvalue.in!`;
+
+        if (typeof navigator !== 'undefined' && navigator.share) {
+            navigator.share({
+                title: car.title,
+                text: shareText,
+                url: shareUrl,
+            }).catch(() => {
+                // If sharing fails or user cancels, fallback to copy
+                navigator.clipboard.writeText(shareUrl);
+                toast({ title: "Link Copied!", description: "Listing link copied to clipboard." });
+            });
+        } else {
+            navigator.clipboard.writeText(shareUrl);
+            toast({ title: "Link Copied!", description: "Listing link copied to clipboard." });
         }
     };
 
@@ -299,7 +336,7 @@ export default function DailyFreshCarsPage() {
                             const isUnlocked = userProfile?.unlockedCars?.includes(car.id) || userProfile?.role === 'Admin';
                             
                             return (
-                                <Card key={car.id} className="overflow-hidden group hover:shadow-md transition-all border-secondary/50">
+                                <Card key={car.id} id={`car-${car.id}`} className="overflow-hidden group hover:shadow-md transition-all border-secondary/50">
                                     <div className="flex flex-col md:flex-row p-5 gap-6">
                                         {/* Metadata Section */}
                                         <div className="flex-grow space-y-4 order-2 md:order-1">
@@ -310,7 +347,7 @@ export default function DailyFreshCarsPage() {
                                                         <MapPin className="h-3 w-3" /> {car.area}, {car.city}, {car.state}
                                                     </div>
                                                 </div>
-                                                <div className="text-right">
+                                                <div className="flex flex-col items-end">
                                                     <p className="text-2xl font-bold text-primary">{formatCurrency(car.price)}</p>
                                                     <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">
                                                         Best Market Value
@@ -376,23 +413,31 @@ export default function DailyFreshCarsPage() {
                                                                     <MessageCircle className="mr-2 h-3.5 w-3.5" /> WhatsApp
                                                                 </a>
                                                             </Button>
+                                                            <Button variant="ghost" size="sm" onClick={() => handleShare(car)} className="h-8 text-muted-foreground hover:text-primary gap-2">
+                                                                <Share2 className="h-3.5 w-3.5" /> Share
+                                                            </Button>
                                                         </div>
                                                     </div>
                                                 ) : (
-                                                    <div className="flex items-center gap-3 p-2 bg-muted/50 rounded-lg border border-dashed">
+                                                    <div className="flex items-center gap-3 p-2 bg-muted/50 rounded-lg border border-dashed flex-grow md:flex-grow-0">
                                                         <Lock className="h-4 w-4 text-muted-foreground" />
                                                         <div className="text-xs text-muted-foreground">
                                                             <p className="font-bold text-foreground">Contact Details Locked</p>
                                                             <p>Unlock to see name and phone number.</p>
                                                         </div>
-                                                        <Button 
-                                                            size="sm" 
-                                                            className="ml-auto gap-2"
-                                                            onClick={() => handleUnlock(car.id)}
-                                                            disabled={unlockingId === car.id}
-                                                        >
-                                                            <Sparkles className="h-3.5 w-3.5" /> {unlockingId === car.id ? 'Unlocking...' : 'Unlock (1 Credit)'}
-                                                        </Button>
+                                                        <div className="flex items-center gap-2 ml-auto">
+                                                            <Button 
+                                                                size="sm" 
+                                                                className="gap-2"
+                                                                onClick={() => handleUnlock(car.id)}
+                                                                disabled={unlockingId === car.id}
+                                                            >
+                                                                <Sparkles className="h-3.5 w-3.5" /> {unlockingId === car.id ? 'Unlocking...' : 'Unlock (1 Credit)'}
+                                                            </Button>
+                                                            <Button variant="ghost" size="icon" onClick={() => handleShare(car)} className="h-8 w-8 text-muted-foreground hover:text-primary">
+                                                                <Share2 className="h-4 w-4" />
+                                                            </Button>
+                                                        </div>
                                                     </div>
                                                 )}
                                                 <span className="text-[10px] text-muted-foreground">
@@ -447,7 +492,7 @@ export default function DailyFreshCarsPage() {
                                                         />
                                                         <div className="relative z-10 space-y-1">
                                                             <ImageIcon className="h-6 w-6 text-white mx-auto drop-shadow-md" />
-                                                            <p className="text-[10px] font-bold text-white uppercase drop-shadow-md">Photo Blurred</p>
+                                                            <p className="text-[10px] font-bold text-white uppercase drop-shadow-md">Photo Locked</p>
                                                         </div>
                                                     </div>
                                                 )}
