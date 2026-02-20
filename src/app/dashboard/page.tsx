@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Suspense, useEffect, useState, useMemo } from 'react';
@@ -777,9 +776,9 @@ function AgentOwnerDashboard({ user, userProfile }: { user: any, userProfile: Us
                             <CardDescription>Unlock owner contact details and photos in Hot Market Listings.</CardDescription>
                         </CardHeader>
                         <CardContent className="pt-6 space-y-4">
-                            <CreditPackCard credits={5} price={199} userId={user.uid} firestore={firestore} />
-                            <CreditPackCard credits={15} price={499} userId={user.uid} firestore={firestore} />
-                            <CreditPackCard credits={40} price={999} userId={user.uid} firestore={firestore} />
+                            <CreditPackCard credits={5} price={25} userId={user.uid} firestore={firestore} />
+                            <CreditPackCard credits={10} price={49} userId={user.uid} firestore={firestore} />
+                            <CreditPackCard credits={20} price={99} userId={user.uid} firestore={firestore} />
                             <div className="pt-2 text-center">
                                 <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">
                                     Secure Payments via Razorpay
