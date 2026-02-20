@@ -23,8 +23,8 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-    if (body.type === 'credits') {
-      amount = body.amount; // Use the specific credit pack amount
+    if (body.amount) {
+      amount = body.amount; // Use the amount passed from the client
     }
   } catch (e) {
     // No body or invalid JSON, fallback to default valuation price

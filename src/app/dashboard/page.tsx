@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Suspense, useEffect, useState, useMemo, useRef } from 'react';
@@ -27,7 +28,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Wallet, ArrowDown, Ban, Check, Clock, IndianRupee, Info, AlertTriangle, Car, Trash2, Eye, Calendar as CalendarIcon, Coins, CreditCard, Sparkles } from 'lucide-react';
+import { Wallet, ArrowDown, Ban, Check, Clock, IndianRupee, Info, AlertTriangle, Car, Trash2, Eye, Calendar as CalendarIcon, Coins, CreditCard, Sparkles, ShoppingBag } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -277,34 +278,90 @@ function WithdrawalDialog({ wallet, userProfile, isWithdrawalEnabled }: { wallet
     )
 }
 
-function CreditPackCard({ credits, price, buttonId }: { credits: number, price: number, buttonId: string }) {
-    const containerRef = useRef<HTMLDivElement>(null);
+function CreditPackCard({ credits, price }: { credits: number, price: number }) {
+    const { user } = useUser();
+    const firestore = useFirestore();
+    const { toast } = useToast();
+    const [isPurchasing, setIsPurchasing] = useState(false);
 
-    useEffect(() => {
-        if (!containerRef.current) return;
+    const handleBuy = async () => {
+        if (!user || !firestore) {
+            toast({ variant: "destructive", title: "Auth Required", description: "Please login to purchase credits." });
+            return;
+        }
 
-        // Clear previous button if any (prevents duplicates on re-renders)
-        containerRef.current.innerHTML = '';
+        if (!(window as any).Razorpay) {
+            toast({ variant: "destructive", title: "Error", description: "Payment gateway unavailable. Please refresh." });
+            return;
+        }
 
-        const form = document.createElement('form');
-        const script = document.createElement('script');
-        script.src = "https://checkout.razorpay.com/v1/payment-button.js";
-        script.setAttribute('data-payment_button_id', buttonId);
-        script.async = true;
-        
-        form.appendChild(script);
-        containerRef.current.appendChild(form);
-    }, [buttonId]);
+        setIsPurchasing(true);
+        try {
+            const res = await fetch('/api/razorpay', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ amount: price, type: 'credits' })
+            });
+            const order = await res.json();
+
+            const options = {
+                key: order.key,
+                amount: order.amount,
+                currency: order.currency,
+                name: "mycarvalue.in",
+                description: `${credits} Hot Listing Credits`,
+                order_id: order.id,
+                handler: async function (response: any) {
+                    try {
+                        // Success! Update Firestore credits
+                        await addCredits(firestore, user.uid, credits);
+                        toast({ 
+                            title: "Purchase Successful!", 
+                            description: `${credits} credits added to your account.`,
+                            className: "bg-green-600 text-white" 
+                        });
+                    } catch (e) {
+                        toast({ variant: "destructive", title: "Sync Error", description: "Payment was successful but credits update failed. Please contact support." });
+                    }
+                },
+                prefill: {
+                    name: user.displayName || "",
+                    email: user.email || ""
+                },
+                theme: { color: "#f9c70a" }
+            };
+
+            const rzp = new (window as any).Razorpay(options);
+            rzp.open();
+        } catch (error) {
+            toast({ variant: "destructive", title: "Payment Error", description: "Could not initiate payment." });
+        } finally {
+            setIsPurchasing(false);
+        }
+    };
 
     return (
-        <div className="flex items-center justify-between p-4 border rounded-lg bg-card hover:bg-muted/30 transition-colors">
-            <div>
-                <p className="font-bold text-lg">{credits} Credits</p>
-                <p className="text-2xl font-black text-primary">₹{price}</p>
-                <p className="text-xs text-muted-foreground">Unlock {credits} hot listings</p>
+        <div className="flex items-center justify-between p-5 border rounded-xl bg-card hover:border-primary/50 transition-all shadow-sm group">
+            <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                    <p className="font-bold text-lg">{credits} Credits</p>
+                    <Badge variant="secondary" className="text-[10px] uppercase font-black tracking-tighter bg-primary/10 text-primary border-primary/20">Value Pack</Badge>
+                </div>
+                <p className="text-3xl font-black text-foreground">₹{price}</p>
+                <p className="text-xs text-muted-foreground">Unlock {credits} hot owner contacts</p>
             </div>
-            <div ref={containerRef} className="min-w-[120px] flex justify-end">
-                {/* Razorpay Button injects here */}
+            <div>
+                <Button 
+                    onClick={handleBuy} 
+                    disabled={isPurchasing}
+                    className="rounded-full px-6 font-bold bg-gradient-to-r from-primary to-orange-500 hover:from-primary/90 hover:to-orange-600 shadow-md group-hover:scale-105 transition-transform"
+                >
+                    {isPurchasing ? (
+                        <div className="flex items-center gap-2"><div className="h-3 w-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div> One Sec...</div>
+                    ) : (
+                        <>Pay Now <Sparkles className="ml-2 h-4 w-4" /></>
+                    )}
+                </Button>
             </div>
         </div>
     );
@@ -629,6 +686,11 @@ function AgentOwnerDashboard({ user, userProfile }: { user: any, userProfile: Us
 
     return (
         <div className="container mx-auto py-8 px-4 md:px-6">
+            <Script
+                id="razorpay-checkout-js"
+                src="https://checkout.razorpay.com/v1/checkout.js"
+                strategy="lazyOnload"
+            />
             <header className="mb-8 flex flex-wrap justify-between items-end gap-4">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
@@ -746,24 +808,24 @@ function AgentOwnerDashboard({ user, userProfile }: { user: any, userProfile: Us
                 </div>
 
                 <div className="space-y-8">
-                    <Card className="border-primary/20 shadow-lg">
-                        <CardHeader className="bg-primary/5">
+                    <Card className="border-primary/20 shadow-lg overflow-hidden">
+                        <CardHeader className="bg-gradient-to-br from-primary/10 to-orange-500/10 border-b">
                             <CardTitle className="flex items-center gap-2">
-                                <Sparkles className="h-5 w-5 text-primary" /> Buy Credits
+                                <Sparkles className="h-5 w-5 text-primary" /> Top Up Credits
                             </CardTitle>
                             <CardDescription>Unlock owner contact details and photos in Hot Market Listings.</CardDescription>
                         </CardHeader>
                         <CardContent className="pt-6 space-y-4">
-                            <CreditPackCard credits={5} price={25} buttonId="pl_SIZ7sj4EqMt8sC" />
-                            <CreditPackCard credits={10} price={49} buttonId="pl_SIZ9qgkxZGmTZI" />
-                            <CreditPackCard credits={20} price={99} buttonId="pl_SIZB3AEJN73mLw" />
-                            <div className="pt-2 text-center">
-                                <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">
-                                    Secure Payments via Razorpay
-                                </p>
-                                <p className="text-[9px] text-muted-foreground mt-1 italic">
-                                    Note: Credits will be added to your account after payment verification.
-                                </p>
+                            <CreditPackCard credits={5} price={25} />
+                            <CreditPackCard credits={10} price={49} />
+                            <CreditPackCard credits={20} price={99} />
+                            
+                            <div className="pt-4 p-4 rounded-lg bg-muted/30 border border-dashed flex items-start gap-3">
+                                <ShoppingBag className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                                <div className="space-y-1">
+                                    <p className="text-[11px] font-bold uppercase tracking-widest text-foreground">Secure Checkout</p>
+                                    <p className="text-[10px] leading-relaxed text-muted-foreground">Credits are added instantly to your wallet after successful UPI or Card payment verification via Razorpay.</p>
+                                </div>
                             </div>
                         </CardContent>
                     </Card>
