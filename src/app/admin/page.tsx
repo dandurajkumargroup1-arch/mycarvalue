@@ -18,6 +18,8 @@ import { format } from "date-fns";
 import { cn, toDate, formatCurrency, formatDateTime, formatDateOnly } from "@/lib/utils";
 import { indianStates } from "@/lib/variants";
 import Papa from 'papaparse';
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 
 
 import { Button } from '@/components/ui/button';
@@ -31,7 +33,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
-import { AlertTriangle, CheckCircle, Shield, Users, Wallet, XCircle, Calendar as CalendarIcon, Download, Trash2, Plus, Flame, Edit, Car, History, MessageCircle } from 'lucide-react';
+import { AlertTriangle, CheckCircle, Shield, Users, Wallet, XCircle, Calendar as CalendarIcon, Download, Trash2, Plus, Flame, Edit, Car, History, MessageCircle, FileText } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -383,6 +385,7 @@ function AdminDashboard({ user }: { user: any }) {
   const [withdrawalDateRange, setWithdrawalDateRange] = useState<DateRange | undefined>();
   const [roleFilter, setRoleFilter] = useState<string>('All');
   const [activeTab, setActiveTab] = useState('pending');
+  const [isExporting, setIsExporting] = useState<string | null>(null);
 
   // --- Data Fetching & Processing ---
   
@@ -511,6 +514,94 @@ function AdminDashboard({ user }: { user: any }) {
     }
   }
 
+  const handleDownloadHotListingPdf = async (car: any) => {
+    setIsExporting(car.id);
+    
+    // Create a temporary element for PDF rendering
+    const exportRoot = document.createElement('div');
+    exportRoot.id = 'pdf-export-root';
+    exportRoot.style.position = 'fixed';
+    exportRoot.style.top = '-10000px';
+    exportRoot.style.left = '-10000px';
+    exportRoot.style.width = '800px';
+    exportRoot.style.backgroundColor = 'white';
+    exportRoot.style.padding = '40px';
+    exportRoot.style.color = '#0f172a';
+    exportRoot.style.fontFamily = 'sans-serif';
+    
+    exportRoot.innerHTML = `
+        <div style="border: 2px solid #f9c70a; padding: 30px; border-radius: 8px;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px; border-bottom: 1px solid #e2e8f0; padding-bottom: 20px;">
+                <div>
+                    <h1 style="font-size: 28px; font-weight: 800; color: #0f172a; margin: 0;">mycarvalue<span style="color: #f9c70a;">.in</span></h1>
+                    <p style="font-size: 14px; color: #64748b; margin-top: 4px;">Hot Market Pick - Listing Summary</p>
+                </div>
+                <div style="text-align: right;">
+                    <p style="font-size: 12px; color: #94a3b8;">Generated on ${new Date().toLocaleDateString('en-IN')}</p>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 30px;">
+                <h2 style="font-size: 24px; font-weight: 700; color: #0f172a; margin-bottom: 10px;">${car.year} ${car.title}</h2>
+                <div style="display: inline-block; background-color: #f9c70a; color: #0f172a; padding: 8px 16px; border-radius: 6px; font-size: 24px; font-weight: 800;">
+                    ${formatCurrency(car.price)}
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-cols: repeat(2, 1fr); gap: 20px; margin-bottom: 30px;">
+                <div style="background-color: #f8fafc; padding: 15px; border-radius: 6px;">
+                    <p style="font-size: 10px; text-transform: uppercase; font-weight: 700; color: #64748b; margin-bottom: 5px;">Kilometers</p>
+                    <p style="font-size: 16px; font-weight: 600;">${car.km.toLocaleString()} km</p>
+                </div>
+                <div style="background-color: #f8fafc; padding: 15px; border-radius: 6px;">
+                    <p style="font-size: 10px; text-transform: uppercase; font-weight: 700; color: #64748b; margin-bottom: 5px;">Ownership</p>
+                    <p style="font-size: 16px; font-weight: 600;">${car.ownership} Owner</p>
+                </div>
+                <div style="background-color: #f8fafc; padding: 15px; border-radius: 6px;">
+                    <p style="font-size: 10px; text-transform: uppercase; font-weight: 700; color: #64748b; margin-bottom: 5px;">Fuel & Transmission</p>
+                    <p style="font-size: 16px; font-weight: 600; text-transform: capitalize;">${car.fuelType} | ${car.transmission}</p>
+                </div>
+                <div style="background-color: #f8fafc; padding: 15px; border-radius: 6px;">
+                    <p style="font-size: 10px; text-transform: uppercase; font-weight: 700; color: #64748b; margin-bottom: 5px;">Location</p>
+                    <p style="font-size: 16px; font-weight: 600;">${car.area}, ${car.city}, ${car.state}</p>
+                </div>
+            </div>
+
+            ${car.aiInsight ? `
+                <div style="margin-bottom: 30px; border-left: 4px solid #f9c70a; padding: 15px 20px; background-color: #fffbeb;">
+                    <p style="font-size: 12px; font-weight: 800; color: #92400e; margin-bottom: 5px; text-transform: uppercase;">Expert Market Insight</p>
+                    <p style="font-size: 14px; font-style: italic; line-height: 1.5; color: #451a03;">"${car.aiInsight}"</p>
+                </div>
+            ` : ''}
+
+            <div style="border-top: 1px solid #e2e8f0; padding-top: 20px; margin-top: 40px; text-align: center;">
+                <p style="font-size: 12px; font-weight: 600; color: #0f172a;">To get owner contact details and full photos, visit <span style="color: #f9c70a;">mycarvalue.in</span></p>
+                <p style="font-size: 10px; color: #94a3b8; margin-top: 10px;">Disclaimer: Listing data is based on information provided to the platform. Physical inspection is recommended before purchase.</p>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(exportRoot);
+
+    try {
+        const canvas = await html2canvas(exportRoot, { scale: 2, backgroundColor: '#ffffff' });
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const imgWidth = 210;
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        
+        pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+        pdf.save(`Listing-${car.title.replace(/\s+/g, '-')}.pdf`);
+        toast({ title: "Success", description: "Listing PDF downloaded." });
+    } catch (error) {
+        console.error("PDF generation failed:", error);
+        toast({ variant: 'destructive', title: "Export Failed", description: "Could not generate PDF." });
+    } finally {
+        document.body.removeChild(exportRoot);
+        setIsExporting(null);
+    }
+  };
+
   const cardDescriptions: Record<string, string> = {
     pending: 'Review pending requests for withdrawals.',
     history: 'Browse historical withdrawals.',
@@ -615,6 +706,14 @@ function AdminDashboard({ user }: { user: any }) {
                                                         <TableCell className="font-bold text-sm">{formatCurrency(car.price)}</TableCell>
                                                         <TableCell className="text-right">
                                                             <div className="flex justify-end gap-1">
+                                                                <Button 
+                                                                    variant="ghost" 
+                                                                    size="icon" 
+                                                                    onClick={() => handleDownloadHotListingPdf(car)}
+                                                                    disabled={isExporting === car.id}
+                                                                >
+                                                                    <FileText className={cn("h-4 w-4 text-blue-500", isExporting === car.id && "animate-pulse")} />
+                                                                </Button>
                                                                 <FreshCarDialog car={car} />
                                                                 <Button variant="ghost" size="icon" onClick={() => handleDeleteFreshCar(car.id)}><Trash2 className="h-4 w-4 text-destructive"/></Button>
                                                             </div>
