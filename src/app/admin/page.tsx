@@ -32,7 +32,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
-import { AlertTriangle, CheckCircle, Shield, Users, Wallet, XCircle, Calendar as CalendarIcon, Download, Trash2, Plus, Flame, Edit } from 'lucide-react';
+import { AlertTriangle, CheckCircle, Shield, Users, Wallet, XCircle, Calendar as CalendarIcon, Download, Trash2, Plus, Flame, Edit, Car, History } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -509,11 +509,19 @@ function AdminDashboard({ user }: { user: any }) {
                         <Tabs value={activeTab} onValueChange={setActiveTab}>
                             <CardHeader>
                                 <div className="flex items-center justify-between">
-                                    <CardTitle className="flex items-center gap-2"><Shield/> Management</CardTitle>
+                                    <CardTitle className="flex items-center gap-2">
+                                        <Car className="h-5 w-5 text-primary" /> Management
+                                    </CardTitle>
                                     <TabsList>
-                                        <TabsTrigger value="pending">Withdrawals</TabsTrigger>
-                                        <TabsTrigger value="freshCars">Hot Listings</TabsTrigger>
-                                        <TabsTrigger value="history">History</TabsTrigger>
+                                        <TabsTrigger value="pending" className="gap-2">
+                                            <Wallet className="h-4 w-4" /> Withdrawals
+                                        </TabsTrigger>
+                                        <TabsTrigger value="freshCars" className="gap-2">
+                                            <Car className="h-4 w-4" /> Hot Listings
+                                        </TabsTrigger>
+                                        <TabsTrigger value="history" className="gap-2">
+                                            <History className="h-4 w-4" /> History
+                                        </TabsTrigger>
                                     </TabsList>
                                 </div>
                                 <CardDescription>{cardDescriptions[activeTab]}</CardDescription>
