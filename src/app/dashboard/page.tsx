@@ -282,6 +282,7 @@ function CreditPackCard({ credits, price, badge }: { credits: number, price: num
     const { user } = useUser();
     const firestore = useFirestore();
     const { toast } = useToast();
+    const router = useRouter();
     const [isPurchasing, setIsPurchasing] = useState(false);
 
     const handleBuy = async () => {
@@ -315,11 +316,18 @@ function CreditPackCard({ credits, price, badge }: { credits: number, price: num
                     try {
                         // Success! Update Firestore credits
                         await addCredits(firestore, user.uid, credits);
+                        
+                        // Set payment ID for the success page to reference if needed
+                        localStorage.setItem("razorpay_payment_id", response.razorpay_payment_id);
+                        
                         toast({ 
                             title: "Purchase Successful!", 
                             description: `${credits} credits added to your account.`,
                             className: "bg-green-600 text-white" 
                         });
+
+                        // Redirect to a success confirmation page
+                        router.push('/payment-success?type=credits');
                     } catch (e) {
                         toast({ variant: "destructive", title: "Sync Error", description: "Payment was successful but credits update failed. Please contact support." });
                     }
