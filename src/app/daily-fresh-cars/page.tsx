@@ -116,9 +116,9 @@ export default function DailyFreshCarsPage() {
                 <div className="h-20 w-20 bg-primary/10 rounded-full flex items-center justify-center mb-6">
                     <Lock className="h-10 w-10 text-primary" />
                 </div>
-                <h1 className="text-3xl font-bold mb-4">Browse Daily Fresh Cars</h1>
+                <h1 className="text-3xl font-bold mb-4">Browse Hot Market Listings</h1>
                 <p className="text-muted-foreground max-w-md mb-8">
-                    To maintain privacy and provide direct owner access, please login or register to browse daily fresh listings.
+                    To maintain privacy and provide direct owner access, please login or register to browse these exclusive listings.
                 </p>
                 <div className="flex gap-4">
                     <Button asChild size="lg">
@@ -135,7 +135,7 @@ export default function DailyFreshCarsPage() {
     if (error) {
         return (
             <div className="container mx-auto py-20 text-center">
-                <p className="text-destructive">Failed to load fresh cars. Please try again later.</p>
+                <p className="text-destructive">Failed to load listings. Please try again later.</p>
             </div>
         );
     }
@@ -146,13 +146,13 @@ export default function DailyFreshCarsPage() {
                 <header className="mb-12 text-center">
                     <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-1 text-sm font-medium text-primary mb-4">
                         <Flame className="h-4 w-4" />
-                        Fresh Picks
+                        Hot Deals
                     </div>
                     <h1 className="text-4xl font-bold tracking-tighter sm:text-5xl mb-4">
-                        Daily Fresh Cars
+                        Hot Market Listings
                     </h1>
                     <p className="text-muted-foreground md:text-xl max-w-2xl mx-auto mb-8">
-                        Hand-picked vehicles listed within the last 24 hours. Metadata-focused for fast browsing.
+                        Hand-picked vehicles and direct-owner deals. The best listings in the market, updated daily.
                     </p>
 
                     <Card className="max-w-6xl mx-auto p-4 md:p-6 bg-muted/20 border-secondary/50">
@@ -335,7 +335,7 @@ export default function DailyFreshCarsPage() {
                                         )}
                                     </div>
 
-                                    {/* Image Link Box - Moved to Right */}
+                                    {/* Image Link Box */}
                                     <div className="flex-shrink-0 w-full md:w-48 space-y-3 order-1 md:order-2">
                                         <div className="aspect-video relative rounded border bg-muted/50 flex flex-col items-center justify-center p-4 text-center group-hover:bg-muted transition-colors">
                                             <ImageIcon className="h-8 w-8 text-muted-foreground mb-2" />
@@ -361,7 +361,7 @@ export default function DailyFreshCarsPage() {
                 ) : (
                     <div className="text-center py-20 bg-secondary/20 rounded-xl border border-dashed">
                         <Flame className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
-                        <h2 className="text-xl font-semibold mb-2">No matching cars found</h2>
+                        <h2 className="text-xl font-semibold mb-2">No matching listings found</h2>
                         <p className="text-muted-foreground">Try adjusting your filters or check back later.</p>
                         <Button 
                             variant="link" 

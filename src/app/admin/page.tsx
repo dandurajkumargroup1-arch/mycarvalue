@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Suspense, useEffect, useState, useMemo } from 'react';
@@ -121,7 +120,7 @@ function FreshCarDialog({ car }: { car?: any }) {
         setIsSubmitting(true);
         try {
             await upsertFreshCar(firestore, { ...data, id: car?.id });
-            toast({ title: "Success", description: car ? "Listing updated." : "New car added to Fresh Picks." });
+            toast({ title: "Success", description: car ? "Listing updated." : "New listing added to Hot Picks." });
             setOpen(false);
             if (!car) form.reset();
         } catch (error) {
@@ -154,12 +153,12 @@ function FreshCarDialog({ car }: { car?: any }) {
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                {car ? <Button variant="ghost" size="icon"><Edit className="h-4 w-4"/></Button> : <Button><Plus className="mr-2 h-4 w-4" /> Add Fresh Car</Button>}
+                {car ? <Button variant="ghost" size="icon"><Edit className="h-4 w-4"/></Button> : <Button><Plus className="mr-2 h-4 w-4" /> Add Hot Listing</Button>}
             </DialogTrigger>
             <DialogContent className="max-w-3xl overflow-y-auto max-h-[90vh]">
                 <DialogHeader>
-                    <DialogTitle>{car ? 'Edit Listing' : 'Add Daily Fresh Car'}</DialogTitle>
-                    <DialogDescription>These listings appear on the public 'Daily Fresh Cars' page.</DialogDescription>
+                    <DialogTitle>{car ? 'Edit Listing' : 'Add Hot Market Listing'}</DialogTitle>
+                    <DialogDescription>These listings appear on the public 'Hot Market Listings' page.</DialogDescription>
                 </DialogHeader>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(handleSave)} className="space-y-6">
@@ -168,7 +167,7 @@ function FreshCarDialog({ car }: { car?: any }) {
                                 <FormItem className="col-span-full"><FormLabel>Car Title</FormLabel><FormControl><Input placeholder="e.g. 2021 Hyundai Creta SX" {...field} /></FormControl><FormMessage /></FormItem>
                             )} />
                             <FormField control={form.control} name="imageUrl" render={({ field }) => (
-                                <FormItem className="col-span-full"><FormLabel>Image URL</FormLabel><FormControl><Input placeholder="https://..." {...field} /></FormControl><FormMessage /></FormItem>
+                                <FormItem className="col-span-full"><FormLabel>Image URL (Direct link to .jpg/.png)</FormLabel><FormControl><Input placeholder="https://..." {...field} /></FormControl><FormMessage /></FormItem>
                             )} />
                             
                             <div className="col-span-full grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-muted/30 rounded-lg border">
@@ -238,12 +237,12 @@ function FreshCarDialog({ car }: { car?: any }) {
                         <FormField control={form.control} name="aiInsight" render={({ field }) => (
                             <FormItem>
                                 <div className="flex items-center justify-between">
-                                    <FormLabel>AI Pick Insight</FormLabel>
+                                    <FormLabel>AI Deal Insight</FormLabel>
                                     <Button type="button" variant="link" size="sm" onClick={handleGenerateInsight} disabled={isGeneratingInsight}>
                                         <Sparkles className="h-3 w-3 mr-1" /> {isGeneratingInsight ? 'Generating...' : 'Auto-Generate'}
                                     </Button>
                                 </div>
-                                <FormControl><Textarea placeholder="Why is this a fresh pick?" {...field} /></FormControl>
+                                <FormControl><Textarea placeholder="Why is this a hot listing?" {...field} /></FormControl>
                                 <FormMessage />
                             </FormItem>
                         )} />
@@ -560,7 +559,7 @@ function AdminDashboard({ user }: { user: any }) {
     if (!firestore) return;
     try {
         await deleteFreshCar(firestore, carId);
-        toast({ title: "Listing Deleted", description: "The car has been removed from Fresh Picks." });
+        toast({ title: "Listing Deleted", description: "The listing has been removed from Hot Picks." });
     } catch (e) {
         toast({ variant: 'destructive', title: "Error", description: "Failed to delete listing." });
     }
@@ -584,14 +583,14 @@ function AdminDashboard({ user }: { user: any }) {
   const cardDescriptions: Record<string, string> = {
     pending: 'Review pending requests for withdrawals.',
     history: 'Browse historical withdrawals.',
-    freshCars: 'Manage featured cars for the public feed.',
+    freshCars: 'Manage featured Hot Listings for the public feed.',
   };
 
   return (
     <div className="container mx-auto py-8 px-4 md:px-6 bg-background">
         <header className="mb-8">
             <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
-            <p className="text-muted-foreground">Manage withdrawals, users, and fresh listings.</p>
+            <p className="text-muted-foreground">Manage withdrawals, users, and market listings.</p>
         </header>
 
         <main className="grid grid-cols-1 gap-8">
@@ -604,7 +603,7 @@ function AdminDashboard({ user }: { user: any }) {
                                     <CardTitle className="flex items-center gap-2"><Shield/> Management</CardTitle>
                                     <TabsList>
                                         <TabsTrigger value="pending">Withdrawals</TabsTrigger>
-                                        <TabsTrigger value="freshCars">Fresh Cars</TabsTrigger>
+                                        <TabsTrigger value="freshCars">Hot Listings</TabsTrigger>
                                         <TabsTrigger value="history">History</TabsTrigger>
                                     </TabsList>
                                 </div>
@@ -716,7 +715,7 @@ function AdminDashboard({ user }: { user: any }) {
                                                     </TableRow>
                                                 ))
                                             ) : (
-                                                <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">No listings found. Add your first fresh car!</TableCell></TableRow>
+                                                <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">No listings found. Add your first hot listing!</TableCell></TableRow>
                                             )}
                                         </TableBody>
                                     </Table>

@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from "next/link";
@@ -27,7 +26,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const navLinks = [
-  { href: "/daily-fresh-cars", label: "Fresh Cars", icon: Flame },
+  { href: "/daily-fresh-cars", label: "Hot Listings", icon: Flame },
   { href: "/valuation", label: "Valuation", icon: Sparkles },
   { href: "/emi-calculator", label: "EMI Calculator", icon: Calculator },
   { href: "/about", label: "About", icon: Info },
