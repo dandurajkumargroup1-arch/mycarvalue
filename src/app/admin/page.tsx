@@ -8,7 +8,6 @@ import type { UserProfile } from '@/lib/firebase/user-profile-service';
 import { approveWithdrawal, rejectWithdrawal } from '@/lib/firebase/withdrawal-service';
 import { deleteUser } from '@/lib/firebase/user-profile-service';
 import { upsertFreshCar, deleteFreshCar, type FreshCarData } from '@/lib/firebase/fresh-car-service';
-import { getFreshCarInsight } from '@/ai/flows/fresh-car-insight';
 import { useRouter } from 'next/navigation';
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -76,7 +75,6 @@ type FreshCarFormInput = z.infer<typeof FreshCarSchema>;
 function FreshCarDialog({ car }: { car?: any }) {
     const [open, setOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [isGeneratingInsight, setIsGeneratingInsight] = useState(false);
     const firestore = useFirestore();
     const { toast } = useToast();
 
@@ -131,25 +129,6 @@ function FreshCarDialog({ car }: { car?: any }) {
         }
     };
 
-    const handleGenerateInsight = async () => {
-        const values = form.getValues();
-        if (!values.title || !values.price) {
-            toast({ variant: 'destructive', title: "Missing Info", description: "Enter at least title and price first." });
-            return;
-        }
-        setIsGeneratingInsight(true);
-        try {
-            const insight = await getFreshCarInsight(values);
-            form.setValue('aiInsight', insight);
-            toast({ title: "AI Insight Generated", description: "Insight added to form." });
-        } catch (error) {
-            console.error(error);
-            toast({ variant: 'destructive', title: "AI Error", description: "Failed to generate AI insight." });
-        } finally {
-            setIsGeneratingInsight(false);
-        }
-    };
-
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
@@ -158,7 +137,7 @@ function FreshCarDialog({ car }: { car?: any }) {
             <DialogContent className="max-w-3xl overflow-y-auto max-h-[90vh]">
                 <DialogHeader>
                     <DialogTitle>{car ? 'Edit Listing' : 'Add Hot Market Listing'}</DialogTitle>
-                    <DialogDescription>These listings appear on the public 'Hot Market Listings' page.</DialogDescription>
+                    <DialogDescription>Manually manage featured car listings for the public 'Hot Market Listings' feed.</DialogDescription>
                 </DialogHeader>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(handleSave)} className="space-y-6">
@@ -236,13 +215,8 @@ function FreshCarDialog({ car }: { car?: any }) {
                         </div>
                         <FormField control={form.control} name="aiInsight" render={({ field }) => (
                             <FormItem>
-                                <div className="flex items-center justify-between">
-                                    <FormLabel>AI Deal Insight</FormLabel>
-                                    <Button type="button" variant="link" size="sm" onClick={handleGenerateInsight} disabled={isGeneratingInsight}>
-                                        <Sparkles className="h-3 w-3 mr-1" /> {isGeneratingInsight ? 'Generating...' : 'Auto-Generate'}
-                                    </Button>
-                                </div>
-                                <FormControl><Textarea placeholder="Why is this a hot listing?" {...field} /></FormControl>
+                                <FormLabel>Market Insight / Description</FormLabel>
+                                <FormControl><Textarea placeholder="Describe why this car is a hot deal (e.g. low kms, single owner, mint condition)..." {...field} /></FormControl>
                                 <FormMessage />
                             </FormItem>
                         )} />
