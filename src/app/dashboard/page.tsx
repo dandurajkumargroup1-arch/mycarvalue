@@ -300,7 +300,8 @@ function CreditPackCard({ credits, price, buttonId }: { credits: number, price: 
         <div className="flex items-center justify-between p-4 border rounded-lg bg-card hover:bg-muted/30 transition-colors">
             <div>
                 <p className="font-bold text-lg">{credits} Credits</p>
-                <p className="text-sm text-muted-foreground">Unlock {credits} hot listings</p>
+                <p className="text-2xl font-black text-primary">₹{price}</p>
+                <p className="text-xs text-muted-foreground">Unlock {credits} hot listings</p>
             </div>
             <div ref={containerRef} className="min-w-[120px] flex justify-end">
                 {/* Razorpay Button injects here */}
