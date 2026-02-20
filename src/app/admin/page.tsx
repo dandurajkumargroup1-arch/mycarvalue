@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { Suspense, useEffect, useState, useMemo } from 'react';
@@ -9,6 +8,8 @@ import { useUser, useFirestore, useDoc, useCollection } from '@/firebase';
 import type { UserProfile } from '@/lib/firebase/user-profile-service';
 import { approveWithdrawal, rejectWithdrawal } from '@/lib/firebase/withdrawal-service';
 import { deleteUser } from '@/lib/firebase/user-profile-service';
+import { upsertFreshCar, deleteFreshCar, type FreshCarData } from '@/lib/firebase/fresh-car-service';
+import { getFreshCarInsight } from '@/ai/flows/fresh-car-insight';
 import { useRouter } from 'next/navigation';
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -29,8 +30,9 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
-import { AlertTriangle, CheckCircle, Shield, Users, Wallet, XCircle, Calendar as CalendarIcon, Download, Trash2 } from 'lucide-react';
+import { AlertTriangle, CheckCircle, Shield, Users, Wallet, XCircle, Calendar as CalendarIcon, Download, Trash2, Plus, Flame, Edit, Sparkles } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -49,6 +51,159 @@ interface WithdrawalRequest {
     processedAt?: Date | null;
     rejectionReason?: string;
     transactionId?: string;
+}
+
+const FreshCarSchema = z.object({
+    title: z.string().min(5, "Title is required"),
+    imageUrl: z.string().url("Valid image URL is required"),
+    price: z.coerce.number().min(10000, "Price must be at least 10,000"),
+    location: z.string().min(3, "Location is required"),
+    year: z.coerce.number().min(1980, "Year must be 1980 or later"),
+    km: z.coerce.number().min(0, "KM is required"),
+    fuelType: z.string().min(1, "Fuel type is required"),
+    transmission: z.string().min(1, "Transmission is required"),
+    aiInsight: z.string().optional(),
+});
+
+type FreshCarFormInput = z.infer<typeof FreshCarSchema>;
+
+function FreshCarDialog({ car }: { car?: any }) {
+    const [open, setOpen] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isGeneratingInsight, setIsGeneratingInsight] = useState(false);
+    const firestore = useFirestore();
+    const { toast } = useToast();
+
+    const form = useForm<FreshCarFormInput>({
+        resolver: zodResolver(FreshCarSchema),
+        defaultValues: car ? {
+            title: car.title,
+            imageUrl: car.imageUrl,
+            price: car.price,
+            location: car.location,
+            year: car.year,
+            km: car.km,
+            fuelType: car.fuelType,
+            transmission: car.transmission,
+            aiInsight: car.aiInsight || '',
+        } : {
+            title: '',
+            imageUrl: '',
+            price: 500000,
+            location: '',
+            year: new Date().getFullYear(),
+            km: 50000,
+            fuelType: 'petrol',
+            transmission: 'manual',
+            aiInsight: '',
+        }
+    });
+
+    const handleSave = async (data: FreshCarFormInput) => {
+        if (!firestore) return;
+        setIsSubmitting(true);
+        try {
+            await upsertFreshCar(firestore, { ...data, id: car?.id });
+            toast({ title: "Success", description: car ? "Listing updated." : "New car added to Fresh Picks." });
+            setOpen(false);
+            if (!car) form.reset();
+        } catch (error) {
+            console.error(error);
+            toast({ variant: 'destructive', title: "Error", description: "Failed to save listing." });
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleGenerateInsight = async () => {
+        const values = form.getValues();
+        // Minimal check before generating
+        if (!values.title || !values.price) {
+            toast({ variant: 'destructive', title: "Missing Info", description: "Enter at least title and price first." });
+            return;
+        }
+        setIsGeneratingInsight(true);
+        try {
+            const insight = await getFreshCarInsight(values);
+            form.setValue('aiInsight', insight);
+            toast({ title: "AI Insight Generated", description: "Insight added to form." });
+        } catch (error) {
+            console.error(error);
+            toast({ variant: 'destructive', title: "AI Error", description: "Failed to generate AI insight." });
+        } finally {
+            setIsGeneratingInsight(false);
+        }
+    };
+
+    return (
+        <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+                {car ? <Button variant="ghost" size="icon"><Edit className="h-4 w-4"/></Button> : <Button><Plus className="mr-2 h-4 w-4" /> Add Fresh Car</Button>}
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                    <DialogTitle>{car ? 'Edit Listing' : 'Add Daily Fresh Car'}</DialogTitle>
+                    <DialogDescription>These listings appear on the public 'Daily Fresh Cars' page.</DialogDescription>
+                </DialogHeader>
+                <Form {...form}>
+                    <form onSubmit={form.handleSubmit(handleSave)} className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                            <FormField control={form.control} name="title" render={({ field }) => (
+                                <FormItem className="col-span-2"><FormLabel>Title</FormLabel><FormControl><Input placeholder="e.g. 2021 Hyundai Creta SX" {...field} /></FormControl><FormMessage /></FormItem>
+                            )} />
+                            <FormField control={form.control} name="imageUrl" render={({ field }) => (
+                                <FormItem className="col-span-2"><FormLabel>Image URL (Unsplash/Picsum)</FormLabel><FormControl><Input placeholder="https://..." {...field} /></FormControl><FormMessage /></FormItem>
+                            )} />
+                            <FormField control={form.control} name="price" render={({ field }) => (
+                                <FormItem><FormLabel>Price (INR)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                            )} />
+                            <FormField control={form.control} name="location" render={({ field }) => (
+                                <FormItem><FormLabel>Location</FormLabel><FormControl><Input placeholder="e.g. Mumbai, MH" {...field} /></FormControl><FormMessage /></FormItem>
+                            )} />
+                            <FormField control={form.control} name="year" render={({ field }) => (
+                                <FormItem><FormLabel>Manufacture Year</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                            )} />
+                            <FormField control={form.control} name="km" render={({ field }) => (
+                                <FormItem><FormLabel>KM Driven</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                            )} />
+                            <FormField control={form.control} name="fuelType" render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Fuel Type</FormLabel>
+                                    <Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger></FormControl>
+                                        <SelectContent><SelectItem value="petrol">Petrol</SelectItem><SelectItem value="diesel">Diesel</SelectItem><SelectItem value="cng">CNG</SelectItem><SelectItem value="electric">Electric</SelectItem></SelectContent>
+                                    </Select><FormMessage />
+                                </FormItem>
+                            )} />
+                            <FormField control={form.control} name="transmission" render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Transmission</FormLabel>
+                                    <Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger></FormControl>
+                                        <SelectContent><SelectItem value="manual">Manual</SelectItem><SelectItem value="automatic">Automatic</SelectItem></SelectContent>
+                                    </Select><FormMessage />
+                                </FormItem>
+                            )} />
+                        </div>
+                        <FormField control={form.control} name="aiInsight" render={({ field }) => (
+                            <FormItem>
+                                <div className="flex items-center justify-between">
+                                    <FormLabel>AI Pick Insight</FormLabel>
+                                    <Button type="button" variant="link" size="sm" onClick={handleGenerateInsight} disabled={isGeneratingInsight}>
+                                        <Sparkles className="h-3 w-3 mr-1" /> {isGeneratingInsight ? 'Generating...' : 'Auto-Generate'}
+                                    </Button>
+                                </div>
+                                <FormControl><Textarea placeholder="Why is this a fresh pick?" {...field} /></FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )} />
+                        <DialogFooter>
+                            <DialogClose asChild><Button type="button" variant="secondary">Cancel</Button></DialogClose>
+                            <Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Saving...' : 'Save Listing'}</Button>
+                        </DialogFooter>
+                    </form>
+                </Form>
+            </DialogContent>
+        </Dialog>
+    );
 }
 
 
@@ -215,6 +370,12 @@ function AdminDashboard({ user }: { user: any }) {
       processedAt: toDate(req.processedAt),
     }));
   }, [rawAllRequestsData]);
+
+  const freshCarsQuery = useMemo(() => {
+    if (!firestore || !user) return null;
+    return query(collection(firestore, 'dailyFreshCars'), orderBy('createdAt', 'desc'));
+  }, [firestore, user]);
+  const { data: freshCars, isLoading: isFreshCarsLoading } = useCollection<any>(freshCarsQuery);
   
 
   // --- Derived Data ---
@@ -342,6 +503,16 @@ function AdminDashboard({ user }: { user: any }) {
         toast({ variant: "destructive", title: "Deletion Failed", description: "Could not delete the user." });
     }
   };
+
+  const handleDeleteFreshCar = async (carId: string) => {
+    if (!firestore) return;
+    try {
+        await deleteFreshCar(firestore, carId);
+        toast({ title: "Listing Deleted", description: "The car has been removed from Fresh Picks." });
+    } catch (e) {
+        toast({ variant: 'destructive', title: "Error", description: "Failed to delete listing." });
+    }
+  }
   
 
   const isLoading = isUsersLoading || isRequestsLoading;
@@ -361,13 +532,14 @@ function AdminDashboard({ user }: { user: any }) {
   const cardDescriptions: Record<string, string> = {
     pending: 'Review pending requests for withdrawals.',
     history: 'Browse historical withdrawals.',
+    freshCars: 'Manage featured cars for the public feed.',
   };
 
   return (
     <div className="container mx-auto py-8 px-4 md:px-6 bg-background">
         <header className="mb-8">
             <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
-            <p className="text-muted-foreground">Manage withdrawals and users.</p>
+            <p className="text-muted-foreground">Manage withdrawals, users, and fresh listings.</p>
         </header>
 
         <main className="grid grid-cols-1 gap-8">
@@ -379,7 +551,8 @@ function AdminDashboard({ user }: { user: any }) {
                                 <div className="flex items-center justify-between">
                                     <CardTitle className="flex items-center gap-2"><Shield/> Management</CardTitle>
                                     <TabsList>
-                                        <TabsTrigger value="pending">Pending</TabsTrigger>
+                                        <TabsTrigger value="pending">Withdrawals</TabsTrigger>
+                                        <TabsTrigger value="freshCars">Fresh Cars</TabsTrigger>
                                         <TabsTrigger value="history">History</TabsTrigger>
                                     </TabsList>
                                 </div>
@@ -435,6 +608,58 @@ function AdminDashboard({ user }: { user: any }) {
                                                         No pending requests. All caught up!
                                                     </TableCell>
                                                 </TableRow>
+                                            )}
+                                        </TableBody>
+                                    </Table>
+                                </CardContent>
+                            </TabsContent>
+                            <TabsContent value="freshCars">
+                                <CardContent>
+                                    <div className="flex justify-end mb-4">
+                                        <FreshCarDialog />
+                                    </div>
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead>Car</TableHead>
+                                                <TableHead>Location</TableHead>
+                                                <TableHead>Price</TableHead>
+                                                <TableHead>Insight</TableHead>
+                                                <TableHead className="text-right">Actions</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {isFreshCarsLoading ? (
+                                                <TableRow><TableCell colSpan={5}><Skeleton className="h-8 w-full" /></TableCell></TableRow>
+                                            ) : freshCars && freshCars.length > 0 ? (
+                                                freshCars.map(car => (
+                                                    <TableRow key={car.id}>
+                                                        <TableCell className="font-medium">
+                                                            <div className="flex items-center gap-3">
+                                                                <div className="relative h-10 w-10 rounded overflow-hidden flex-shrink-0">
+                                                                    <Image src={car.imageUrl} alt={car.title} fill className="object-cover" />
+                                                                </div>
+                                                                <div>
+                                                                    <p>{car.title}</p>
+                                                                    <p className="text-xs text-muted-foreground">{car.year} | {car.km.toLocaleString()} km</p>
+                                                                </div>
+                                                            </div>
+                                                        </TableCell>
+                                                        <TableCell className="text-sm">{car.location}</TableCell>
+                                                        <TableCell className="font-bold">{formatCurrency(car.price)}</TableCell>
+                                                        <TableCell className="max-w-[200px] truncate text-xs italic">
+                                                            {car.aiInsight || 'No insight'}
+                                                        </TableCell>
+                                                        <TableCell className="text-right">
+                                                            <div className="flex justify-end gap-1">
+                                                                <FreshCarDialog car={car} />
+                                                                <Button variant="ghost" size="icon" onClick={() => handleDeleteFreshCar(car.id)}><Trash2 className="h-4 w-4 text-destructive"/></Button>
+                                                            </div>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ))
+                                            ) : (
+                                                <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">No listings found. Add your first fresh car!</TableCell></TableRow>
                                             )}
                                         </TableBody>
                                     </Table>

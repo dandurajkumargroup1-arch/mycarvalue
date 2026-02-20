@@ -26,7 +26,7 @@ service cloud.firestore {
     function isAdmin() {
       // isSuperAdmin does not require a DB read and is faster.
       let isSuperAdmin = isSignedIn() && request.auth.token.email == 'rajmycarvalue@gmail.com';
-      // isRoleAdmin requires a DB read. The `allow get` rule on /users/{userId} must permit this check.
+      // isRoleAdmin requires a DB read.
       let isRoleAdmin = isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Admin';
       return isSuperAdmin || isRoleAdmin;
     }
@@ -35,50 +35,41 @@ service cloud.firestore {
     // User Rules
     // ------------------------------------------------------------------------
     match /users/{userId} {
-      // An Admin can get/list/update/delete any user.
-      // A non-admin can only get/update their own profile. They cannot list all users.
       allow get, update: if isOwner(userId) || isAdmin();
       allow list, delete: if isAdmin();
       allow create: if (isOwner(userId) && userProfileHasCorrectIdOnCreate(userId)) || isAdmin();
 
-      // --- Subcollection Rules ---
-
       match /carValuations/{carValuationId} {
-        // Admins can manage any valuation. Users can manage their own.
         allow get, list, delete: if isOwner(userId) || isAdmin();
-        allow create: if (isOwner(userId) && hasCorrectOwnerDataOnCreate(userId)) || isAdmin();
-        // Valuations are immutable to maintain data integrity.
+        allow create: if isOwner(userId) && hasCorrectOwnerDataOnCreate(userId);
         allow update: if false;
       }
 
       match /wallet/{walletId} {
-        // Admins can manage any wallet. Users can manage their own.
         allow get, list, write: if isOwner(userId) || isAdmin();
       }
 
       match /withdrawalRequests/{requestId} {
-        // A user can create and read their own requests. Admins can also read them for management.
         allow get, list: if isOwner(userId) || isAdmin();
         allow create: if isOwner(userId);
-        // A user cannot update or delete their request once it's submitted.
-        // Admin updates are handled by the collection group rule below.
         allow update, delete: if false;
       }
     }
 
     // ------------------------------------------------------------------------
-    // Auction Rules
+    // Daily Fresh Car Rules
     // ------------------------------------------------------------------------
-    match /auctionCars/{auctionCarId} {
-        // Only Admins can create, read, update, or delete auction car listings.
-        allow read, write: if isAdmin();
+    match /dailyFreshCars/{carId} {
+        // Everyone can view fresh car listings
+        allow read: if true;
+        // Only admins can add or edit listings
+        allow write: if isAdmin();
     }
     
     // ------------------------------------------------------------------------
     // Collection Group Rules for Admin Access
     // ------------------------------------------------------------------------
     match /{path=**}/withdrawalRequests/{requestId} {
-      // Admins can read, update (approve/reject), and delete any request from any user.
       allow read, update, delete: if isAdmin();
     }
   }

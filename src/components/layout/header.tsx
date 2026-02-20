@@ -2,7 +2,7 @@
 "use client";
 
 import Link from "next/link";
-import { Car, Menu, Sparkles, LogIn, LogOut, Calculator, Info, HelpCircle, Phone, UserPlus, LayoutDashboard, Shield, Gavel } from "lucide-react";
+import { Car, Menu, Sparkles, LogIn, LogOut, Calculator, Info, HelpCircle, Phone, UserPlus, LayoutDashboard, Shield, Flame } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { signOut as firebaseSignOut } from "firebase/auth";
 import { useState, useMemo, useEffect } from "react";
@@ -27,6 +27,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const navLinks = [
+  { href: "/daily-fresh-cars", label: "Fresh Cars", icon: Flame },
   { href: "/valuation", label: "Valuation", icon: Sparkles },
   { href: "/emi-calculator", label: "EMI Calculator", icon: Calculator },
   { href: "/about", label: "About", icon: Info },
@@ -147,7 +148,6 @@ export default function Header() {
     setIsClient(true);
   }, []);
   
-  // Centralize user and profile data fetching here
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
   const userProfileRef = useMemo(() => {
@@ -156,21 +156,16 @@ export default function Header() {
   }, [firestore, user]);
   const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileRef);
 
-  // Derive admin status with robust logic that doesn't get blocked by profile loading
   const isAdmin = useMemo(() => {
-    // Cannot be admin if auth is loading or no user
     if (isUserLoading || !user) {
         return false;
     }
-    // Hardcoded email check is immediate and doesn't need profile
     if (user.email === 'rajmycarvalue@gmail.com') {
         return true;
     }
-    // For other users, we must wait for profile to check role
     if (isProfileLoading) {
         return false;
     }
-    // Finally, check role from loaded profile
     return userProfile?.role === 'Admin';
   }, [user, isUserLoading, userProfile, isProfileLoading]);
 

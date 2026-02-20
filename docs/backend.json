@@ -205,46 +205,25 @@
       },
       "required": ["id", "userId", "paymentId", "make", "model", "manufactureYear", "createdAt"]
     },
-    "AuctionCar": {
+    "DailyFreshCar": {
       "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Auction Car",
+      "title": "Daily Fresh Car",
       "type": "object",
-      "description": "Represents a car listed for live auction.",
+      "description": "Represents a featured car listing for the 'Daily Fresh Cars' section.",
       "properties": {
         "id": { "type": "string" },
-        "title": { "type": "string", "description": "e.g., 2021 Hyundai Creta SX(O)" },
-        "images": { "type": "array", "items": { "type": "string", "format": "uri" }, "description": "Array of image URLs." },
-        "odometer": { "type": "string" },
+        "title": { "type": "string" },
+        "imageUrl": { "type": "string", "format": "uri" },
+        "price": { "type": "number" },
+        "location": { "type": "string" },
+        "year": { "type": "number" },
+        "km": { "type": "number" },
         "fuelType": { "type": "string" },
         "transmission": { "type": "string" },
-        "ownership": { "type": "string" },
-        "registration": { "type": "string" },
-        "conditionSummary": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "item": { "type": "string" },
-              "status": { "type": "string" }
-            },
-            "required": ["item", "status"]
-          }
-        },
-        "inspectionReportUrl": { "type": "string", "format": "uri" },
-        "sellerName": { "type": "string" },
-        "sellerRating": { "type": "number" },
-        "sellerLocation": { "type": "string" },
-        "startTime": { "type": "string", "format": "date-time" },
-        "endTime": { "type": "string", "format": "date-time" },
-        "startPrice": { "type": "number" },
-        "reservePrice": { "type": "number" },
-        "currentBid": { "type": "number" },
-        "highestBidderId": { "type": "string" },
-        "status": { "type": "string", "enum": ["scheduled", "live", "completed", "cancelled"] },
-        "createdAt": { "type": "string", "format": "date-time" },
-        "updatedAt": { "type": "string", "format": "date-time" }
+        "aiInsight": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["id", "title", "startTime", "endTime", "startPrice", "reservePrice", "status"]
+      "required": ["id", "title", "imageUrl", "price", "location", "year", "km", "createdAt"]
     },
     "Wallet": {
       "title": "Wallet",
@@ -351,14 +330,14 @@
         }
       },
       {
-        "path": "/auctionCars/{auctionCarId}",
+        "path": "/dailyFreshCars/{carId}",
         "definition": {
-          "entityName": "AuctionCar",
-          "schema": { "$ref": "#/backend/entities/AuctionCar" },
-          "description": "Stores cars for live auction. Only Admins can manage these."
+          "entityName": "DailyFreshCar",
+          "schema": { "$ref": "#/backend/entities/DailyFreshCar" },
+          "description": "Stores featured car listings. Publicly readable."
         }
       }
     ],
-    "reasoning": "The Firestore data structure is user-centric. All user-specific data (valuations, wallet, withdrawals) is stored in subcollections under their main user document. This allows for simple, secure access control rules. The `auctionCars` collection is a root collection as it is not user-specific and managed only by admins. Admins use collection group queries to access all withdrawal requests across all users for processing."
+    "reasoning": "The Firestore data structure is user-centric for sensitive data. Publicly accessible featured listings like 'Daily Fresh Cars' are stored in a root collection for easy global access."
   }
 }
