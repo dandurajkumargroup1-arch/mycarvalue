@@ -278,7 +278,7 @@ function WithdrawalDialog({ wallet, userProfile, isWithdrawalEnabled }: { wallet
     )
 }
 
-function CreditPackCard({ credits, price }: { credits: number, price: number }) {
+function CreditPackCard({ credits, price, badge }: { credits: number, price: number, badge?: string }) {
     const { user } = useUser();
     const firestore = useFirestore();
     const { toast } = useToast();
@@ -344,11 +344,11 @@ function CreditPackCard({ credits, price }: { credits: number, price: number }) 
         <div className="flex items-center justify-between p-5 border rounded-xl bg-card hover:border-primary/50 transition-all shadow-sm group">
             <div className="space-y-1">
                 <div className="flex items-center gap-2">
-                    <p className="font-bold text-lg">{credits} Credits</p>
-                    <Badge variant="secondary" className="text-[10px] uppercase font-black tracking-tighter bg-primary/10 text-primary border-primary/20">Value Pack</Badge>
+                    <p className="font-bold text-lg">{credits} Credit{credits > 1 ? 's' : ''}</p>
+                    {badge && <Badge variant="secondary" className="text-[10px] uppercase font-black tracking-tighter bg-primary/10 text-primary border-primary/20">{badge}</Badge>}
                 </div>
                 <p className="text-3xl font-black text-foreground">₹{price}</p>
-                <p className="text-xs text-muted-foreground">Unlock {credits} hot owner contacts</p>
+                <p className="text-xs text-muted-foreground">Unlock {credits} hot owner contact{credits > 1 ? 's' : ''}</p>
             </div>
             <div>
                 <Button 
@@ -636,7 +636,7 @@ function AgentOwnerDashboard({ user, userProfile }: { user: any, userProfile: Us
         return query(collection(firestore, 'users', user.uid, 'carValuations'), orderBy('createdAt', 'desc'));
     }, [firestore, user]);
 
-    const { data: rawValuations, isLoading, error } = useCollection<Omit<ValuationDoc, 'createdAt'> & { createdAt: any }>(valuationsQuery);
+    const { data: rawValuations, isLoading: error } = useCollection<Omit<ValuationDoc, 'createdAt'> & { createdAt: any }>(valuationsQuery);
     const valuations = useMemo(() => {
         if (!rawValuations) return null;
         return rawValuations.map(v => ({ ...v, createdAt: toDate(v.createdAt) }));
@@ -761,21 +761,15 @@ function AgentOwnerDashboard({ user, userProfile }: { user: any, userProfile: Us
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {isLoading && (
+                                    {/* Table Content Handled by useCollection result in parent */}
+                                    {!valuations && (
                                         <TableRow>
                                             <TableCell colSpan={4} className="h-24 text-center">
                                                 <Skeleton className="w-full h-8" />
                                             </TableCell>
                                         </TableRow>
                                     )}
-                                    {error && (
-                                        <TableRow>
-                                            <TableCell colSpan={4} className="h-24 text-center text-destructive">
-                                                An error occurred while loading your reports. Please try again later.
-                                            </TableCell>
-                                        </TableRow>
-                                    )}
-                                    {!isLoading && !error && filteredValuations && filteredValuations.length > 0 ? (
+                                    {valuations && filteredValuations.length > 0 ? (
                                         filteredValuations.map((valuation) => (
                                             <TableRow key={valuation.id}>
                                                 <TableCell className="font-medium">{valuation.make} {valuation.model}</TableCell>
@@ -792,7 +786,7 @@ function AgentOwnerDashboard({ user, userProfile }: { user: any, userProfile: Us
                                             </TableRow>
                                         ))
                                     ) : (
-                                        !isLoading && !error && (
+                                        valuations && (
                                             <TableRow>
                                                 <TableCell colSpan={4} className="h-24 text-center">
                                                     No valuation reports found.
@@ -816,6 +810,7 @@ function AgentOwnerDashboard({ user, userProfile }: { user: any, userProfile: Us
                             <CardDescription>Unlock owner contact details and photos in Hot Market Listings.</CardDescription>
                         </CardHeader>
                         <CardContent className="pt-6 space-y-4">
+                            <CreditPackCard credits={1} price={5} badge="Trial Pack" />
                             <CreditPackCard credits={5} price={25} />
                             <CreditPackCard credits={10} price={49} />
                             <CreditPackCard credits={20} price={99} />
