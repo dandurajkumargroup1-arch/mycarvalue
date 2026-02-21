@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState, useMemo } from 'react';
 import Image from 'next/image';
-import { doc, collection, query, collectionGroup, where } from 'firebase/firestore';
+import { doc, collection, query, collectionGroup, where, getDocs, orderBy } from 'firebase/firestore';
 import { useUser, useFirestore, useDoc, useCollection } from '@/firebase';
 import type { UserProfile } from '@/lib/firebase/user-profile-service';
 import { approveWithdrawal, rejectWithdrawal } from '@/lib/firebase/withdrawal-service';
@@ -268,7 +268,7 @@ function UserManagementRow({ userProfile }: { userProfile: UserProfile }) {
                         <AlertDialogHeader>
                             <AlertDialogTitle>Delete User Account?</AlertDialogTitle>
                             <AlertDialogDescription>
-                                This will permanently delete the user profile and all associated data (valuations, wallet). This action cannot be undone.
+                                This will permanently delete the user profile and all associated data. This action cannot be undone.
                             </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
@@ -359,7 +359,7 @@ function AdminDashboard({ user }: { user: any }) {
             <div style="background:#f8fafc;padding:15px;border-radius:6px;">Loc: <b>${car.city}</b></div>
         </div>
         ${car.aiInsight ? `<div style="border-left:4px solid #f9c70a;background:#fffbeb;padding:15px;"><i>"${car.aiInsight}"</i></div>` : ''}
-        <p style="text-align:center;margin-top:40px;font-size:12px;color:#64748b;">Visit mycarvalue.in for contact details and full inspection report.</p>
+        <p style="text-align:center;margin-top:40px;font-size:12px;color:#64748b;">Visit mycarvalue.in for details.</p>
     </div>`;
     document.body.appendChild(root);
     try {

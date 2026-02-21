@@ -342,7 +342,7 @@ function CreditPackCard({ credits, price, badge }: { credits: number, price: num
                     {badge && <Badge variant="secondary" className="text-[10px] uppercase font-black tracking-tighter bg-primary/10 text-primary border-primary/20">{badge}</Badge>}
                 </div>
                 <p className="text-3xl font-black text-foreground">₹{price}</p>
-                <p className="text-xs text-muted-foreground">Unlock {credits} hot owner contact{credits > 1 ? 's' : ''}</p>
+                <p className="text-xs text-muted-foreground">Unlock {credits} hot owner details</p>
             </div>
             <div>
                 <Button 
@@ -403,7 +403,6 @@ function MechanicDashboard({ user, userProfile }: { user: any, userProfile: User
     }, [valuations]);
 
     const dailyLimit = 10; 
-    const earningsPerReport = 15;
     const minWithdrawalAmount = 1;
     const remainingInspections = dailyLimit - completedToday;
     const lastPendingRequest = withdrawalsData?.find(w => w.status === 'requested');
@@ -429,7 +428,6 @@ function MechanicDashboard({ user, userProfile }: { user: any, userProfile: User
             </header>
 
             <main className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-                {/* Mobile Top Up Credits (Visible first on mobile) */}
                 <div className="lg:hidden block">
                     <TopUpCreditsCard />
                 </div>
@@ -472,7 +470,6 @@ function MechanicDashboard({ user, userProfile }: { user: any, userProfile: User
                 </div>
 
                 <div className="space-y-6">
-                    {/* Desktop Top Up Credits */}
                     <div className="hidden lg:block">
                         <TopUpCreditsCard />
                     </div>
@@ -564,7 +561,6 @@ function AgentOwnerDashboard({ user, userProfile }: { user: any, userProfile: Us
             </header>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Buy Credits Card (Visible first on mobile) */}
                 <div className="lg:hidden block">
                     <TopUpCreditsCard />
                 </div>
@@ -605,7 +601,6 @@ function AgentOwnerDashboard({ user, userProfile }: { user: any, userProfile: Us
                     </Card>
                 </div>
 
-                {/* Buy Credits Card (Sidebar on desktop) */}
                 <div className="hidden lg:block space-y-8">
                     <TopUpCreditsCard />
                 </div>

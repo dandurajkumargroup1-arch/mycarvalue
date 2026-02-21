@@ -14,7 +14,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Flame, MapPin, Calendar as CalendarIcon, Gauge, Fuel, Zap, Sparkles, User, Phone, Search, LogIn, Lock, Image as ImageIcon, ExternalLink, MessageCircle, Coins, Share2 } from 'lucide-react';
+import { Flame, MapPin, Calendar as CalendarIcon, Gauge, Fuel, Zap, Sparkles, User, Phone, Search, LogIn, Lock, Image as ImageIcon, ExternalLink, MessageCircle, Coins, Share2, Eye } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { DateRange } from "react-day-picker";
@@ -76,7 +76,6 @@ export default function DailyFreshCarsPage() {
 
     const { data: rawCars, isLoading, error } = useCollection<DailyFreshCar>(freshCarsQuery);
 
-    // Dynamic Lists for Filters
     const availableCities = useMemo(() => {
         if (!rawCars) return [];
         let carsInState = rawCars;
@@ -98,7 +97,6 @@ export default function DailyFreshCarsPage() {
         return Array.from(new Set(carsInCity.map(car => car.area))).sort();
     }, [rawCars, stateFilter, cityFilter]);
 
-    // Reset sub-filters when parent changes
     useEffect(() => {
         setCityFilter('all');
         setAreaFilter('all');
@@ -131,7 +129,6 @@ export default function DailyFreshCarsPage() {
         });
     }, [rawCars, stateFilter, cityFilter, areaFilter, typeFilter, dateRange]);
 
-    // Handle Deep Linking
     useEffect(() => {
         if (hasMounted && !isLoading && rawCars) {
             const params = new URLSearchParams(window.location.search);
@@ -358,7 +355,6 @@ export default function DailyFreshCarsPage() {
                             return (
                                 <Card key={car.id} id={`car-${car.id}`} className="overflow-hidden group hover:shadow-md transition-all border-secondary/50">
                                     <div className="flex flex-col md:flex-row p-5 gap-6">
-                                        {/* Metadata Section */}
                                         <div className="flex-grow space-y-4 order-2 md:order-1">
                                             <div className="flex flex-wrap justify-between items-start gap-4">
                                                 <div>
@@ -480,7 +476,6 @@ export default function DailyFreshCarsPage() {
                                             )}
                                         </div>
 
-                                        {/* Image Link Box */}
                                         <div className="flex-shrink-0 w-full md:w-48 space-y-3 order-1 md:order-2">
                                             <div className="relative aspect-video rounded border bg-muted/50 overflow-hidden flex flex-col items-center justify-center p-4 text-center">
                                                 {isUnlocked ? (
@@ -496,9 +491,9 @@ export default function DailyFreshCarsPage() {
                                                                 href={car.imageUrl} 
                                                                 target="_blank" 
                                                                 rel="noopener noreferrer" 
-                                                                className="text-white font-bold text-xs flex items-center gap-1 hover:underline"
+                                                                className="text-white font-bold text-xs flex items-center gap-1.5 hover:underline bg-background/20 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/30 shadow-xl"
                                                             >
-                                                                View Full Photo <ExternalLink className="h-3 w-3" />
+                                                                <Eye className="h-4 w-4" /> View
                                                             </a>
                                                         </div>
                                                     </>

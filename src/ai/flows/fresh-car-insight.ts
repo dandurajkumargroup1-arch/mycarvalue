@@ -1,8 +1,6 @@
 'use server';
 /**
  * @fileOverview AI flow to generate insights for 'Daily Fresh Cars'.
- *
- * - getFreshCarInsight - Generates a brief, catchy reason why a car is a 'Fresh Pick'.
  */
 
 import { ai } from '@/ai/genkit';
@@ -18,7 +16,7 @@ const FreshCarInputSchema = z.object({
 });
 
 const FreshCarOutputSchema = z.object({
-  insight: z.string().describe("A brief, catchy (10-15 words) insight about why this car is a great deal or a rare find."),
+  insight: z.string().describe("A brief, catchy (10-15 words) insight about why this car is a great deal."),
 });
 
 const freshCarPrompt = ai.definePrompt({
@@ -35,7 +33,7 @@ const freshCarPrompt = ai.definePrompt({
     - Transmission: {{transmission}}
 
     Generate a 1-sentence 'Fresh Pick' insight for this car listing. 
-    Focus on things like 'low running for its age', 'hard to find variant', or 'excellent value for money'.
+    Focus on things like 'low running for its age' or 'excellent value'.
     Keep it professional but exciting.`,
 });
 
