@@ -14,7 +14,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Flame, MapPin, Calendar as CalendarIcon, Gauge, Fuel, Zap, Sparkles, User, Phone, Search, LogIn, Lock, Image as ImageIcon, ExternalLink, MessageCircle, Coins, Share2, Eye } from 'lucide-react';
+import { Flame, MapPin, Calendar as CalendarIcon, Gauge, Fuel, Zap, Sparkles, User, Phone, Search, LogIn, Lock, Car, ExternalLink, MessageCircle, Coins, Share2, Eye } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { DateRange } from "react-day-picker";
@@ -477,7 +477,7 @@ export default function DailyFreshCarsPage() {
                                         </div>
 
                                         <div className="flex-shrink-0 w-full md:w-48 space-y-3 order-1 md:order-2">
-                                            <div className="relative aspect-video rounded border bg-muted/50 overflow-hidden flex flex-col items-center justify-center p-4 text-center">
+                                            <div className="relative aspect-video rounded border bg-muted/50 overflow-hidden flex flex-col items-center justify-center p-4 text-center group">
                                                 {isUnlocked ? (
                                                     <>
                                                         <Image 
@@ -498,16 +498,20 @@ export default function DailyFreshCarsPage() {
                                                         </div>
                                                     </>
                                                 ) : (
-                                                    <div className="relative w-full h-full flex flex-col items-center justify-center">
-                                                        <Image 
-                                                            src={car.imageUrl} 
-                                                            alt={car.title} 
-                                                            fill 
-                                                            className="object-cover blur-xl grayscale"
-                                                        />
-                                                        <div className="relative z-10 space-y-1">
-                                                            <ImageIcon className="h-6 w-6 text-white mx-auto drop-shadow-md" />
-                                                            <p className="text-[10px] font-bold text-white uppercase drop-shadow-md">Photo Locked</p>
+                                                    <div className="relative w-full h-full flex flex-col items-center justify-center bg-muted/30">
+                                                        {car.imageUrl && (
+                                                            <Image 
+                                                                src={car.imageUrl} 
+                                                                alt={car.title} 
+                                                                fill 
+                                                                className="object-cover blur-xl grayscale opacity-50"
+                                                            />
+                                                        )}
+                                                        <div className="relative z-10 space-y-2 text-center">
+                                                            <div className="bg-background/20 backdrop-blur-md p-3 rounded-full border border-white/30 inline-block shadow-lg">
+                                                                <Car className="h-6 w-6 text-white drop-shadow-md" />
+                                                            </div>
+                                                            <p className="text-[10px] font-bold text-white uppercase tracking-widest drop-shadow-md">Photo Locked</p>
                                                         </div>
                                                     </div>
                                                 )}

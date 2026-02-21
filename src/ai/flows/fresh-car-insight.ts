@@ -1,6 +1,8 @@
 'use server';
 /**
  * @fileOverview AI flow to generate insights for 'Daily Fresh Cars'.
+ *
+ * - getFreshCarInsight - A function that handles the AI insight generation.
  */
 
 import { ai } from '@/ai/genkit';
@@ -19,7 +21,7 @@ const FreshCarOutputSchema = z.object({
   insight: z.string().describe("A brief, catchy (10-15 words) insight about why this car is a great deal."),
 });
 
-const freshCarPrompt = ai.definePrompt({
+const prompt = ai.definePrompt({
   name: 'freshCarPrompt',
   input: { schema: FreshCarInputSchema },
   output: { schema: FreshCarOutputSchema },
@@ -44,7 +46,7 @@ const freshCarInsightFlow = ai.defineFlow(
     outputSchema: FreshCarOutputSchema,
   },
   async (input) => {
-    const { output } = await freshCarPrompt(input);
+    const { output } = await prompt(input);
     return output!;
   }
 );
