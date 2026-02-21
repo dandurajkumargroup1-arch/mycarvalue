@@ -50,27 +50,26 @@ export default function Home() {
       { icon: <FileText />, name: 'Documents' },
   ];
 
-  const heroImage = PlaceHolderImages.find(p => p.id === 'hero');
   const whatWeCheckImage = PlaceHolderImages.find(p => p.id === 'what-we-check');
 
   return (
     <>
       <section className="relative w-full pt-12 pb-10 md:pt-20 md:pb-16 lg:pt-24 lg:pb-20 overflow-hidden bg-gradient-to-b from-secondary/50 to-background">
         <div className="container relative z-10 mx-auto px-4 md:px-6">
-          <div className="flex flex-col lg:flex-row items-center gap-10 text-center lg:text-left">
-            <div className="flex-1 space-y-6">
+          <div className="flex flex-col items-center text-center">
+            <div className="max-w-3xl space-y-6">
               <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary">
                 <Sparkles className="h-3.5 w-3.5" />
                 #1 AI Car Valuation in India
               </div>
-              <h1 className="text-3xl font-black tracking-tight sm:text-4xl md:text-5xl lg:text-6xl max-w-3xl">
+              <h1 className="text-3xl font-black tracking-tight sm:text-4xl md:text-5xl lg:text-6xl">
                 Don't Sell Blindly. <br />
                 <span className="text-primary underline underline-offset-4">Know Your Car's Worth.</span>
               </h1>
-              <p className="max-w-[540px] mx-auto lg:mx-0 text-base text-muted-foreground sm:text-lg leading-relaxed">
+              <p className="max-w-[600px] mx-auto text-base text-muted-foreground sm:text-lg leading-relaxed">
                 {description}
               </p>
-              <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3">
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
                 <Button asChild size="lg" className="w-full sm:w-auto font-black shadow-md shadow-primary/10">
                   <Link href={buttonLink}>
                     {buttonText} <ChevronRight className="ml-1 h-4 w-4" />
@@ -82,7 +81,7 @@ export default function Home() {
                   </Link>
                 </Button>
               </div>
-              <div className="flex items-center justify-center lg:justify-start gap-4 text-xs text-muted-foreground font-medium">
+              <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground font-medium">
                 <div className="flex items-center gap-1.5">
                   <CheckCircle className="h-3.5 w-3.5 text-green-500" /> Secure Payment
                 </div>
@@ -94,27 +93,6 @@ export default function Home() {
                 </div>
               </div>
             </div>
-
-            {heroImage && (
-              <div className="flex-1 relative w-full max-w-[500px] aspect-video sm:aspect-[4/3] lg:aspect-square">
-                <div className="absolute -inset-6 bg-primary/10 blur-[80px] rounded-full opacity-30 animate-pulse"></div>
-                <div className="relative h-full w-full rounded-2xl border-[8px] border-secondary overflow-hidden shadow-xl">
-                  <Image
-                    src={heroImage.imageUrl}
-                    alt="Premium Car Inspection"
-                    fill
-                    className="object-cover"
-                    priority
-                    data-ai-hint={heroImage.imageHint}
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent"></div>
-                  <div className="absolute bottom-4 left-4 right-4 text-white text-left">
-                    <p className="text-xl font-bold">Inspection-Ready Values</p>
-                    <p className="text-xs opacity-80">Based on 160+ real-world data points</p>
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </section>
