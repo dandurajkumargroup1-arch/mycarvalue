@@ -25,8 +25,7 @@ import { Progress } from '@/components/ui/progress';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Wallet, ArrowDown, Ban, Check, Clock, IndianRupee, Info, AlertTriangle, Car, Trash2, Eye, Calendar as CalendarIcon, Coins, CreditCard, Sparkles, ShoppingBag } from 'lucide-react';
+import { Wallet, ArrowDown, IndianRupee, Info, Car, Trash2, Eye, Calendar as CalendarIcon, Coins, CreditCard, Sparkles, ShoppingBag } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -414,18 +413,33 @@ function MechanicDashboard({ user, userProfile }: { user: any, userProfile: User
 
     return (
         <div className="container mx-auto py-8 px-4 md:px-6 bg-background">
-            <header className="mb-8">
-                <h1 className="text-3xl font-bold tracking-tight">Mechanic Dashboard</h1>
-                <p className="text-muted-foreground">Welcome back, {userProfile.displayName}!</p>
+            <Script id="rzp-checkout" src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
+            <header className="mb-8 flex flex-wrap justify-between items-end gap-4">
+                <div>
+                    <h1 className="text-3xl font-bold tracking-tight">Mechanic Dashboard</h1>
+                    <p className="text-muted-foreground">Welcome back, {userProfile.displayName}!</p>
+                </div>
+                <div className="flex items-center gap-3 bg-primary/10 border border-primary/20 px-4 py-2 rounded-lg">
+                    <Coins className="h-5 w-5 text-primary" />
+                    <div className="text-sm">
+                        <p className="font-bold text-primary">{userProfile.credits || 0} Credits</p>
+                        <p className="text-[10px] uppercase font-bold text-muted-foreground">For Hot Listings</p>
+                    </div>
+                </div>
             </header>
 
-            <main className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+            <main className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+                {/* Mobile Top Up Credits (Visible first on mobile) */}
+                <div className="lg:hidden block">
+                    <TopUpCreditsCard />
+                </div>
+
                 <div className="lg:col-span-2 space-y-6">
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         <Card><CardHeader className="pb-2"><CardTitle className="text-xs uppercase text-muted-foreground">Today</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold">{completedToday}</div></CardContent></Card>
                         <Card><CardHeader className="pb-2"><CardTitle className="text-xs uppercase text-muted-foreground">Left</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold">{remainingInspections}</div></CardContent></Card>
                         <Card><CardHeader className="pb-2"><CardTitle className="text-xs uppercase text-muted-foreground">Wallet</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold">{formatCurrency(wallet?.balance)}</div></CardContent></Card>
-                        <Card><CardHeader className="pb-2"><CardTitle className="text-xs uppercase text-muted-foreground">Total</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold">{formatCurrency(wallet?.totalEarned)}</div></CardContent></Card>
+                        <Card><CardHeader className="pb-2"><CardTitle className="text-xs uppercase text-muted-foreground">Total Earned</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold">{formatCurrency(wallet?.totalEarned)}</div></CardContent></Card>
                     </div>
 
                     <Card>
@@ -444,13 +458,13 @@ function MechanicDashboard({ user, userProfile }: { user: any, userProfile: User
                             <Table>
                                 <TableHeader><TableRow><TableHead>Date</TableHead><TableHead>Amount</TableHead><TableHead className="text-right">Status</TableHead></TableRow></TableHeader>
                                 <TableBody>
-                                    {withdrawalsData?.map(item => (
+                                    {withdrawalsData?.length ? withdrawalsData.map(item => (
                                         <TableRow key={item.id}>
                                             <TableCell className="text-xs">{formatDateOnly(item.requestedAt)}</TableCell>
                                             <TableCell className="font-medium text-xs">{formatCurrency(item.amount)}</TableCell>
                                             <TableCell className="text-right"><Badge variant={item.status === 'paid' ? 'default' : 'secondary'} className="text-[10px]">{item.status}</Badge></TableCell>
                                         </TableRow>
-                                    ))}
+                                    )) : <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground h-20">No withdrawals yet.</TableCell></TableRow>}
                                 </TableBody>
                             </Table>
                         </CardContent>
@@ -458,6 +472,11 @@ function MechanicDashboard({ user, userProfile }: { user: any, userProfile: User
                 </div>
 
                 <div className="space-y-6">
+                    {/* Desktop Top Up Credits */}
+                    <div className="hidden lg:block">
+                        <TopUpCreditsCard />
+                    </div>
+
                     <Card>
                         <CardHeader><CardTitle>Withdraw Funds</CardTitle></CardHeader>
                         <CardContent className="space-y-4">
@@ -468,6 +487,23 @@ function MechanicDashboard({ user, userProfile }: { user: any, userProfile: User
                 </div>
             </main>
         </div>
+    );
+}
+
+function TopUpCreditsCard() {
+    return (
+        <Card className="border-primary/20 shadow-lg overflow-hidden h-fit">
+            <CardHeader className="bg-gradient-to-br from-primary/10 to-orange-500/10 border-b">
+                <CardTitle className="flex items-center gap-2"><Sparkles className="h-5 w-5 text-primary" /> Top Up Credits</CardTitle>
+                <CardDescription>Unlock hot leads and owner details.</CardDescription>
+            </CardHeader>
+            <CardContent className="pt-6 space-y-4">
+                <CreditPackCard credits={1} price={5} badge="Trial" />
+                <CreditPackCard credits={5} price={25} />
+                <CreditPackCard credits={10} price={49} />
+                <CreditPackCard credits={20} price={99} />
+            </CardContent>
+        </Card>
     );
 }
 
@@ -528,6 +564,11 @@ function AgentOwnerDashboard({ user, userProfile }: { user: any, userProfile: Us
             </header>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* Buy Credits Card (Visible first on mobile) */}
+                <div className="lg:hidden block">
+                    <TopUpCreditsCard />
+                </div>
+
                 <div className="lg:col-span-2 space-y-8">
                     <Card>
                         <CardHeader className="flex flex-col sm:flex-row justify-between gap-4">
@@ -564,19 +605,9 @@ function AgentOwnerDashboard({ user, userProfile }: { user: any, userProfile: Us
                     </Card>
                 </div>
 
-                <div className="space-y-8">
-                    <Card className="border-primary/20 shadow-lg overflow-hidden">
-                        <CardHeader className="bg-gradient-to-br from-primary/10 to-orange-500/10 border-b">
-                            <CardTitle className="flex items-center gap-2"><Sparkles className="h-5 w-5 text-primary" /> Top Up Credits</CardTitle>
-                            <CardDescription>Unlock hot leads and owner details.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="pt-6 space-y-4">
-                            <CreditPackCard credits={1} price={5} badge="Trial" />
-                            <CreditPackCard credits={5} price={25} />
-                            <CreditPackCard credits={10} price={49} />
-                            <CreditPackCard credits={20} price={99} />
-                        </CardContent>
-                    </Card>
+                {/* Buy Credits Card (Sidebar on desktop) */}
+                <div className="hidden lg:block space-y-8">
+                    <TopUpCreditsCard />
                 </div>
             </div>
 
