@@ -26,6 +26,10 @@ export interface WithdrawalRequestData extends WithdrawalRequestPayload {
   requestedAt: FieldValue;
 }
 
+/**
+ * Creates a new withdrawal request for a mechanic.
+ * Ensures the userId in the data matches the document path.
+ */
 export async function requestWithdrawal(
   firestore: Firestore,
   user: User,
@@ -35,7 +39,7 @@ export async function requestWithdrawal(
     throw new Error('User is required to request a withdrawal.');
   }
 
-  const withdrawalCollectionRef = collection(firestore, `users/${user.uid}/withdrawalRequests`);
+  const withdrawalCollectionRef = collection(firestore, 'users', user.uid, 'withdrawalRequests');
 
   const withdrawalData: WithdrawalRequestData = {
     userId: user.uid,
@@ -52,6 +56,10 @@ export async function requestWithdrawal(
   }
 }
 
+/**
+ * Approves a withdrawal request and updates the user's wallet balance.
+ * Uses a transaction to ensure atomic updates and prevent over-withdrawal.
+ */
 export async function approveWithdrawal(
   firestore: Firestore,
   userId: string,
@@ -68,13 +76,26 @@ export async function approveWithdrawal(
       const requestDoc = await transaction.get(requestRef);
 
       if (!requestDoc.exists()) {
-        throw new Error(`Withdrawal request not found for path: users/${userId}/withdrawalRequests/${requestId}`);
+        throw new Error(`Withdrawal request not found for path: users/${userId}/withdrawalRequests/${requestId}. Please verify if the User ID in the record matches the actual document path.`);
       }
 
       const requestData = requestDoc.data();
+      if (requestData.status !== 'requested') {
+        throw new Error(`Request is already in status: ${requestData.status}`);
+      }
+
       const amount = requestData.amount;
-      
-      const walletRef = doc(firestore, `users/${userId}/wallet/main`);
+      const walletRef = doc(firestore, 'users', userId, 'wallet', 'main');
+      const walletDoc = await transaction.get(walletRef);
+
+      if (!walletDoc.exists()) {
+        throw new Error("User wallet not found. Cannot process withdrawal.");
+      }
+
+      const currentBalance = walletDoc.data().balance || 0;
+      if (currentBalance < amount) {
+        throw new Error(`Insufficient wallet balance (Current: ₹${currentBalance}) to approve ₹${amount}.`);
+      }
       
       // Update the request document
       transaction.update(requestRef, {
@@ -86,7 +107,8 @@ export async function approveWithdrawal(
       // Update the user's wallet
       transaction.update(walletRef, {
         balance: increment(-amount),
-        lastWithdrawalDate: serverTimestamp()
+        lastWithdrawalDate: serverTimestamp(),
+        updatedAt: serverTimestamp()
       });
     });
   } catch (error) {
@@ -95,7 +117,9 @@ export async function approveWithdrawal(
   }
 }
 
-
+/**
+ * Rejects a withdrawal request with a reason.
+ */
 export async function rejectWithdrawal(
   firestore: Firestore,
   userId: string,
