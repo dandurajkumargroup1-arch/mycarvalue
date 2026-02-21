@@ -72,11 +72,23 @@ function ListingImage({ src, alt, isUnlocked }: { src: string, alt: string, isUn
 
   if (error || !src) {
     return (
-      <div className="w-full h-full flex flex-col items-center justify-center bg-secondary/50 p-4">
+      <div className="relative w-full h-full flex flex-col items-center justify-center bg-secondary/50 p-4 group">
         <div className="p-4 bg-muted/20 rounded-full mb-2">
             <Car className="h-8 w-8 text-muted-foreground/40" />
         </div>
         <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-tighter">No Preview Available</span>
+        {src && (
+            <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                <a 
+                    href={src} 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="text-white font-bold text-xs flex items-center gap-1.5 hover:underline bg-background/20 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/30 shadow-xl"
+                >
+                    <Eye className="h-4 w-4" /> View Original
+                </a>
+            </div>
+        )}
       </div>
     );
   }
