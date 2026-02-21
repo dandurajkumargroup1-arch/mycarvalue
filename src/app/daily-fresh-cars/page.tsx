@@ -50,12 +50,12 @@ function ListingImage({ src, alt, isUnlocked }: { src: string, alt: string, isUn
 
   if (!isUnlocked) {
     return (
-      <div className="relative w-full h-full flex flex-col items-center justify-center bg-muted/30">
-          <div className="relative z-10 space-y-2 text-center">
-              <div className="bg-background/20 backdrop-blur-md p-3 rounded-full border border-white/30 inline-block shadow-lg">
-                  <Car className="h-6 w-6 text-white drop-shadow-md" />
+      <div className="relative w-full h-full flex flex-col items-center justify-center bg-secondary/50">
+          <div className="relative z-10 space-y-2 text-center p-4">
+              <div className="bg-primary/10 p-3 rounded-full border border-primary/20 inline-block shadow-sm">
+                  <Lock className="h-6 w-6 text-primary" />
               </div>
-              <p className="text-[10px] font-bold text-white uppercase tracking-widest drop-shadow-md">Photo Locked</p>
+              <p className="text-[10px] font-bold text-primary uppercase tracking-widest">Photo Locked</p>
           </div>
       </div>
     );
