@@ -45,6 +45,65 @@ interface DailyFreshCar {
     createdAt: any;
 }
 
+function ListingImage({ src, alt, isUnlocked }: { src: string, alt: string, isUnlocked: boolean }) {
+  const [error, setError] = useState(false);
+
+  if (!isUnlocked) {
+    return (
+      <div className="relative w-full h-full flex flex-col items-center justify-center bg-muted/30">
+          {src && !error && (
+              <Image 
+                  src={src} 
+                  alt={alt} 
+                  fill 
+                  className="object-cover blur-xl grayscale opacity-50"
+                  onError={() => setError(true)}
+              />
+          )}
+          <div className="relative z-10 space-y-2 text-center">
+              <div className="bg-background/20 backdrop-blur-md p-3 rounded-full border border-white/30 inline-block shadow-lg">
+                  <Car className="h-6 w-6 text-white drop-shadow-md" />
+              </div>
+              <p className="text-[10px] font-bold text-white uppercase tracking-widest drop-shadow-md">Photo Locked</p>
+          </div>
+      </div>
+    );
+  }
+
+  if (error || !src) {
+    return (
+      <div className="w-full h-full flex flex-col items-center justify-center bg-secondary/50 p-4">
+        <div className="p-4 bg-muted/20 rounded-full mb-2">
+            <Car className="h-8 w-8 text-muted-foreground/40" />
+        </div>
+        <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-tighter">No Preview Available</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative w-full h-full">
+        <Image 
+            src={src} 
+            alt={alt} 
+            fill 
+            className="object-cover"
+            onError={() => setError(true)}
+        />
+        <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+            <a 
+                href={src} 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="text-white font-bold text-xs flex items-center gap-1.5 hover:underline bg-background/20 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/30 shadow-xl"
+            >
+                <Eye className="h-4 w-4" /> View
+            </a>
+        </div>
+    </div>
+  );
+}
+
 export default function DailyFreshCarsPage() {
     const firestore = useFirestore();
     const { user, isUserLoading } = useUser();
@@ -477,44 +536,8 @@ export default function DailyFreshCarsPage() {
                                         </div>
 
                                         <div className="flex-shrink-0 w-full md:w-48 space-y-3 order-1 md:order-2">
-                                            <div className="relative aspect-video rounded border bg-muted/50 overflow-hidden flex flex-col items-center justify-center p-4 text-center group">
-                                                {isUnlocked ? (
-                                                    <>
-                                                        <Image 
-                                                            src={car.imageUrl} 
-                                                            alt={car.title} 
-                                                            fill 
-                                                            className="object-cover"
-                                                        />
-                                                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                                            <a 
-                                                                href={car.imageUrl} 
-                                                                target="_blank" 
-                                                                rel="noopener noreferrer" 
-                                                                className="text-white font-bold text-xs flex items-center gap-1.5 hover:underline bg-background/20 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/30 shadow-xl"
-                                                            >
-                                                                <Eye className="h-4 w-4" /> View
-                                                            </a>
-                                                        </div>
-                                                    </>
-                                                ) : (
-                                                    <div className="relative w-full h-full flex flex-col items-center justify-center bg-muted/30">
-                                                        {car.imageUrl && (
-                                                            <Image 
-                                                                src={car.imageUrl} 
-                                                                alt={car.title} 
-                                                                fill 
-                                                                className="object-cover blur-xl grayscale opacity-50"
-                                                            />
-                                                        )}
-                                                        <div className="relative z-10 space-y-2 text-center">
-                                                            <div className="bg-background/20 backdrop-blur-md p-3 rounded-full border border-white/30 inline-block shadow-lg">
-                                                                <Car className="h-6 w-6 text-white drop-shadow-md" />
-                                                            </div>
-                                                            <p className="text-[10px] font-bold text-white uppercase tracking-widest drop-shadow-md">Photo Locked</p>
-                                                        </div>
-                                                    </div>
-                                                )}
+                                            <div className="relative aspect-video rounded border bg-muted/50 overflow-hidden flex flex-col items-center justify-center p-0 text-center group">
+                                                <ListingImage src={car.imageUrl} alt={car.title} isUnlocked={isUnlocked} />
                                             </div>
                                             {car.isDirectOwner && (
                                                 <Badge className="w-full justify-center bg-green-600/10 text-green-600 border-green-600/20 font-bold uppercase py-1">
