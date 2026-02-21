@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState, useMemo } from 'react';
 import Image from 'next/image';
-import { doc, collection, query, orderBy, collectionGroup, where } from 'firebase/firestore';
+import { doc, collection, query, collectionGroup, where } from 'firebase/firestore';
 import { useUser, useFirestore, useDoc, useCollection } from '@/firebase';
 import type { UserProfile } from '@/lib/firebase/user-profile-service';
 import { approveWithdrawal, rejectWithdrawal } from '@/lib/firebase/withdrawal-service';
@@ -13,7 +13,6 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from 'zod';
 import { useToast } from "@/hooks/use-toast";
-import { format } from "date-fns";
 import { cn, toDate, formatCurrency, formatDateTime, formatDateOnly } from "@/lib/utils";
 import { indianStates } from "@/lib/variants";
 import jsPDF from "jspdf";
@@ -29,7 +28,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Shield, Users, Wallet, Trash2, Plus, Edit, Car, FileText, Coins, Search, UserCheck } from 'lucide-react';
+import { Shield, Users, Wallet, Trash2, Plus, Edit, Car, FileText, Coins, Search, UserCheck, Sparkles } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
@@ -290,20 +289,28 @@ function AdminDashboard({ user }: { user: any }) {
   const [isExporting, setIsExporting] = useState<string | null>(null);
   const [userSearch, setUserSearch] = useState("");
 
-  const usersQuery = useMemo(() => firestore ? query(collection(firestore, 'users'), orderBy('lastUpdatedAt', 'desc')) : null, [firestore]);
+  const usersQuery = useMemo(() => firestore ? collection(firestore, 'users') : null, [firestore]);
   const { data: rawUsers, isLoading: isUsersLoading } = useCollection<UserProfile>(usersQuery);
-  const userMap = useMemo(() => rawUsers?.reduce((acc, u) => ({ ...acc, [u.id]: u }), {} as Record<string, UserProfile>) || {}, [rawUsers]);
-
-  const filteredUsers = useMemo(() => {
+  
+  const sortedAndFilteredUsers = useMemo(() => {
     if (!rawUsers) return [];
-    if (!userSearch) return rawUsers;
-    const s = userSearch.toLowerCase();
-    return rawUsers.filter(u => 
-        (u.displayName?.toLowerCase().includes(s)) || 
-        (u.email?.toLowerCase().includes(s)) ||
-        (u.role?.toLowerCase().includes(s))
-    );
+    let filtered = rawUsers;
+    if (userSearch) {
+        const s = userSearch.toLowerCase();
+        filtered = filtered.filter(u => 
+            (u.displayName?.toLowerCase().includes(s)) || 
+            (u.email?.toLowerCase().includes(s)) ||
+            (u.role?.toLowerCase().includes(s))
+        );
+    }
+    return [...filtered].sort((a, b) => {
+        const timeA = toDate(a.lastUpdatedAt)?.getTime() || 0;
+        const timeB = toDate(b.lastUpdatedAt)?.getTime() || 0;
+        return timeB - timeA;
+    });
   }, [rawUsers, userSearch]);
+
+  const userMap = useMemo(() => rawUsers?.reduce((acc, u) => ({ ...acc, [u.id]: u }), {} as Record<string, UserProfile>) || {}, [rawUsers]);
 
   const requestsQuery = useMemo(() => firestore ? collectionGroup(firestore, 'withdrawalRequests') : null, [firestore]);
   const { data: rawRequests } = useCollection<WithdrawalRequest>(requestsQuery);
@@ -319,8 +326,17 @@ function AdminDashboard({ user }: { user: any }) {
         });
   }, [rawRequests]);
 
-  const freshCarsQuery = useMemo(() => firestore ? query(collection(firestore, 'dailyFreshCars'), orderBy('createdAt', 'desc')) : null, [firestore]);
-  const { data: freshCars } = useCollection<any>(freshCarsQuery);
+  const freshCarsQuery = useMemo(() => firestore ? collection(firestore, 'dailyFreshCars') : null, [firestore]);
+  const { data: rawFreshCars } = useCollection<any>(freshCarsQuery);
+  
+  const sortedFreshCars = useMemo(() => {
+    if (!rawFreshCars) return [];
+    return [...rawFreshCars].sort((a, b) => {
+        const timeA = toDate(a.createdAt)?.getTime() || 0;
+        const timeB = toDate(b.createdAt)?.getTime() || 0;
+        return timeB - timeA;
+    });
+  }, [rawFreshCars]);
 
   const handleDeleteFreshCar = async (id: string) => {
     if (!firestore) return;
@@ -419,8 +435,8 @@ function AdminDashboard({ user }: { user: any }) {
                                                 <TableCell colSpan={5}><Skeleton className="h-12 w-full" /></TableCell>
                                             </TableRow>
                                         ))
-                                    ) : filteredUsers.length > 0 ? (
-                                        filteredUsers.map(u => <UserManagementRow key={u.id} userProfile={u} />)
+                                    ) : sortedAndFilteredUsers.length > 0 ? (
+                                        sortedAndFilteredUsers.map(u => <UserManagementRow key={u.id} userProfile={u} />)
                                     ) : (
                                         <TableRow><TableCell colSpan={5} className="h-24 text-center text-muted-foreground">No users found.</TableCell></TableRow>
                                     )}
@@ -478,7 +494,7 @@ function AdminDashboard({ user }: { user: any }) {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {freshCars && freshCars.length > 0 ? freshCars.map(car => (
+                                    {sortedFreshCars && sortedFreshCars.length > 0 ? sortedFreshCars.map(car => (
                                         <TableRow key={car.id}>
                                             <TableCell>
                                                 <div className="font-medium">{car.title}</div>
