@@ -2,7 +2,6 @@ import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Sparkles, CheckCircle, ChevronRight, Flame, BadgeCheck, Star, Lock, Clock, Wrench, Cog, Car, Power, AirVent, Armchair, Disc, ChevronsDown, GitPullRequest, FileText } from "lucide-react";
-import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { Card, CardContent } from "@/components/ui/card";
 
 export default function Home() {

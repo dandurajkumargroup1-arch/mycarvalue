@@ -30,30 +30,6 @@
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
   }
-
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --background: 222 47% 4%; /* Near Black Graphite */
-      --foreground: 210 40% 98%;
-      --card: 222 47% 6%;
-      --card-foreground: 210 40% 98%;
-      --popover: 222 47% 6%;
-      --popover-foreground: 210 40% 98%;
-      --primary: 262 83% 58%;
-      --primary-foreground: 0 0% 100%;
-      --secondary: 222 47% 12%;
-      --secondary-foreground: 210 40% 98%;
-      --muted: 222 47% 12%;
-      --muted-foreground: 215.4 16.3% 56.9%;
-      --accent: 262 83% 58%;
-      --accent-foreground: 210 40% 98%;
-      --destructive: 0 62.8% 30.6%;
-      --destructive-foreground: 210 40% 98%;
-      --border: 222 47% 12%;
-      --input: 222 47% 12%;
-      --ring: 262 83% 58%;
-    }
-  }
 }
 
 @layer base {
