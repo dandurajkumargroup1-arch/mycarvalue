@@ -109,7 +109,7 @@ function FreshCarDialog({ car }: { car?: any }) {
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                {car ? <Button variant="ghost" size="icon"><Edit className="h-4 w-4"/></Button> : <Button><Plus className="mr-2 h-4 w-4" /> Add Hot Listing</Button>}
+                {car ? <Button variant="ghost" size="icon"><Edit className="h-4 w-4"/></Button> : <Button className="rounded-full"><Plus className="mr-2 h-4 w-4" /> Add Hot Listing</Button>}
             </DialogTrigger>
             <DialogContent className="max-w-3xl overflow-y-auto max-h-[90vh]">
                 <DialogHeader><DialogTitle>{car ? 'Edit Listing' : 'Add Hot Listing'}</DialogTitle></DialogHeader>
@@ -204,7 +204,7 @@ function FreshCarDialog({ car }: { car?: any }) {
                             </div>
                         </div>
                         <FormField control={form.control} name="aiInsight" render={({ field }) => (<FormItem><FormLabel>Market Insight (Catchy 1-sentence description)</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>)} />
-                        <DialogFooter><Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Saving...' : 'Save Listing'}</Button></DialogFooter>
+                        <DialogFooter><Button type="submit" disabled={isSubmitting} className="rounded-full">{isSubmitting ? 'Saving...' : 'Save Listing'}</Button></DialogFooter>
                     </form>
                 </Form>
             </DialogContent>
@@ -268,7 +268,7 @@ function UserManagementRow({ userProfile }: { userProfile: UserProfile }) {
                         value={addAmount} 
                         onChange={(e) => setAddAmount(e.target.value)}
                     />
-                    <Button size="sm" variant="outline" className="h-8 text-xs" onClick={handleAddCredits}>
+                    <Button size="sm" variant="outline" className="h-8 text-xs rounded-full" onClick={handleAddCredits}>
                         Add
                     </Button>
                 </div>
@@ -363,18 +363,18 @@ function AdminDashboard({ user }: { user: any }) {
     setIsExporting(car.id);
     const root = document.createElement('div');
     root.style.cssText = 'position:fixed;top:-10000px;width:800px;background:white;padding:40px;font-family:sans-serif;color:#0f172a;';
-    root.innerHTML = `<div style="border:2px solid #f9c70a;padding:30px;border-radius:8px;">
-        <h1 style="font-size:28px;margin:0;">mycarvalue<span style="color:#f9c70a;">.in</span></h1>
+    root.innerHTML = `<div style="border:2px solid #7c3aed;padding:30px;border-radius:8px;">
+        <h1 style="font-size:28px;margin:0;">mycarvalue<span style="color:#7c3aed;">.in</span></h1>
         <p style="color:#64748b;margin-bottom:30px;">Premium Listing Summary</p>
         <h2 style="font-size:24px;margin-bottom:10px;">${car.year} ${car.title}</h2>
-        <div style="background:#f9c70a;display:inline-block;padding:8px 16px;border-radius:6px;font-size:24px;font-weight:800;margin-bottom:30px;">${formatCurrency(car.price)}</div>
+        <div style="background:#7c3aed;color:white;display:inline-block;padding:8px 16px;border-radius:6px;font-size:24px;font-weight:800;margin-bottom:30px;">${formatCurrency(car.price)}</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:30px;">
             <div style="background:#f8fafc;padding:15px;border-radius:6px;">KM: <b>${car.km.toLocaleString()}</b></div>
             <div style="background:#f8fafc;padding:15px;border-radius:6px;">Owner: <b>${car.ownership}</b></div>
             <div style="background:#f8fafc;padding:15px;border-radius:6px;">Fuel: <b>${car.fuelType}</b></div>
             <div style="background:#f8fafc;padding:15px;border-radius:6px;">Loc: <b>${car.city}</b></div>
         </div>
-        ${car.aiInsight ? `<div style="border-left:4px solid #f9c70a;background:#fffbeb;padding:15px;"><i>"${car.aiInsight}"</i></div>` : ''}
+        ${car.aiInsight ? `<div style="border-left:4px solid #7c3aed;background:#f5f3ff;padding:15px;"><i>"${car.aiInsight}"</i></div>` : ''}
         <p style="text-align:center;margin-top:40px;font-size:12px;color:#64748b;">Visit mycarvalue.in for details.</p>
     </div>`;
     document.body.appendChild(root);
@@ -402,13 +402,13 @@ function AdminDashboard({ user }: { user: any }) {
         </header>
 
         <main className="grid grid-cols-1 gap-8">
-            <Card>
+            <Card className="rounded-2xl shadow-sm border-border/50">
                 <Tabs value={activeTab} onValueChange={setActiveTab}>
                     <CardHeader className="flex flex-col md:flex-row justify-between items-start md:items-center border-b bg-muted/30 pb-4">
-                        <TabsList className="bg-background border">
-                            <TabsTrigger value="users"><Users className="mr-2 h-4 w-4" /> Users</TabsTrigger>
-                            <TabsTrigger value="freshCars"><Car className="mr-2 h-4 w-4" /> Hot Listings</TabsTrigger>
-                            <TabsTrigger value="pending" className="relative">
+                        <TabsList className="bg-background border rounded-full p-1">
+                            <TabsTrigger value="users" className="rounded-full"><Users className="mr-2 h-4 w-4" /> Users</TabsTrigger>
+                            <TabsTrigger value="freshCars" className="rounded-full"><Car className="mr-2 h-4 w-4" /> Hot Listings</TabsTrigger>
+                            <TabsTrigger value="pending" className="relative rounded-full">
                                 <Wallet className="mr-2 h-4 w-4" /> Withdrawals
                                 {sortedAndFilteredRequests.length > 0 && (
                                     <span className="absolute -top-1 -right-1 h-4 w-4 bg-primary text-primary-foreground text-[10px] rounded-full flex items-center justify-center font-bold">
@@ -420,10 +420,10 @@ function AdminDashboard({ user }: { user: any }) {
                         
                         {activeTab === 'users' && (
                             <div className="relative w-full md:w-64 mt-4 md:mt-0">
-                                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
                                 <Input 
                                     placeholder="Search users..." 
-                                    className="pl-8 bg-background" 
+                                    className="pl-9 bg-background rounded-full" 
                                     value={userSearch} 
                                     onChange={(e) => setUserSearch(e.target.value)}
                                 />
@@ -485,7 +485,7 @@ function AdminDashboard({ user }: { user: any }) {
                                                 {r.bankAccountNumber && <div className="text-[10px] font-mono">Bank: {r.bankAccountNumber} / {r.bankIfscCode}</div>}
                                             </TableCellFixed>
                                             <TableCellFixed className="text-right">
-                                                <Button size="sm" onClick={() => approveWithdrawal(firestore!, r.userId, r.id, 'MANUAL_PAID')}>
+                                                <Button size="sm" className="rounded-full" onClick={() => approveWithdrawal(firestore!, r.userId, r.id, 'MANUAL_PAID')}>
                                                     <UserCheck className="mr-2 h-4 w-4" /> Mark Paid
                                                 </Button>
                                             </TableCellFixed>

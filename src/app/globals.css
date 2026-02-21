@@ -10,49 +10,48 @@
     --card-foreground: 222 47% 11%;
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
-    --primary: 24 95% 53%;
+    --primary: 262 83% 58%; /* Premium Purple (Violet 600) */
     --primary-foreground: 0 0% 100%;
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222 47% 11%;
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222 47% 11%;
+    --accent: 262 83% 95%; /* Light Lavender Accent */
+    --accent-foreground: 262 83% 40%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 24 95% 53%;
-    --radius: 0.75rem;
-    --chart-1: 24 95% 53%;
+    --ring: 262 83% 58%;
+    --radius: 1rem;
+    --chart-1: 262 83% 58%;
     --chart-2: 222 47% 11%;
     --chart-3: 199 89% 48%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
   }
 
-  /* Force light theme values for a unified professional look */
   @media (prefers-color-scheme: dark) {
     :root {
-      --background: 0 0% 100%;
-      --foreground: 222 47% 11%;
-      --card: 0 0% 100%;
-      --card-foreground: 222 47% 11%;
-      --popover: 0 0% 100%;
-      --popover-foreground: 222 47% 11%;
-      --primary: 24 95% 53%;
+      --background: 222 47% 4%; /* Near Black Graphite */
+      --foreground: 210 40% 98%;
+      --card: 222 47% 6%;
+      --card-foreground: 210 40% 98%;
+      --popover: 222 47% 6%;
+      --popover-foreground: 210 40% 98%;
+      --primary: 262 83% 58%;
       --primary-foreground: 0 0% 100%;
-      --secondary: 210 40% 96.1%;
-      --secondary-foreground: 222 47% 11%;
-      --muted: 210 40% 96.1%;
-      --muted-foreground: 215.4 16.3% 46.9%;
-      --accent: 210 40% 96.1%;
-      --accent-foreground: 222 47% 11%;
-      --destructive: 0 84.2% 60.2%;
+      --secondary: 222 47% 12%;
+      --secondary-foreground: 210 40% 98%;
+      --muted: 222 47% 12%;
+      --muted-foreground: 215.4 16.3% 56.9%;
+      --accent: 262 83% 58%;
+      --accent-foreground: 210 40% 98%;
+      --destructive: 0 62.8% 30.6%;
       --destructive-foreground: 210 40% 98%;
-      --border: 214.3 31.8% 91.4%;
-      --input: 214.3 31.8% 91.4%;
-      --ring: 24 95% 53%;
+      --border: 222 47% 12%;
+      --input: 222 47% 12%;
+      --ring: 262 83% 58%;
     }
   }
 }
@@ -67,15 +66,14 @@
   }
 }
 
-/* Custom UI Polish */
+.premium-gradient-text {
+  @apply bg-gradient-to-r from-primary to-purple-400 bg-clip-text text-transparent;
+}
+
 .glass-header {
-  @apply bg-white/80 backdrop-blur-md border-b sticky top-0 z-50;
+  @apply bg-background/80 backdrop-blur-md border-b sticky top-0 z-50;
 }
 
 .velocity-card {
-  @apply rounded-xl border border-border/50 bg-card shadow-sm hover:shadow-md transition-all duration-300;
-}
-
-.velocity-gradient-bg {
-  @apply bg-gradient-to-br from-primary/5 to-transparent;
+  @apply rounded-2xl border border-border/50 bg-card shadow-sm hover:shadow-xl hover:scale-[1.01] transition-all duration-300;
 }
