@@ -6,9 +6,9 @@ import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { Card, CardContent } from "@/components/ui/card";
 
 export default function Home() {
-  const description = "Get an instant, AI-powered valuation report for just ₹149. This helps you sell directly to buyers at the right price.";
+  const description = "Get an instant, AI-powered valuation report for just ₹149. Know your car's true market value before selling.";
   
-  const buttonText = 'Get Your Car’s True Value Now';
+  const buttonText = 'Get Your True Value Now';
   const buttonLink = '/valuation';
 
   const whyChooseUsFeatures = [
@@ -20,7 +20,7 @@ export default function Home() {
     {
       icon: <Star className="h-8 w-8 text-primary" />,
       stat: "4.8/5",
-      text: "Rated by Our Users",
+      text: "User Rating",
     },
     {
       icon: <Lock className="h-8 w-8 text-primary" />,
@@ -30,7 +30,7 @@ export default function Home() {
     {
       icon: <Clock className="h-8 w-8 text-primary" />,
       stat: "2 Mins",
-      text: "Get Your Report Instantly",
+      text: "Instant Report",
     },
   ];
 
@@ -51,42 +51,42 @@ export default function Home() {
 
   return (
     <>
-      <section className="relative w-full pt-16 pb-12 md:pt-24 md:pb-20 overflow-hidden bg-gradient-to-b from-secondary/50 to-background">
+      <section className="relative w-full pt-16 pb-12 md:pt-24 md:pb-20 overflow-hidden bg-gradient-to-b from-primary/5 to-background">
         <div className="container relative z-10 mx-auto px-4 md:px-6">
           <div className="flex flex-col items-center text-center">
-            <div className="max-w-3xl space-y-6">
-              <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-1 text-xs font-semibold text-primary">
+            <div className="max-w-4xl space-y-8">
+              <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-1.5 text-xs font-bold text-primary uppercase tracking-wider">
                 <Sparkles className="h-3.5 w-3.5" />
-                #1 AI Car Valuation in India
+                India's Most Accurate AI Car Valuation
               </div>
-              <h1 className="text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl lg:text-6xl">
+              <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl md:text-6xl lg:text-7xl">
                 Don't Sell Blindly. <br />
-                <span className="text-primary decoration-primary/30 decoration-2 underline underline-offset-8">Know Your Car's Worth.</span>
+                <span className="text-primary">Know Your Worth.</span>
               </h1>
-              <p className="max-w-[650px] mx-auto text-base text-muted-foreground sm:text-lg md:text-xl leading-relaxed font-medium">
+              <p className="max-w-[700px] mx-auto text-lg text-muted-foreground sm:text-xl md:text-2xl leading-relaxed">
                 {description}
               </p>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
-                <Button asChild size="lg" className="w-full sm:w-auto font-bold shadow-lg shadow-primary/20 h-12 px-8">
+                <Button asChild size="lg" className="w-full sm:w-auto font-black text-lg h-14 px-10 shadow-xl shadow-primary/20">
                   <Link href={buttonLink}>
-                    {buttonText} <ChevronRight className="ml-1 h-4 w-4" />
+                    {buttonText} <ChevronRight className="ml-2 h-5 w-5" />
                   </Link>
                 </Button>
-                <Button asChild variant="outline" size="lg" className="w-full sm:w-auto font-bold border-primary/20 hover:bg-primary/5 h-12 px-8">
+                <Button asChild variant="outline" size="lg" className="w-full sm:w-auto font-bold border-primary/20 hover:bg-primary/5 h-14 px-10">
                   <Link href="/daily-fresh-cars">
-                    <Flame className="mr-2 h-4 w-4 text-primary" /> Hot Market Listings
+                    <Flame className="mr-2 h-5 w-5 text-primary" /> Hot Market Listings
                   </Link>
                 </Button>
               </div>
-              <div className="flex items-center justify-center gap-6 text-[10px] sm:text-[11px] text-muted-foreground font-bold uppercase tracking-wider pt-6">
-                <div className="flex items-center gap-1.5">
-                  <CheckCircle className="h-3.5 w-3.5 text-green-500" /> Secure Payment
+              <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-4 text-[11px] text-muted-foreground font-bold uppercase tracking-widest pt-10">
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="h-4 w-4 text-primary" /> Secure Payment
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <CheckCircle className="h-3.5 w-3.5 text-green-500" /> Instant PDF
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="h-4 w-4 text-primary" /> Instant PDF Download
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <CheckCircle className="h-3.5 w-3.5 text-green-500" /> No Logins Needed
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="h-4 w-4 text-primary" /> No Dealer Spam
                 </div>
               </div>
             </div>
@@ -94,91 +94,100 @@ export default function Home() {
         </div>
       </section>
       
-      <section className="py-12 lg:py-20 bg-background">
+      <section className="py-16 bg-background">
         <div className="container">
-            <div className="text-center max-w-2xl mx-auto mb-10">
-                <h2 className="text-2xl font-bold tracking-tight md:text-3xl">Why Choose mycarvalue.in?</h2>
-                <p className="mt-3 text-muted-foreground text-base">We provide a fast, unbiased, and data-driven valuation you can trust.</p>
+            <div className="text-center max-w-2xl mx-auto mb-12">
+                <h2 className="text-3xl font-bold tracking-tight md:text-4xl text-foreground">Engineered for Accuracy</h2>
+                <p className="mt-4 text-muted-foreground text-lg font-medium">We provide an unbiased, data-driven valuation report you can use to negotiate better.</p>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
               {whyChooseUsFeatures.map((feature) => (
-                <Card key={feature.stat} className="text-center p-5 shadow-sm hover:shadow-md transition-shadow border-secondary/50">
-                  <div className="flex justify-center mb-3">
+                <Card key={feature.stat} className="text-center p-6 border-primary/10 hover:border-primary/30 transition-all shadow-sm">
+                  <div className="flex justify-center mb-4">
                     {feature.icon}
                   </div>
-                  <p className="text-2xl font-bold text-primary">{feature.stat}</p>
-                  <p className="mt-1 text-xs text-muted-foreground font-semibold">{feature.text}</p>
+                  <p className="text-3xl font-black text-foreground">{feature.stat}</p>
+                  <p className="mt-2 text-sm text-muted-foreground font-bold uppercase tracking-tight">{feature.text}</p>
                 </Card>
               ))}
             </div>
         </div>
       </section>
       
-      <section className="py-12 lg:py-20 bg-secondary/30">
-        <div className="container max-w-5xl text-center">
-            <h2 className="text-2xl font-bold tracking-tight mb-3 md:text-3xl">What We Check</h2>
-            <p className="text-muted-foreground md:text-base max-w-2xl mx-auto mb-10">
-                Our comprehensive AI valuation covers every vital aspect of your vehicle to give you the most accurate market price.
+      <section className="py-20 bg-secondary/30">
+        <div className="container max-w-6xl text-center">
+            <h2 className="text-3xl font-bold tracking-tight mb-4 md:text-4xl">Comprehensive Inspection</h2>
+            <p className="text-muted-foreground text-lg max-w-3xl mx-auto mb-12">
+                Our AI model analyzes every vital aspect of your vehicle, from engine health to tire wear, ensuring the most accurate market price.
             </p>
-            <Card className="shadow-xl overflow-hidden border-none bg-background">
-                <CardContent className="p-5 md:p-8 grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+            <Card className="shadow-2xl overflow-hidden border-none bg-background rounded-2xl">
+                <CardContent className="p-0 md:p-0 grid grid-cols-1 md:grid-cols-2">
                     {whatWeCheckImage && (
-                        <div className="relative aspect-video rounded-xl overflow-hidden shadow-inner bg-muted">
+                        <div className="relative aspect-square md:aspect-auto h-full min-h-[400px] bg-muted">
                             <Image
                                 src={whatWeCheckImage.imageUrl}
-                                alt="Car inspection points"
+                                alt="Car inspection"
                                 fill
                                 className="object-cover"
                                 data-ai-hint={whatWeCheckImage.imageHint}
                             />
                         </div>
                     )}
-                    <div className="grid grid-cols-2 gap-x-6 gap-y-4 text-left">
-                        {inspectionItems.map((item) => (
-                            <div key={item.name} className="flex items-center gap-2.5 group">
-                                <div className="p-1.5 rounded-md bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-                                    <div className="[&>svg]:h-4 [&>svg]:w-4">{item.icon}</div>
+                    <div className="p-8 md:p-12 bg-white flex flex-col justify-center">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-left">
+                            {inspectionItems.map((item) => (
+                                <div key={item.name} className="flex items-center gap-4 group">
+                                    <div className="p-2.5 rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white transition-all duration-300">
+                                        <div className="[&>svg]:h-5 [&>svg]:w-5">{item.icon}</div>
+                                    </div>
+                                    <span className="font-bold text-sm md:text-base text-foreground/80">{item.name}</span>
                                 </div>
-                                <span className="font-bold text-xs md:text-sm">{item.name}</span>
-                            </div>
-                        ))}
+                            ))}
+                        </div>
+                        <div className="mt-12 text-left">
+                            <Button asChild size="lg" className="rounded-full px-8">
+                                <Link href="/valuation">See How It Works</Link>
+                            </Button>
+                        </div>
                     </div>
                 </CardContent>
             </Card>
         </div>
       </section>
 
-      <section className="py-12 lg:py-20 bg-background">
-        <div className="container max-w-3xl">
-          <div className="flex flex-col md:flex-row items-center justify-center gap-5 rounded-xl bg-primary/10 p-6 border border-primary/20 shadow-md">
-              <div className="h-12 w-12 rounded-full bg-primary flex items-center justify-center text-primary-foreground flex-shrink-0 animate-bounce">
-                <CheckCircle className="h-7 w-7" />
+      <section className="py-20 bg-background">
+        <div className="container max-w-4xl">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-8 rounded-3xl bg-foreground text-white p-10 md:p-12 shadow-2xl relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-3xl -mr-32 -mt-32"></div>
+              <div className="relative z-10 flex flex-col gap-2 max-w-md">
+                <p className="text-primary font-black uppercase tracking-widest text-sm">Pro Tip for Sellers</p>
+                <h3 className="text-2xl md:text-3xl font-bold">Always check your true value first.</h3>
+                <p className="text-white/70 text-lg">Don't let dealers or brokers decide your car's price. Enter the negotiation with a professional AI report.</p>
               </div>
-              <div className="text-center md:text-left">
-                <p className="text-lg font-bold text-primary uppercase tracking-tight">Pro Tip</p>
-                <p className="text-base font-medium text-foreground/90">
-                    Always check your car’s true value here before you talk to any dealer or broker.
-                </p>
+              <div className="relative z-10">
+                <div className="h-20 w-20 rounded-full bg-primary flex items-center justify-center text-white shadow-lg shadow-primary/20 animate-bounce">
+                    <CheckCircle className="h-10 w-10" />
+                </div>
               </div>
           </div>
         </div>
       </section>
 
-       <section className="py-12 lg:py-20 bg-secondary/50">
+       <section className="py-24 bg-secondary/50">
         <div className="container max-w-4xl text-center">
-          <div className="flex flex-col items-center gap-5">
-              <div className="flex -space-x-3 mb-1">
-                {[1,2,3,4,5].map(i => (
-                    <div key={i} className="h-10 w-10 rounded-full border-2 border-background bg-muted flex items-center justify-center overflow-hidden">
-                        <Image src={`https://picsum.photos/seed/${i}/100/100`} alt="User" width={40} height={40} />
+          <div className="flex flex-col items-center gap-8">
+              <div className="flex -space-x-4">
+                {[1,2,3,4,5,6].map(i => (
+                    <div key={i} className="h-12 w-12 rounded-full border-4 border-background bg-muted flex items-center justify-center overflow-hidden">
+                        <Image src={`https://picsum.photos/seed/${i+10}/100/100`} alt="User" width={48} height={48} />
                     </div>
                 ))}
               </div>
-              <p className="text-xl md:text-2xl font-bold text-foreground max-w-2xl leading-tight">
-                  Trusted by <span className="text-primary decoration-2 underline">3000+ people</span> across India for fair and unbiased car valuations.
-              </p>
-              <Button asChild size="lg" variant="secondary" className="rounded-full font-bold">
-                <Link href="/valuation">Join Them Now</Link>
+              <h2 className="text-3xl md:text-5xl font-black text-foreground max-w-3xl leading-tight">
+                  Trusted by <span className="text-primary">5,000+ car owners</span> for fair market pricing.
+              </h2>
+              <Button asChild size="lg" className="rounded-full px-12 h-16 text-xl font-black">
+                <Link href="/valuation">Get Your Report Now</Link>
               </Button>
           </div>
         </div>

@@ -393,7 +393,7 @@ function AdminDashboard({ user }: { user: any }) {
     <div className="container mx-auto py-8 px-4">
         <header className="mb-8 flex justify-between items-center">
             <div>
-                <h1 className="text-3xl font-bold">Admin Panel</h1>
+                <h1 className="text-3xl font-bold text-foreground">Admin Panel</h1>
                 <p className="text-muted-foreground">Platform oversight and listing management.</p>
             </div>
             <Badge variant="secondary" className="px-3 py-1 bg-primary/10 text-primary border-primary/20">

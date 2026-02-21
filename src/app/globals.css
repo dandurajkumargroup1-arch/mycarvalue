@@ -10,8 +10,8 @@
     --card-foreground: 222 47% 11%;
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
-    --primary: 48 96% 51%;
-    --primary-foreground: 222 47% 11%;
+    --primary: 24 95% 53%;
+    --primary-foreground: 0 0% 100%;
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222 47% 11%;
     --muted: 210 40% 96.1%;
@@ -22,16 +22,16 @@
     --destructive-foreground: 210 40% 98%;
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 48 96% 51%;
-    --radius: 1rem;
-    --chart-1: 48 96% 51%;
+    --ring: 24 95% 53%;
+    --radius: 0.75rem;
+    --chart-1: 24 95% 53%;
     --chart-2: 222 47% 11%;
     --chart-3: 199 89% 48%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
   }
 
-  /* Force light theme values even in dark mode for a unified look */
+  /* Force light theme values for a unified professional look */
   @media (prefers-color-scheme: dark) {
     :root {
       --background: 0 0% 100%;
@@ -40,8 +40,8 @@
       --card-foreground: 222 47% 11%;
       --popover: 0 0% 100%;
       --popover-foreground: 222 47% 11%;
-      --primary: 48 96% 51%;
-      --primary-foreground: 222 47% 11%;
+      --primary: 24 95% 53%;
+      --primary-foreground: 0 0% 100%;
       --secondary: 210 40% 96.1%;
       --secondary-foreground: 222 47% 11%;
       --muted: 210 40% 96.1%;
@@ -52,7 +52,7 @@
       --destructive-foreground: 210 40% 98%;
       --border: 214.3 31.8% 91.4%;
       --input: 214.3 31.8% 91.4%;
-      --ring: 48 96% 51%;
+      --ring: 24 95% 53%;
     }
   }
 }
@@ -65,4 +65,17 @@
     @apply bg-background text-foreground antialiased;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
+}
+
+/* Custom UI Polish */
+.glass-header {
+  @apply bg-white/80 backdrop-blur-md border-b sticky top-0 z-50;
+}
+
+.velocity-card {
+  @apply rounded-xl border border-border/50 bg-card shadow-sm hover:shadow-md transition-all duration-300;
+}
+
+.velocity-gradient-bg {
+  @apply bg-gradient-to-br from-primary/5 to-transparent;
 }
