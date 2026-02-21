@@ -1,18 +1,15 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { Sparkles, ShieldOff, Target, Lock, CheckCircle, Users, Wrench, Cog, Car, Power, AirVent, Armchair, Disc, GitPullRequest, FileText, BadgeCheck, Star, RefreshCw, Clock, ChevronsDown, ChevronRight, Flame } from "lucide-react";
+import { Sparkles, CheckCircle, ChevronRight, Flame, BadgeCheck, Star, Lock, Clock, Wrench, Cog, Car, Power, AirVent, Armchair, Disc, ChevronsDown, GitPullRequest, FileText } from "lucide-react";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { Card, CardContent } from "@/components/ui/card";
 
 export default function Home() {
-  const brandName = "mycarvalue.in";
-  const title = "Don’t Sell Your Car Blindly. Know Its Real Value First.";
   const description = "Get an instant, AI-powered valuation report for just ₹149. This helps you sell directly to buyers at the right price.";
   
   const buttonText = 'Get Your Car’s True Value Now';
   const buttonLink = '/valuation';
-  const trustLine = "Join 3000+ satisfied car owners today.";
 
   const whyChooseUsFeatures = [
     {
@@ -54,34 +51,34 @@ export default function Home() {
 
   return (
     <>
-      <section className="relative w-full pt-12 pb-10 md:pt-20 md:pb-16 lg:pt-24 lg:pb-20 overflow-hidden bg-gradient-to-b from-secondary/50 to-background">
+      <section className="relative w-full pt-16 pb-12 md:pt-24 md:pb-20 overflow-hidden bg-gradient-to-b from-secondary/50 to-background">
         <div className="container relative z-10 mx-auto px-4 md:px-6">
           <div className="flex flex-col items-center text-center">
             <div className="max-w-3xl space-y-6">
-              <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary">
+              <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-1.5 text-xs font-semibold text-primary">
                 <Sparkles className="h-3.5 w-3.5" />
                 #1 AI Car Valuation in India
               </div>
-              <h1 className="text-3xl font-black tracking-tight sm:text-4xl md:text-5xl lg:text-6xl">
+              <h1 className="text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl">
                 Don't Sell Blindly. <br />
-                <span className="text-primary underline underline-offset-4">Know Your Car's Worth.</span>
+                <span className="text-primary decoration-primary/30 decoration-2 underline underline-offset-8">Know Your Car's Worth.</span>
               </h1>
-              <p className="max-w-[600px] mx-auto text-base text-muted-foreground sm:text-lg leading-relaxed">
+              <p className="max-w-[600px] mx-auto text-base text-muted-foreground sm:text-lg leading-relaxed font-medium">
                 {description}
               </p>
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-                <Button asChild size="lg" className="w-full sm:w-auto font-black shadow-md shadow-primary/10">
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
+                <Button asChild size="lg" className="w-full sm:w-auto font-semibold shadow-lg shadow-primary/20">
                   <Link href={buttonLink}>
                     {buttonText} <ChevronRight className="ml-1 h-4 w-4" />
                   </Link>
                 </Button>
-                <Button asChild variant="outline" size="lg" className="w-full sm:w-auto font-bold border-primary/20 hover:bg-primary/5">
+                <Button asChild variant="outline" size="lg" className="w-full sm:w-auto font-semibold border-primary/20 hover:bg-primary/5">
                   <Link href="/daily-fresh-cars">
                     <Flame className="mr-2 h-4 w-4 text-primary" /> Hot Market Listings
                   </Link>
                 </Button>
               </div>
-              <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground font-medium">
+              <div className="flex items-center justify-center gap-6 text-[11px] text-muted-foreground font-semibold uppercase tracking-wider pt-4">
                 <div className="flex items-center gap-1.5">
                   <CheckCircle className="h-3.5 w-3.5 text-green-500" /> Secure Payment
                 </div>
@@ -100,7 +97,7 @@ export default function Home() {
       <section className="py-12 lg:py-20 bg-background">
         <div className="container">
             <div className="text-center max-w-2xl mx-auto mb-10">
-                <h2 className="text-2xl font-bold tracking-tighter md:text-3xl">Why Choose mycarvalue.in?</h2>
+                <h2 className="text-2xl font-bold tracking-tight md:text-3xl">Why Choose mycarvalue.in?</h2>
                 <p className="mt-3 text-muted-foreground text-base">We provide a fast, unbiased, and data-driven valuation you can trust.</p>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
@@ -119,7 +116,7 @@ export default function Home() {
       
       <section className="py-12 lg:py-20 bg-secondary/30">
         <div className="container max-w-5xl text-center">
-            <h2 className="text-2xl font-bold tracking-tighter mb-3 md:text-3xl">What We Check</h2>
+            <h2 className="text-2xl font-bold tracking-tight mb-3 md:text-3xl">What We Check</h2>
             <p className="text-muted-foreground md:text-base max-w-2xl mx-auto mb-10">
                 Our comprehensive AI valuation covers every vital aspect of your vehicle to give you the most accurate market price.
             </p>
@@ -158,7 +155,7 @@ export default function Home() {
                 <CheckCircle className="h-7 w-7" />
               </div>
               <div className="text-center md:text-left">
-                <p className="text-lg font-black text-primary uppercase tracking-tight">Pro Tip</p>
+                <p className="text-lg font-bold text-primary uppercase tracking-tight">Pro Tip</p>
                 <p className="text-base font-medium text-foreground/90">
                     Always check your car’s true value here before you talk to any dealer or broker.
                 </p>
@@ -177,7 +174,7 @@ export default function Home() {
                     </div>
                 ))}
               </div>
-              <p className="text-xl md:text-2xl font-black text-foreground max-w-2xl leading-tight">
+              <p className="text-xl md:text-2xl font-bold text-foreground max-w-2xl leading-tight">
                   Trusted by <span className="text-primary decoration-2 underline">3000+ people</span> across India for fair and unbiased car valuations.
               </p>
               <Button asChild size="lg" variant="secondary" className="rounded-full font-bold">
