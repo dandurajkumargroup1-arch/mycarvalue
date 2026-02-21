@@ -59,26 +59,26 @@ export default function Home() {
                 <Sparkles className="h-3.5 w-3.5" />
                 #1 AI Car Valuation in India
               </div>
-              <h1 className="text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl">
+              <h1 className="text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl lg:text-6xl">
                 Don't Sell Blindly. <br />
                 <span className="text-primary decoration-primary/30 decoration-2 underline underline-offset-8">Know Your Car's Worth.</span>
               </h1>
-              <p className="max-w-[600px] mx-auto text-base text-muted-foreground sm:text-lg leading-relaxed font-medium">
+              <p className="max-w-[650px] mx-auto text-base text-muted-foreground sm:text-lg md:text-xl leading-relaxed font-medium">
                 {description}
               </p>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
-                <Button asChild size="lg" className="w-full sm:w-auto font-semibold shadow-lg shadow-primary/20">
+                <Button asChild size="lg" className="w-full sm:w-auto font-bold shadow-lg shadow-primary/20 h-12 px-8">
                   <Link href={buttonLink}>
                     {buttonText} <ChevronRight className="ml-1 h-4 w-4" />
                   </Link>
                 </Button>
-                <Button asChild variant="outline" size="lg" className="w-full sm:w-auto font-semibold border-primary/20 hover:bg-primary/5">
+                <Button asChild variant="outline" size="lg" className="w-full sm:w-auto font-bold border-primary/20 hover:bg-primary/5 h-12 px-8">
                   <Link href="/daily-fresh-cars">
                     <Flame className="mr-2 h-4 w-4 text-primary" /> Hot Market Listings
                   </Link>
                 </Button>
               </div>
-              <div className="flex items-center justify-center gap-6 text-[11px] text-muted-foreground font-semibold uppercase tracking-wider pt-4">
+              <div className="flex items-center justify-center gap-6 text-[10px] sm:text-[11px] text-muted-foreground font-bold uppercase tracking-wider pt-6">
                 <div className="flex items-center gap-1.5">
                   <CheckCircle className="h-3.5 w-3.5 text-green-500" /> Secure Payment
                 </div>

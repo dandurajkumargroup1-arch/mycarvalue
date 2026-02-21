@@ -22,7 +22,7 @@ export default function Footer() {
               <span className="font-black text-xl tracking-tight">mycarvalue<span className="text-primary">.in</span></span>
             </Link>
             <p className="text-sm text-muted-foreground leading-relaxed max-w-xs">
-              India&apos;s #1 AI-powered car valuation platform. Get the true market value of your vehicle based on real-world data and professional inspection points.
+              India's #1 AI-powered car valuation platform. Get the true market value of your vehicle based on real-world data and professional inspection points.
             </p>
             <div className="flex items-center gap-4 pt-2">
                 <a href="#" className="text-muted-foreground hover:text-primary transition-colors"><Instagram className="h-5 w-5" /></a>
