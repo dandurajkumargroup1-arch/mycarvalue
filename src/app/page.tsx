@@ -47,8 +47,6 @@ export default function Home() {
       { icon: <FileText />, name: 'Documents' },
   ];
 
-  const whatWeCheckImage = PlaceHolderImages.find(p => p.id === 'what-we-check');
-
   return (
     <>
       <section className="relative w-full pt-16 pb-12 md:pt-24 md:pb-20 overflow-hidden bg-gradient-to-b from-primary/5 via-background to-background">
@@ -121,31 +119,20 @@ export default function Home() {
                 Our AI model analyzes every vital aspect of your vehicle, from engine health to tire wear, ensuring the most accurate market price.
             </p>
             <Card className="shadow-2xl overflow-hidden border-none bg-background rounded-3xl">
-                <CardContent className="p-0 md:p-0 grid grid-cols-1 md:grid-cols-2">
-                    {whatWeCheckImage && (
-                        <div className="relative aspect-square md:aspect-auto h-full min-h-[400px] bg-muted">
-                            <Image
-                                src={whatWeCheckImage.imageUrl}
-                                alt="Car inspection"
-                                fill
-                                className="object-cover"
-                                data-ai-hint={whatWeCheckImage.imageHint}
-                            />
-                        </div>
-                    )}
-                    <div className="p-8 md:p-12 bg-white flex flex-col justify-center">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-left">
+                <CardContent className="p-8 md:p-16">
+                    <div className="max-w-5xl mx-auto">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-8 text-left">
                             {inspectionItems.map((item) => (
-                                <div key={item.name} className="flex items-center gap-4 group">
-                                    <div className="p-2.5 rounded-xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white transition-all duration-300">
-                                        <div className="[&>svg]:h-5 [&>svg]:w-5">{item.icon}</div>
+                                <div key={item.name} className="flex flex-col items-center text-center gap-3 group">
+                                    <div className="p-4 rounded-2xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white transition-all duration-300">
+                                        <div className="[&>svg]:h-6 [&>svg]:w-6">{item.icon}</div>
                                     </div>
-                                    <span className="font-bold text-sm md:text-base text-foreground/80">{item.name}</span>
+                                    <span className="font-bold text-sm text-foreground/80">{item.name}</span>
                                 </div>
                             ))}
                         </div>
-                        <div className="mt-12 text-left">
-                            <Button asChild size="lg" className="rounded-full px-8">
+                        <div className="mt-16 flex justify-center">
+                            <Button asChild size="lg" className="rounded-full px-12 h-14 text-lg font-bold">
                                 <Link href="/valuation">See How It Works</Link>
                             </Button>
                         </div>
