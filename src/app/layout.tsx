@@ -7,7 +7,6 @@ import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
 import { Toaster } from "@/components/ui/toaster";
 import { FirebaseClientProvider } from "@/firebase";
-import { ThemeProvider } from "@/components/theme-provider";
 
 const poppins = Poppins({ 
   subsets: ["latin"],
@@ -29,7 +28,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en">
       <head />
       <body
         className={cn(
@@ -39,19 +38,12 @@ export default function RootLayout({
         )}
       >
         <FirebaseClientProvider>
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="dark"
-            enableSystem
-            disableTransitionOnChange
-          >
             <div className="relative flex min-h-screen flex-col selection:bg-primary/30">
               <Header />
               <main className="flex-1">{children}</main>
               <Footer />
             </div>
             <Toaster />
-          </ThemeProvider>
         </FirebaseClientProvider>
         <Script
           id="mycarvalue-org-schema"

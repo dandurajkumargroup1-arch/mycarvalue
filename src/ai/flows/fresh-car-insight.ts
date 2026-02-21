@@ -1,6 +1,8 @@
 'use server';
 /**
  * @fileOverview AI flow to generate insights for 'Daily Fresh Cars'.
+ * 
+ * - getFreshCarInsight - Generates a catchy market insight for a listing.
  */
 
 import { ai } from '@/ai/genkit';

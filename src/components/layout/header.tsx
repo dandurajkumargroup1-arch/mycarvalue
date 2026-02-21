@@ -13,7 +13,6 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { cn } from "@/lib/utils";
 import { useAuth, useUser, useFirestore, useDoc } from "@/firebase";
 import type { UserProfile } from "@/lib/firebase/user-profile-service";
-import { ThemeToggle } from "@/components/theme-toggle";
 
 import {
   DropdownMenu,
@@ -75,7 +74,6 @@ function AuthSection({
 
     return (
       <div className="flex items-center gap-2">
-        <ThemeToggle />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="relative h-8 w-8 rounded-full">
@@ -139,7 +137,6 @@ function AuthSection({
               </Link>
           </Button>
         </div>
-        <ThemeToggle />
     </div>
   );
 }
