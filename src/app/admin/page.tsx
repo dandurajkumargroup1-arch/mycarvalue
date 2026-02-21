@@ -2,11 +2,11 @@
 
 import { Suspense, useEffect, useState, useMemo } from 'react';
 import Image from 'next/image';
-import { doc, collection, query, orderBy, collectionGroup } from 'firebase/firestore';
+import { doc, collection, query, orderBy, collectionGroup, where } from 'firebase/firestore';
 import { useUser, useFirestore, useDoc, useCollection } from '@/firebase';
 import type { UserProfile } from '@/lib/firebase/user-profile-service';
 import { approveWithdrawal, rejectWithdrawal } from '@/lib/firebase/withdrawal-service';
-import { deleteUser } from '@/lib/firebase/user-profile-service';
+import { deleteUser, addCredits } from '@/lib/firebase/user-profile-service';
 import { upsertFreshCar, deleteFreshCar } from '@/lib/firebase/fresh-car-service';
 import { useRouter } from 'next/navigation';
 import { useForm } from "react-hook-form";
@@ -32,7 +32,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
-import { AlertTriangle, Shield, Users, Wallet, Calendar as CalendarIcon, Download, Trash2, Plus, Edit, Car, History, FileText } from 'lucide-react';
+import { AlertTriangle, Shield, Users, Wallet, Calendar as CalendarIcon, Download, Trash2, Plus, Edit, Car, History, FileText, Coins, Search, UserCheck } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -82,7 +82,11 @@ function FreshCarDialog({ car }: { car?: any }) {
 
     const form = useForm<FreshCarFormInput>({
         resolver: zodResolver(FreshCarSchema),
-        defaultValues: car ? { ...car, aiInsight: car.aiInsight || '' } : {
+        defaultValues: car ? { 
+            ...car, 
+            aiInsight: car.aiInsight || '',
+            isDirectOwner: car.isDirectOwner ?? true
+        } : {
             title: '', imageUrl: '', price: 500000, state: '', city: '', area: '', ownerName: '', ownerPhone: '', ownerWhatsapp: '', ownership: '1st', isDirectOwner: true, year: new Date().getFullYear(), km: 50000, fuelType: 'petrol', transmission: 'manual', aiInsight: '',
         }
     });
@@ -112,37 +116,165 @@ function FreshCarDialog({ car }: { car?: any }) {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormField control={form.control} name="title" render={({ field }) => (<FormItem className="col-span-full"><FormLabel>Car Title</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
                         <FormField control={form.control} name="imageUrl" render={({ field }) => (<FormItem className="col-span-full"><FormLabel>Image URL</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                        
                         <FormField control={form.control} name="state" render={({ field }) => (
                             <FormItem><FormLabel>State</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent>{indianStates.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>
                         )} />
                         <FormField control={form.control} name="city" render={({ field }) => (<FormItem><FormLabel>City</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
                         <FormField control={form.control} name="area" render={({ field }) => (<FormItem><FormLabel>Area</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-                        <FormField control={form.control} name="price" render={({ field }) => (<FormItem><FormLabel>Price</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                        <FormField control={form.control} name="ownerName" render={({ field }) => (<FormItem><FormLabel>Owner</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-                        <FormField control={form.control} name="ownerPhone" render={({ field }) => (<FormItem><FormLabel>Phone</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-                        <FormField control={form.control} name="ownerWhatsapp" render={({ field }) => (<FormItem><FormLabel>WhatsApp</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="price" render={({ field }) => (<FormItem><FormLabel>Price (INR)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                        
                         <FormField control={form.control} name="year" render={({ field }) => (<FormItem><FormLabel>Year</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                        <FormField control={form.control} name="km" render={({ field }) => (<FormItem><FormLabel>KM</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="km" render={({ field }) => (<FormItem><FormLabel>Kilometers (KM)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                        
+                        <FormField control={form.control} name="fuelType" render={({ field }) => (
+                            <FormItem><FormLabel>Fuel Type</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="petrol">Petrol</SelectItem><SelectItem value="diesel">Diesel</SelectItem><SelectItem value="cng">CNG</SelectItem><SelectItem value="electric">Electric</SelectItem></SelectContent></Select><FormMessage /></FormItem>
+                        )} />
+                        <FormField control={form.control} name="transmission" render={({ field }) => (
+                            <FormItem><FormLabel>Transmission</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="manual">Manual</SelectItem><SelectItem value="automatic">Automatic</SelectItem></SelectContent></Select><FormMessage /></FormItem>
+                        )} />
+                        
+                        <FormField control={form.control} name="ownership" render={({ field }) => (
+                            <FormItem><FormLabel>Ownership</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="1st">1st Owner</SelectItem><SelectItem value="2nd">2nd Owner</SelectItem><SelectItem value="3rd">3rd Owner</SelectItem><SelectItem value="4th+">4th+ Owner</SelectItem></SelectContent></Select><FormMessage /></FormItem>
+                        )} />
+                        
+                        <FormField control={form.control} name="isDirectOwner" render={({ field }) => (
+                            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                                <div className="space-y-0.5">
+                                    <FormLabel>Direct Owner Listing</FormLabel>
+                                </div>
+                                <FormControl>
+                                    <Switch checked={field.value} onCheckedChange={field.onChange} />
+                                </FormControl>
+                            </FormItem>
+                        )} />
+
+                        <div className="col-span-full border-t pt-4 mt-2">
+                             <h4 className="text-sm font-bold mb-4">Contact Details</h4>
+                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <FormField control={form.control} name="ownerName" render={({ field }) => (<FormItem><FormLabel>Owner Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                <FormField control={form.control} name="ownerPhone" render={({ field }) => (<FormItem><FormLabel>Phone Number</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                <FormField control={form.control} name="ownerWhatsapp" render={({ field }) => (<FormItem><FormLabel>WhatsApp Number</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                             </div>
+                        </div>
                     </div>
-                    <FormField control={form.control} name="aiInsight" render={({ field }) => (<FormItem><FormLabel>Insight</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>)} />
-                    <DialogFooter><Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Saving...' : 'Save'}</Button></DialogFooter>
+                    <FormField control={form.control} name="aiInsight" render={({ field }) => (<FormItem><FormLabel>Market Insight (Catchy 1-sentence description)</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>)} />
+                    <DialogFooter><Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Saving...' : 'Save Listing'}</Button></DialogFooter>
                 </form></Form>
             </DialogContent>
         </Dialog>
     );
 }
 
+function UserManagementRow({ userProfile }: { userProfile: UserProfile }) {
+    const firestore = useFirestore();
+    const { toast } = useToast();
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [addAmount, setAddAmount] = useState<string>("5");
+
+    const handleAddCredits = async () => {
+        if (!firestore) return;
+        const amount = parseInt(addAmount);
+        if (isNaN(amount) || amount === 0) return;
+        
+        try {
+            await addCredits(firestore, userProfile.id, amount);
+            toast({ title: "Credits Added", description: `${amount} credits added to ${userProfile.displayName}` });
+            setAddAmount("5");
+        } catch (e) {
+            toast({ variant: 'destructive', title: "Error adding credits" });
+        }
+    };
+
+    const handleDeleteUser = async () => {
+        if (!firestore) return;
+        setIsDeleting(true);
+        try {
+            await deleteUser(firestore, userProfile.id);
+            toast({ title: "User Deleted" });
+        } catch (e) {
+            toast({ variant: 'destructive', title: "Error deleting user" });
+        } finally {
+            setIsDeleting(false);
+        }
+    };
+
+    return (
+        <TableRow>
+            <TableCell>
+                <div className="font-medium">{userProfile.displayName || 'No Name'}</div>
+                <div className="text-xs text-muted-foreground">{userProfile.email}</div>
+            </TableCell>
+            <TableCell>
+                <Badge variant="outline" className="text-[10px] uppercase font-bold">{userProfile.role}</Badge>
+            </TableCell>
+            <TableCell className="font-bold">
+                <div className="flex items-center gap-1">
+                    <Coins className="h-3 w-3 text-primary" />
+                    {userProfile.credits || 0}
+                </div>
+            </TableCell>
+            <TableCell>
+                <div className="flex items-center gap-2">
+                    <Input 
+                        type="number" 
+                        className="w-16 h-8 text-xs" 
+                        value={addAmount} 
+                        onChange={(e) => setAddAmount(e.target.value)}
+                    />
+                    <Button size="sm" variant="outline" className="h-8 text-xs" onClick={handleAddCredits}>
+                        Add
+                    </Button>
+                </div>
+            </TableCell>
+            <TableCell className="text-right">
+                <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <Button variant="ghost" size="icon" disabled={isDeleting}>
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Delete User Account?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                This will permanently delete the user profile and all associated data (valuations, wallet). This action cannot be undone.
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleDeleteUser} className="bg-destructive">Delete User</AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+            </TableCell>
+        </TableRow>
+    );
+}
+
 function AdminDashboard({ user }: { user: any }) {
   const firestore = useFirestore();
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState('pending');
+  const [activeTab, setActiveTab] = useState('users');
   const [isExporting, setIsExporting] = useState<string | null>(null);
+  const [userSearch, setUserSearch] = useState("");
 
-  const usersQuery = useMemo(() => firestore ? query(collection(firestore, 'users')) : null, [firestore]);
-  const { data: rawUsers } = useCollection<UserProfile>(usersQuery);
+  const usersQuery = useMemo(() => firestore ? query(collection(firestore, 'users'), orderBy('lastUpdatedAt', 'desc')) : null, [firestore]);
+  const { data: rawUsers, isLoading: isUsersLoading } = useCollection<UserProfile>(usersQuery);
   const userMap = useMemo(() => rawUsers?.reduce((acc, u) => ({ ...acc, [u.id]: u }), {} as Record<string, UserProfile>) || {}, [rawUsers]);
 
-  const requestsQuery = useMemo(() => firestore ? query(collectionGroup(firestore, 'withdrawalRequests')) : null, [firestore]);
+  const filteredUsers = useMemo(() => {
+    if (!rawUsers) return [];
+    if (!userSearch) return rawUsers;
+    const s = userSearch.toLowerCase();
+    return rawUsers.filter(u => 
+        (u.displayName?.toLowerCase().includes(s)) || 
+        (u.email?.toLowerCase().includes(s)) ||
+        (u.role?.toLowerCase().includes(s))
+    );
+  }, [rawUsers, userSearch]);
+
+  const requestsQuery = useMemo(() => firestore ? query(collectionGroup(firestore, 'withdrawalRequests'), orderBy('requestedAt', 'desc')) : null, [firestore]);
   const { data: rawRequests } = useCollection<WithdrawalRequest>(requestsQuery);
   const pendingRequests = useMemo(() => rawRequests?.filter(r => r.status === 'requested') || [], [rawRequests]);
 
@@ -186,22 +318,154 @@ function AdminDashboard({ user }: { user: any }) {
 
   return (
     <div className="container mx-auto py-8 px-4">
-        <header className="mb-8"><h1 className="text-3xl font-bold">Admin Panel</h1></header>
+        <header className="mb-8 flex justify-between items-center">
+            <div>
+                <h1 className="text-3xl font-bold">Admin Panel</h1>
+                <p className="text-muted-foreground">Platform oversight and listing management.</p>
+            </div>
+            <Badge variant="secondary" className="px-3 py-1 bg-primary/10 text-primary border-primary/20">
+                <Shield className="mr-2 h-4 w-4" /> Admin Access
+            </Badge>
+        </header>
+
         <main className="grid grid-cols-1 gap-8">
-            <Card><Tabs value={activeTab} onValueChange={setActiveTab}>
-                <CardHeader className="flex flex-row justify-between items-center"><CardTitle>Management</CardTitle><TabsList><TabsTrigger value="pending">Withdrawals</TabsTrigger><TabsTrigger value="freshCars">Hot Listings</TabsTrigger></TabsList></CardHeader>
-                <TabsContent value="pending"><CardContent><Table><TableHeader><TableRow><TableHead>User</TableHead><TableHead>Amount</TableHead><TableHead className="text-right">Action</TableHead></TableRow></TableHeader>
-                    <TableBody>{pendingRequests.map(r => (
-                        <TableRow key={r.id}><TableCell>{userMap[r.userId]?.displayName || r.userId}</TableCell><TableCell>{formatCurrency(r.amount)}</TableCell><TableCell className="text-right"><Button size="sm" onClick={() => approveWithdrawal(firestore!, r.userId, r.id, 'MANUAL_PAID')}>Paid</Button></TableCell></TableRow>
-                    ))}</TableBody></Table></CardContent></TabsContent>
-                <TabsContent value="freshCars"><CardContent><div className="flex justify-end mb-4"><FreshCarDialog /></div><Table><TableHeader><TableRow><TableHead>Car</TableHead><TableHead>Price</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
-                    <TableBody>{freshCars?.map(car => (
-                        <TableRow key={car.id}><TableCell>{car.title}</TableCell><TableCell>{formatCurrency(car.price)}</TableCell><TableCell className="text-right flex justify-end gap-1">
-                            <Button variant="ghost" size="icon" onClick={() => handleDownloadPdf(car)} disabled={isExporting === car.id}><FileText className={cn("h-4 w-4", isExporting === car.id && "animate-pulse")}/></Button>
-                            <FreshCarDialog car={car} /><Button variant="ghost" size="icon" onClick={() => handleDeleteFreshCar(car.id)}><Trash2 className="h-4 w-4 text-destructive"/></Button>
-                        </TableCell></TableRow>
-                    ))}</TableBody></Table></CardContent></TabsContent>
-            </Tabs></Card>
+            <Card>
+                <Tabs value={activeTab} onValueChange={setActiveTab}>
+                    <CardHeader className="flex flex-col md:flex-row justify-between items-start md:items-center border-b bg-muted/30 pb-4">
+                        <TabsList className="bg-background border">
+                            <TabsTrigger value="users"><Users className="mr-2 h-4 w-4" /> Users</TabsTrigger>
+                            <TabsTrigger value="freshCars"><Car className="mr-2 h-4 w-4" /> Hot Listings</TabsTrigger>
+                            <TabsTrigger value="pending" className="relative">
+                                <Wallet className="mr-2 h-4 w-4" /> Withdrawals
+                                {pendingRequests.length > 0 && (
+                                    <span className="absolute -top-1 -right-1 h-4 w-4 bg-primary text-primary-foreground text-[10px] rounded-full flex items-center justify-center font-bold">
+                                        {pendingRequests.length}
+                                    </span>
+                                )}
+                            </TabsTrigger>
+                        </TabsList>
+                        
+                        {activeTab === 'users' && (
+                            <div className="relative w-full md:w-64 mt-4 md:mt-0">
+                                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                <Input 
+                                    placeholder="Search users..." 
+                                    className="pl-8 bg-background" 
+                                    value={userSearch} 
+                                    onChange={(e) => setUserSearch(e.target.value)}
+                                />
+                            </div>
+                        )}
+                        {activeTab === 'freshCars' && <FreshCarDialog />}
+                    </CardHeader>
+
+                    <TabsContent value="users" className="mt-0">
+                        <CardContent className="pt-6">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>User Details</TableHead>
+                                        <TableHead>Role</TableHead>
+                                        <TableHead>Credits</TableHead>
+                                        <TableHead>Quick Add Credits</TableHead>
+                                        <TableHead className="text-right">Action</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {isUsersLoading ? (
+                                        [1, 2, 3].map(i => (
+                                            <TableRow key={i}>
+                                                <TableCell colSpan={5}><Skeleton className="h-12 w-full" /></TableCell>
+                                            </TableRow>
+                                        ))
+                                    ) : filteredUsers.length > 0 ? (
+                                        filteredUsers.map(u => <UserManagementRow key={u.id} userProfile={u} />)
+                                    ) : (
+                                        <TableRow><TableCell colSpan={5} className="h-24 text-center text-muted-foreground">No users found.</TableCell></TableRow>
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </CardContent>
+                    </TabsContent>
+
+                    <TabsContent value="pending" className="mt-0">
+                        <CardContent className="pt-6">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>User</TableHead>
+                                        <TableHead>Amount</TableHead>
+                                        <TableHead>Details</TableHead>
+                                        <TableHead className="text-right">Action</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {pendingRequests.length > 0 ? pendingRequests.map(r => (
+                                        <TableRow key={r.id}>
+                                            <TableCell>
+                                                <div className="font-medium">{userMap[r.userId]?.displayName || 'Unknown'}</div>
+                                                <div className="text-xs text-muted-foreground">{userMap[r.userId]?.email || r.userId}</div>
+                                            </TableCell>
+                                            <TableCell className="font-bold text-primary">{formatCurrency(r.amount)}</TableCell>
+                                            <TableCell className="text-xs">
+                                                {r.upiId && <div className="text-[10px] font-mono">UPI: {r.upiId}</div>}
+                                                {r.bankAccountNumber && <div className="text-[10px] font-mono">Bank: {r.bankAccountNumber} / {r.bankIfscCode}</div>}
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                                <Button size="sm" onClick={() => approveWithdrawal(firestore!, r.userId, r.id, 'MANUAL_PAID')}>
+                                                    <UserCheck className="mr-2 h-4 w-4" /> Mark Paid
+                                                </Button>
+                                            </TableCell>
+                                        </TableRow>
+                                    )) : (
+                                        <TableRow><TableCell colSpan={4} className="h-24 text-center text-muted-foreground">No pending requests.</TableCell></TableRow>
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </CardContent>
+                    </TabsContent>
+
+                    <TabsContent value="freshCars" className="mt-0">
+                        <CardContent className="pt-6">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Listing</TableHead>
+                                        <TableHead>Location</TableHead>
+                                        <TableHead>Price</TableHead>
+                                        <TableHead className="text-right">Actions</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {freshCars && freshCars.length > 0 ? freshCars.map(car => (
+                                        <TableRow key={car.id}>
+                                            <TableCell>
+                                                <div className="font-medium">{car.title}</div>
+                                                <div className="text-[10px] text-muted-foreground uppercase">{car.year} • {car.km.toLocaleString()} KM • {car.ownership}</div>
+                                            </TableCell>
+                                            <TableCell className="text-xs">
+                                                {car.city}, {car.state}
+                                            </TableCell>
+                                            <TableCell className="font-bold">{formatCurrency(car.price)}</TableCell>
+                                            <TableCell className="text-right flex justify-end gap-1">
+                                                <Button variant="ghost" size="icon" onClick={() => handleDownloadPdf(car)} disabled={isExporting === car.id}>
+                                                    <FileText className={cn("h-4 w-4", isExporting === car.id && "animate-pulse")}/>
+                                                </Button>
+                                                <FreshCarDialog car={car} />
+                                                <Button variant="ghost" size="icon" onClick={() => handleDeleteFreshCar(car.id)}>
+                                                    <Trash2 className="h-4 w-4 text-destructive"/>
+                                                </Button>
+                                            </TableCell>
+                                        </TableRow>
+                                    )) : (
+                                        <TableRow><TableCell colSpan={4} className="h-24 text-center text-muted-foreground">No listings added yet.</TableCell></TableRow>
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </CardContent>
+                    </TabsContent>
+                </Tabs>
+            </Card>
         </main>
     </div>
   );
@@ -212,9 +476,17 @@ export default function AdminPage() {
   const firestore = useFirestore();
   const router = useRouter();
   const userProfileRef = useMemo(() => (firestore && user) ? doc(firestore, 'users', user.uid) : null, [firestore, user]);
-  const { data: profile } = useDoc<UserProfile>(userProfileRef);
+  const { data: profile, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileRef);
 
-  useEffect(() => { if (!isUserLoading && !user) router.push('/login'); }, [user, isUserLoading, router]);
-  if (!user || (user.email !== 'rajmycarvalue@gmail.com' && profile?.role !== 'Admin')) return <div className="p-20 text-center">Unauthorized</div>;
+  useEffect(() => { 
+    if (!isUserLoading && !user) router.push('/login'); 
+    else if (user && !isProfileLoading && user.email !== 'rajmycarvalue@gmail.com' && profile?.role !== 'Admin') {
+        router.push('/dashboard');
+    }
+  }, [user, isUserLoading, router, profile, isProfileLoading]);
+
+  if (isUserLoading || isProfileLoading) return <div className="p-20 text-center"><Skeleton className="h-12 w-64 mx-auto" /></div>;
+  if (!user || (user.email !== 'rajmycarvalue@gmail.com' && profile?.role !== 'Admin')) return <div className="p-20 text-center">Unauthorized Access</div>;
+  
   return <AdminDashboard user={user} />;
 }
