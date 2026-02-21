@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -23,7 +22,7 @@ export interface WithdrawalRequestPayload {
 
 export interface WithdrawalRequestData extends WithdrawalRequestPayload {
   userId: string;
-  status: 'requested';
+  status: 'requested' | 'paid' | 'rejected';
   requestedAt: FieldValue;
 }
 
@@ -49,7 +48,6 @@ export async function requestWithdrawal(
     await addDoc(withdrawalCollectionRef, withdrawalData);
   } catch (error) {
     console.error('Error creating withdrawal request:', error);
-    // Let the calling UI component handle the error via toast.
     throw error;
   }
 }
@@ -60,13 +58,17 @@ export async function approveWithdrawal(
   requestId: string,
   transactionId: string,
 ): Promise<void> {
+  if (!userId || !requestId) {
+    throw new Error("Missing User ID or Request ID for approval.");
+  }
+
   try {
     await runTransaction(firestore, async (transaction) => {
       const requestRef = doc(firestore, 'users', userId, 'withdrawalRequests', requestId);
       const requestDoc = await transaction.get(requestRef);
 
       if (!requestDoc.exists()) {
-        throw new Error("Withdrawal request not found!");
+        throw new Error(`Withdrawal request not found for path: users/${userId}/withdrawalRequests/${requestId}`);
       }
 
       const requestData = requestDoc.data();
@@ -88,8 +90,7 @@ export async function approveWithdrawal(
       });
     });
   } catch (error) {
-    console.error("Error approving withdrawal:", error);
-    // Let the calling UI component handle the error.
+    console.error("Error in approveWithdrawal transaction:", error);
     throw error;
   }
 }
@@ -110,9 +111,6 @@ export async function rejectWithdrawal(
     });
   } catch (error) {
     console.error("Error rejecting withdrawal:", error);
-    // Let the calling UI component handle the error.
     throw error;
   }
 }
-
-    

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Suspense, useEffect, useState, useMemo } from 'react';
@@ -322,7 +323,7 @@ function CreditPackCard({ credits, price, badge }: { credits: number, price: num
                     name: user.displayName || "",
                     email: user.email || ""
                 },
-                theme: { color: "#f9c70a" }
+                theme: { color: "#7c3aed" }
             };
 
             const rzp = new (window as any).Razorpay(options);

@@ -118,7 +118,7 @@ const PaymentDisplay = ({ onNewValuation, user, firestore }: { onNewValuation: (
           email: user.email || "customer@example.com",
         },
         theme: {
-          color: "#2A9D8F",
+          color: "#7c3aed",
         },
       };
       

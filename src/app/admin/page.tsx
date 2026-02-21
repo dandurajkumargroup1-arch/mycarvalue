@@ -304,6 +304,7 @@ function AdminDashboard({ user }: { user: any }) {
   const [activeTab, setActiveTab] = useState('users');
   const [isExporting, setIsExporting] = useState<string | null>(null);
   const [userSearch, setUserSearch] = useState("");
+  const [isProcessingWithdrawal, setIsProcessingWithdrawal] = useState<string | null>(null);
 
   const usersQuery = useMemo(() => firestore ? collection(firestore, 'users') : null, [firestore]);
   const { data: rawUsers, isLoading: isUsersLoading } = useCollection<UserProfile>(usersQuery);
@@ -357,6 +358,23 @@ function AdminDashboard({ user }: { user: any }) {
   const handleDeleteFreshCar = async (id: string) => {
     if (!firestore) return;
     try { await deleteFreshCar(firestore, id); toast({ title: "Deleted" }); } catch (e) { toast({ variant: 'destructive', title: "Error" }); }
+  };
+
+  const handleApproveWithdrawal = async (userId: string, requestId: string) => {
+    if (!firestore) return;
+    setIsProcessingWithdrawal(requestId);
+    try {
+        await approveWithdrawal(firestore, userId, requestId, 'MANUAL_PAID');
+        toast({ title: "Success", description: "Withdrawal marked as paid." });
+    } catch (error: any) {
+        toast({
+            variant: "destructive",
+            title: "Approval Failed",
+            description: error.message || "Failed to mark withdrawal as paid.",
+        });
+    } finally {
+        setIsProcessingWithdrawal(null);
+    }
   };
 
   const handleDownloadPdf = async (car: any) => {
@@ -485,8 +503,17 @@ function AdminDashboard({ user }: { user: any }) {
                                                 {r.bankAccountNumber && <div className="text-[10px] font-mono">Bank: {r.bankAccountNumber} / {r.bankIfscCode}</div>}
                                             </TableCellFixed>
                                             <TableCellFixed className="text-right">
-                                                <Button size="sm" className="rounded-full" onClick={() => approveWithdrawal(firestore!, r.userId, r.id, 'MANUAL_PAID')}>
-                                                    <UserCheck className="mr-2 h-4 w-4" /> Mark Paid
+                                                <Button 
+                                                    size="sm" 
+                                                    className="rounded-full" 
+                                                    onClick={() => handleApproveWithdrawal(r.userId, r.id)}
+                                                    disabled={isProcessingWithdrawal === r.id}
+                                                >
+                                                    {isProcessingWithdrawal === r.id ? (
+                                                        <div className="flex items-center gap-2"><div className="h-3 w-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div> Updating...</div>
+                                                    ) : (
+                                                        <><UserCheck className="mr-2 h-4 w-4" /> Mark Paid</>
+                                                    )}
                                                 </Button>
                                             </TableCellFixed>
                                         </TableRowFixed>
