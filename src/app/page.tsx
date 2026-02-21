@@ -176,13 +176,6 @@ export default function Home() {
        <section className="py-24 bg-secondary/50">
         <div className="container max-w-4xl text-center">
           <div className="flex flex-col items-center gap-8">
-              <div className="flex -space-x-4">
-                {[1,2,3,4,5,6].map(i => (
-                    <div key={i} className="h-12 w-12 rounded-full border-4 border-background bg-muted flex items-center justify-center overflow-hidden">
-                        <Image src={`https://picsum.photos/seed/${i+10}/100/100`} alt="User" width={48} height={48} />
-                    </div>
-                ))}
-              </div>
               <h2 className="text-3xl md:text-5xl font-black text-foreground max-w-3xl leading-tight">
                   Trusted by <span className="text-primary">5,000+ car owners</span> for fair market pricing.
               </h2>

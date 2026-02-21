@@ -51,15 +51,6 @@ function ListingImage({ src, alt, isUnlocked }: { src: string, alt: string, isUn
   if (!isUnlocked) {
     return (
       <div className="relative w-full h-full flex flex-col items-center justify-center bg-muted/30">
-          {src && !error && (
-              <Image 
-                  src={src} 
-                  alt={alt} 
-                  fill 
-                  className="object-cover blur-xl grayscale opacity-50"
-                  onError={() => setError(true)}
-              />
-          )}
           <div className="relative z-10 space-y-2 text-center">
               <div className="bg-background/20 backdrop-blur-md p-3 rounded-full border border-white/30 inline-block shadow-lg">
                   <Car className="h-6 w-6 text-white drop-shadow-md" />
