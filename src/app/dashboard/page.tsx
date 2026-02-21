@@ -561,7 +561,7 @@ function AgentOwnerDashboard({ user, userProfile }: { user: any, userProfile: Us
             </header>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div className="lg:hidden block">
+                <div className="lg:hidden block mb-8">
                     <TopUpCreditsCard />
                 </div>
 
