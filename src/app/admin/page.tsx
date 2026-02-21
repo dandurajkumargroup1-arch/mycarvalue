@@ -13,28 +13,23 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from 'zod';
 import { useToast } from "@/hooks/use-toast";
-import { DateRange } from "react-day-picker";
 import { format } from "date-fns";
 import { cn, toDate, formatCurrency, formatDateTime, formatDateOnly } from "@/lib/utils";
 import { indianStates } from "@/lib/variants";
-import Papa from 'papaparse';
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/table';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
-import { AlertTriangle, Shield, Users, Wallet, Calendar as CalendarIcon, Download, Trash2, Plus, Edit, Car, History, FileText, Coins, Search, UserCheck } from 'lucide-react';
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
+import { Shield, Users, Wallet, Trash2, Plus, Edit, Car, FileText, Coins, Search, UserCheck } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
@@ -47,8 +42,8 @@ interface WithdrawalRequest {
     bankAccountNumber?: string;
     bankIfscCode?: string;
     status: 'requested' | 'paid' | 'rejected';
-    requestedAt: Date | null;
-    processedAt?: Date | null;
+    requestedAt: any;
+    processedAt?: any;
     rejectionReason?: string;
     transactionId?: string;
 }
@@ -112,89 +107,91 @@ function FreshCarDialog({ car }: { car?: any }) {
             </DialogTrigger>
             <DialogContent className="max-w-3xl overflow-y-auto max-h-[90vh]">
                 <DialogHeader><DialogTitle>{car ? 'Edit Listing' : 'Add Hot Listing'}</DialogTitle></DialogHeader>
-                <Form {...form}><form onSubmit={form.handleSubmit(handleSave)} className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <FormField control={form.control} name="title" render={({ field }) => (<FormItem className="col-span-full"><FormLabel>Car Title</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-                        <FormField control={form.control} name="imageUrl" render={({ field }) => (<FormItem className="col-span-full"><FormLabel>Image URL</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-                        
-                        <FormField control={form.control} name="state" render={({ field }) => (
-                            <FormItem><FormLabel>State</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent>{indianStates.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>
-                        )} />
-                        <FormField control={form.control} name="city" render={({ field }) => (<FormItem><FormLabel>City</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-                        <FormField control={form.control} name="area" render={({ field }) => (<FormItem><FormLabel>Area</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-                        <FormField control={form.control} name="price" render={({ field }) => (<FormItem><FormLabel>Price (INR)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                        
-                        <FormField control={form.control} name="year" render={({ field }) => (<FormItem><FormLabel>Year</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                        <FormField control={form.control} name="km" render={({ field }) => (<FormItem><FormLabel>Kilometers (KM)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                        
-                        <FormField control={form.control} name="fuelType" render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Fuel Type</FormLabel>
-                                <Select onValueChange={field.onChange} value={field.value}>
-                                    <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                                    <SelectContent>
-                                        <SelectItem value="petrol">Petrol</SelectItem>
-                                        <SelectItem value="diesel">Diesel</SelectItem>
-                                        <SelectItem value="cng">CNG</SelectItem>
-                                        <SelectItem value="electric">Electric</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                                <FormMessage />
-                            </FormItem>
-                        )} />
-                        <FormField control={form.control} name="transmission" render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Transmission</FormLabel>
-                                <Select onValueChange={field.onChange} value={field.value}>
-                                    <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                                    <SelectContent>
-                                        <SelectItem value="manual">Manual</SelectItem>
-                                        <SelectItem value="automatic">Automatic</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                                <FormMessage />
-                            </FormItem>
-                        )} />
-                        
-                        <FormField control={form.control} name="ownership" render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Ownership</FormLabel>
-                                <Select onValueChange={field.onChange} value={field.value}>
-                                    <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                                    <SelectContent>
-                                        <SelectItem value="1st">1st Owner</SelectItem>
-                                        <SelectItem value="2nd">2nd Owner</SelectItem>
-                                        <SelectItem value="3rd">3rd Owner</SelectItem>
-                                        <SelectItem value="4th+">4th+ Owner</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                                <FormMessage />
-                            </FormItem>
-                        )} />
-                        
-                        <FormField control={form.control} name="isDirectOwner" render={({ field }) => (
-                            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                                <div className="space-y-0.5">
-                                    <FormLabel>Direct Owner Listing</FormLabel>
-                                </div>
-                                <FormControl>
-                                    <Switch checked={field.value} onCheckedChange={field.onChange} />
-                                </FormControl>
-                            </FormItem>
-                        )} />
+                <Form {...form}>
+                    <form onSubmit={form.handleSubmit(handleSave)} className="space-y-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <FormField control={form.control} name="title" render={({ field }) => (<FormItem className="col-span-full"><FormLabel>Car Title</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                            <FormField control={form.control} name="imageUrl" render={({ field }) => (<FormItem className="col-span-full"><FormLabel>Image URL</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                            
+                            <FormField control={form.control} name="state" render={({ field }) => (
+                                <FormItem><FormLabel>State</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent>{indianStates.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>
+                            )} />
+                            <FormField control={form.control} name="city" render={({ field }) => (<FormItem><FormLabel>City</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                            <FormField control={form.control} name="area" render={({ field }) => (<FormItem><FormLabel>Area</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                            <FormField control={form.control} name="price" render={({ field }) => (<FormItem><FormLabel>Price (INR)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                            
+                            <FormField control={form.control} name="year" render={({ field }) => (<FormItem><FormLabel>Year</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                            <FormField control={form.control} name="km" render={({ field }) => (<FormItem><FormLabel>Kilometers (KM)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                            
+                            <FormField control={form.control} name="fuelType" render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Fuel Type</FormLabel>
+                                    <Select onValueChange={field.onChange} value={field.value}>
+                                        <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                                        <SelectContent>
+                                            <SelectItem value="petrol">Petrol</SelectItem>
+                                            <SelectItem value="diesel">Diesel</SelectItem>
+                                            <SelectItem value="cng">CNG</SelectItem>
+                                            <SelectItem value="electric">Electric</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                </FormItem>
+                            )} />
+                            <FormField control={form.control} name="transmission" render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Transmission</FormLabel>
+                                    <Select onValueChange={field.onChange} value={field.value}>
+                                        <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                                        <SelectContent>
+                                            <SelectItem value="manual">Manual</SelectItem>
+                                            <SelectItem value="automatic">Automatic</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                </FormItem>
+                            )} />
+                            
+                            <FormField control={form.control} name="ownership" render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Ownership</FormLabel>
+                                    <Select onValueChange={field.onChange} value={field.value}>
+                                        <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                                        <SelectContent>
+                                            <SelectItem value="1st">1st Owner</SelectItem>
+                                            <SelectItem value="2nd">2nd Owner</SelectItem>
+                                            <SelectItem value="3rd">3rd Owner</SelectItem>
+                                            <SelectItem value="4th+">4th+ Owner</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                </FormItem>
+                            )} />
+                            
+                            <FormField control={form.control} name="isDirectOwner" render={({ field }) => (
+                                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                                    <div className="space-y-0.5">
+                                        <FormLabel>Direct Owner Listing</FormLabel>
+                                    </div>
+                                    <FormControl>
+                                        <Switch checked={field.value} onCheckedChange={field.onChange} />
+                                    </FormControl>
+                                </FormItem>
+                            )} />
 
-                        <div className="col-span-full border-t pt-4 mt-2">
-                             <h4 className="text-sm font-bold mb-4">Contact Details</h4>
-                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <FormField control={form.control} name="ownerName" render={({ field }) => (<FormItem><FormLabel>Owner Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                <FormField control={form.control} name="ownerPhone" render={({ field }) => (<FormItem><FormLabel>Phone Number</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                <FormField control={form.control} name="ownerWhatsapp" render={({ field }) => (<FormItem><FormLabel>WhatsApp Number</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-                             </div>
+                            <div className="col-span-full border-t pt-4 mt-2">
+                                <h4 className="text-sm font-bold mb-4">Contact Details</h4>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <FormField control={form.control} name="ownerName" render={({ field }) => (<FormItem><FormLabel>Owner Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                    <FormField control={form.control} name="ownerPhone" render={({ field }) => (<FormItem><FormLabel>Phone Number</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                    <FormField control={form.control} name="ownerWhatsapp" render={({ field }) => (<FormItem><FormLabel>WhatsApp Number</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                    <FormField control={form.control} name="aiInsight" render={({ field }) => (<FormItem><FormLabel>Market Insight (Catchy 1-sentence description)</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>)} />
-                    <DialogFooter><Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Saving...' : 'Save Listing'}</Button></DialogFooter>
-                </form></Form>
+                        <FormField control={form.control} name="aiInsight" render={({ field }) => (<FormItem><FormLabel>Market Insight (Catchy 1-sentence description)</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>)} />
+                        <DialogFooter><Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Saving...' : 'Save Listing'}</Button></DialogFooter>
+                    </form>
+                </Form>
             </DialogContent>
         </Dialog>
     );
@@ -322,8 +319,6 @@ function AdminDashboard({ user }: { user: any }) {
         });
   }, [rawRequests]);
 
-  const pendingRequests = sortedAndFilteredRequests;
-
   const freshCarsQuery = useMemo(() => firestore ? query(collection(firestore, 'dailyFreshCars'), orderBy('createdAt', 'desc')) : null, [firestore]);
   const { data: freshCars } = useCollection<any>(freshCarsQuery);
 
@@ -383,9 +378,9 @@ function AdminDashboard({ user }: { user: any }) {
                             <TabsTrigger value="freshCars"><Car className="mr-2 h-4 w-4" /> Hot Listings</TabsTrigger>
                             <TabsTrigger value="pending" className="relative">
                                 <Wallet className="mr-2 h-4 w-4" /> Withdrawals
-                                {pendingRequests.length > 0 && (
+                                {sortedAndFilteredRequests.length > 0 && (
                                     <span className="absolute -top-1 -right-1 h-4 w-4 bg-primary text-primary-foreground text-[10px] rounded-full flex items-center justify-center font-bold">
-                                        {pendingRequests.length}
+                                        {sortedAndFilteredRequests.length}
                                     </span>
                                 )}
                             </TabsTrigger>
@@ -446,7 +441,7 @@ function AdminDashboard({ user }: { user: any }) {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {pendingRequests.length > 0 ? pendingRequests.map(r => (
+                                    {sortedAndFilteredRequests.length > 0 ? sortedAndFilteredRequests.map(r => (
                                         <TableRow key={r.id}>
                                             <TableCell>
                                                 <div className="font-medium">{userMap[r.userId]?.displayName || 'Unknown'}</div>
@@ -487,7 +482,7 @@ function AdminDashboard({ user }: { user: any }) {
                                         <TableRow key={car.id}>
                                             <TableCell>
                                                 <div className="font-medium">{car.title}</div>
-                                                <div className="text-[10px] text-muted-foreground uppercase">{car.year} • {car.km.toLocaleString()} KM • {car.ownership}</div>
+                                                <div className="text-[10px] text-muted-foreground uppercase">{car.year} • {car.km?.toLocaleString()} KM • {car.ownership}</div>
                                             </TableCell>
                                             <TableCell className="text-xs">
                                                 {car.city}, {car.state}
