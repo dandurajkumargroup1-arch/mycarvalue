@@ -55,50 +55,50 @@ export default function Home() {
 
   return (
     <>
-      <section className="relative w-full pt-20 pb-16 md:pt-32 md:pb-24 lg:pt-40 lg:pb-32 overflow-hidden bg-gradient-to-b from-secondary/50 to-background">
+      <section className="relative w-full pt-12 pb-10 md:pt-20 md:pb-16 lg:pt-24 lg:pb-20 overflow-hidden bg-gradient-to-b from-secondary/50 to-background">
         <div className="container relative z-10 mx-auto px-4 md:px-6">
-          <div className="flex flex-col lg:flex-row items-center gap-12 text-center lg:text-left">
-            <div className="flex-1 space-y-8">
-              <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-1.5 text-sm font-bold text-primary">
-                <Sparkles className="h-4 w-4" />
+          <div className="flex flex-col lg:flex-row items-center gap-10 text-center lg:text-left">
+            <div className="flex-1 space-y-6">
+              <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary">
+                <Sparkles className="h-3.5 w-3.5" />
                 #1 AI Car Valuation in India
               </div>
-              <h1 className="text-4xl font-black tracking-tight sm:text-5xl md:text-6xl lg:text-7xl">
+              <h1 className="text-3xl font-black tracking-tight sm:text-4xl md:text-5xl lg:text-6xl max-w-3xl">
                 Don't Sell Blindly. <br />
-                <span className="text-primary underline underline-offset-8">Know Your Car's Worth.</span>
+                <span className="text-primary underline underline-offset-4">Know Your Car's Worth.</span>
               </h1>
-              <p className="max-w-[600px] mx-auto lg:mx-0 text-lg text-muted-foreground md:text-xl leading-relaxed">
+              <p className="max-w-[540px] mx-auto lg:mx-0 text-base text-muted-foreground sm:text-lg leading-relaxed">
                 {description}
               </p>
-              <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4">
-                <Button asChild size="xl" className="w-full sm:w-auto font-black shadow-lg shadow-primary/20">
+              <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3">
+                <Button asChild size="lg" className="w-full sm:w-auto font-black shadow-md shadow-primary/10">
                   <Link href={buttonLink}>
-                    {buttonText} <ChevronRight className="ml-2 h-5 w-5" />
+                    {buttonText} <ChevronRight className="ml-1 h-4 w-4" />
                   </Link>
                 </Button>
-                <Button asChild variant="outline" size="xl" className="w-full sm:w-auto font-bold border-primary/20 hover:bg-primary/5">
+                <Button asChild variant="outline" size="lg" className="w-full sm:w-auto font-bold border-primary/20 hover:bg-primary/5">
                   <Link href="/daily-fresh-cars">
-                    <Flame className="mr-2 h-5 w-5 text-primary" /> Hot Market Listings
+                    <Flame className="mr-2 h-4 w-4 text-primary" /> Hot Market Listings
                   </Link>
                 </Button>
               </div>
-              <div className="flex items-center justify-center lg:justify-start gap-6 text-sm text-muted-foreground font-medium">
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="h-4 w-4 text-green-500" /> Secure Payment
+              <div className="flex items-center justify-center lg:justify-start gap-4 text-xs text-muted-foreground font-medium">
+                <div className="flex items-center gap-1.5">
+                  <CheckCircle className="h-3.5 w-3.5 text-green-500" /> Secure Payment
                 </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="h-4 w-4 text-green-500" /> Instant PDF
+                <div className="flex items-center gap-1.5">
+                  <CheckCircle className="h-3.5 w-3.5 text-green-500" /> Instant PDF
                 </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="h-4 w-4 text-green-500" /> No Logins Needed
+                <div className="flex items-center gap-1.5">
+                  <CheckCircle className="h-3.5 w-3.5 text-green-500" /> No Logins Needed
                 </div>
               </div>
             </div>
 
             {heroImage && (
-              <div className="flex-1 relative w-full max-w-[600px] aspect-[4/3] lg:aspect-square">
-                <div className="absolute -inset-10 bg-primary/20 blur-[100px] rounded-full opacity-30 animate-pulse"></div>
-                <div className="relative h-full w-full rounded-3xl border-[12px] border-secondary overflow-hidden shadow-2xl">
+              <div className="flex-1 relative w-full max-w-[500px] aspect-video sm:aspect-[4/3] lg:aspect-square">
+                <div className="absolute -inset-6 bg-primary/10 blur-[80px] rounded-full opacity-30 animate-pulse"></div>
+                <div className="relative h-full w-full rounded-2xl border-[8px] border-secondary overflow-hidden shadow-xl">
                   <Image
                     src={heroImage.imageUrl}
                     alt="Premium Car Inspection"
@@ -107,10 +107,10 @@ export default function Home() {
                     priority
                     data-ai-hint={heroImage.imageHint}
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
-                  <div className="absolute bottom-6 left-6 right-6 text-white text-left">
-                    <p className="text-2xl font-bold">Inspection-Ready Values</p>
-                    <p className="text-sm opacity-80">Based on 160+ real-world data points</p>
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent"></div>
+                  <div className="absolute bottom-4 left-4 right-4 text-white text-left">
+                    <p className="text-xl font-bold">Inspection-Ready Values</p>
+                    <p className="text-xs opacity-80">Based on 160+ real-world data points</p>
                   </div>
                 </div>
               </div>
@@ -119,36 +119,36 @@ export default function Home() {
         </div>
       </section>
       
-      <section className="py-16 lg:py-24 bg-background">
+      <section className="py-12 lg:py-20 bg-background">
         <div className="container">
-            <div className="text-center max-w-2xl mx-auto mb-12">
-                <h2 className="text-3xl font-bold tracking-tighter md:text-4xl">Why Choose mycarvalue.in?</h2>
-                <p className="mt-4 text-muted-foreground text-lg">We provide a fast, unbiased, and data-driven valuation you can trust.</p>
+            <div className="text-center max-w-2xl mx-auto mb-10">
+                <h2 className="text-2xl font-bold tracking-tighter md:text-3xl">Why Choose mycarvalue.in?</h2>
+                <p className="mt-3 text-muted-foreground text-base">We provide a fast, unbiased, and data-driven valuation you can trust.</p>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
               {whyChooseUsFeatures.map((feature) => (
-                <Card key={feature.stat} className="text-center p-6 shadow-sm hover:shadow-lg transition-shadow border-secondary/50">
+                <Card key={feature.stat} className="text-center p-5 shadow-sm hover:shadow-md transition-shadow border-secondary/50">
                   <div className="flex justify-center mb-3">
                     {feature.icon}
                   </div>
-                  <p className="text-3xl font-bold text-primary">{feature.stat}</p>
-                  <p className="mt-1 text-sm text-muted-foreground font-semibold">{feature.text}</p>
+                  <p className="text-2xl font-bold text-primary">{feature.stat}</p>
+                  <p className="mt-1 text-xs text-muted-foreground font-semibold">{feature.text}</p>
                 </Card>
               ))}
             </div>
         </div>
       </section>
       
-      <section className="py-16 lg:py-24 bg-secondary/30">
+      <section className="py-12 lg:py-20 bg-secondary/30">
         <div className="container max-w-5xl text-center">
-            <h2 className="text-3xl font-bold tracking-tighter mb-4 md:text-4xl">What We Check</h2>
-            <p className="text-muted-foreground md:text-lg max-w-2xl mx-auto mb-12">
+            <h2 className="text-2xl font-bold tracking-tighter mb-3 md:text-3xl">What We Check</h2>
+            <p className="text-muted-foreground md:text-base max-w-2xl mx-auto mb-10">
                 Our comprehensive AI valuation covers every vital aspect of your vehicle to give you the most accurate market price.
             </p>
-            <Card className="shadow-2xl overflow-hidden border-none bg-background">
-                <CardContent className="p-6 md:p-10 grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+            <Card className="shadow-xl overflow-hidden border-none bg-background">
+                <CardContent className="p-5 md:p-8 grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
                     {whatWeCheckImage && (
-                        <div className="relative aspect-video rounded-2xl overflow-hidden shadow-inner bg-muted">
+                        <div className="relative aspect-video rounded-xl overflow-hidden shadow-inner bg-muted">
                             <Image
                                 src={whatWeCheckImage.imageUrl}
                                 alt="Car inspection points"
@@ -158,13 +158,13 @@ export default function Home() {
                             />
                         </div>
                     )}
-                    <div className="grid grid-cols-2 gap-x-8 gap-y-6 text-left">
+                    <div className="grid grid-cols-2 gap-x-6 gap-y-4 text-left">
                         {inspectionItems.map((item) => (
-                            <div key={item.name} className="flex items-center gap-3 group">
-                                <div className="p-2 rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-                                    {item.icon}
+                            <div key={item.name} className="flex items-center gap-2.5 group">
+                                <div className="p-1.5 rounded-md bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                                    <div className="[&>svg]:h-4 [&>svg]:w-4">{item.icon}</div>
                                 </div>
-                                <span className="font-bold text-sm md:text-base">{item.name}</span>
+                                <span className="font-bold text-xs md:text-sm">{item.name}</span>
                             </div>
                         ))}
                     </div>
@@ -173,15 +173,15 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="py-16 lg:py-24 bg-background">
+      <section className="py-12 lg:py-20 bg-background">
         <div className="container max-w-3xl">
-          <div className="flex flex-col md:flex-row items-center justify-center gap-6 rounded-2xl bg-primary/10 p-8 border border-primary/20 shadow-lg">
-              <div className="h-16 w-16 rounded-full bg-primary flex items-center justify-center text-primary-foreground flex-shrink-0 animate-bounce">
-                <CheckCircle className="h-10 w-10" />
+          <div className="flex flex-col md:flex-row items-center justify-center gap-5 rounded-xl bg-primary/10 p-6 border border-primary/20 shadow-md">
+              <div className="h-12 w-12 rounded-full bg-primary flex items-center justify-center text-primary-foreground flex-shrink-0 animate-bounce">
+                <CheckCircle className="h-7 w-7" />
               </div>
               <div className="text-center md:text-left">
-                <p className="text-xl font-black text-primary uppercase tracking-tight">Pro Tip</p>
-                <p className="text-lg font-medium text-foreground/90">
+                <p className="text-lg font-black text-primary uppercase tracking-tight">Pro Tip</p>
+                <p className="text-base font-medium text-foreground/90">
                     Always check your car’s true value here before you talk to any dealer or broker.
                 </p>
               </div>
@@ -189,20 +189,20 @@ export default function Home() {
         </div>
       </section>
 
-       <section className="py-16 lg:py-24 bg-secondary/50">
+       <section className="py-12 lg:py-20 bg-secondary/50">
         <div className="container max-w-4xl text-center">
-          <div className="flex flex-col items-center gap-6">
-              <div className="flex -space-x-4 mb-2">
+          <div className="flex flex-col items-center gap-5">
+              <div className="flex -space-x-3 mb-1">
                 {[1,2,3,4,5].map(i => (
-                    <div key={i} className="h-12 w-12 rounded-full border-4 border-background bg-muted flex items-center justify-center overflow-hidden">
-                        <Image src={`https://picsum.photos/seed/${i}/100/100`} alt="User" width={48} height={48} />
+                    <div key={i} className="h-10 w-10 rounded-full border-2 border-background bg-muted flex items-center justify-center overflow-hidden">
+                        <Image src={`https://picsum.photos/seed/${i}/100/100`} alt="User" width={40} height={40} />
                     </div>
                 ))}
               </div>
-              <p className="text-2xl md:text-3xl font-black text-foreground max-w-2xl">
-                  Trusted by <span className="text-primary decoration-4 underline">3000+ people</span> across India for fair and unbiased car valuations.
+              <p className="text-xl md:text-2xl font-black text-foreground max-w-2xl leading-tight">
+                  Trusted by <span className="text-primary decoration-2 underline">3000+ people</span> across India for fair and unbiased car valuations.
               </p>
-              <Button asChild size="lg" variant="secondary" className="rounded-full">
+              <Button asChild size="lg" variant="secondary" className="rounded-full font-bold">
                 <Link href="/valuation">Join Them Now</Link>
               </Button>
           </div>
