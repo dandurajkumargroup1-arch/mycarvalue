@@ -23,7 +23,7 @@ import html2canvas from "html2canvas";
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/table';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from '@/components/ui/dialog';
@@ -128,14 +128,48 @@ function FreshCarDialog({ car }: { car?: any }) {
                         <FormField control={form.control} name="km" render={({ field }) => (<FormItem><FormLabel>Kilometers (KM)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
                         
                         <FormField control={form.control} name="fuelType" render={({ field }) => (
-                            <FormItem><FormLabel>Fuel Type</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="petrol">Petrol</SelectItem><SelectItem value="diesel">Diesel</SelectItem><SelectItem value="cng">CNG</SelectItem><SelectItem value="electric">Electric</SelectItem></Select><FormMessage /></FormItem>
+                            <FormItem>
+                                <FormLabel>Fuel Type</FormLabel>
+                                <Select onValueChange={field.onChange} value={field.value}>
+                                    <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                                    <SelectContent>
+                                        <SelectItem value="petrol">Petrol</SelectItem>
+                                        <SelectItem value="diesel">Diesel</SelectItem>
+                                        <SelectItem value="cng">CNG</SelectItem>
+                                        <SelectItem value="electric">Electric</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <FormMessage />
+                            </FormItem>
                         )} />
                         <FormField control={form.control} name="transmission" render={({ field }) => (
-                            <FormItem><FormLabel>Transmission</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="manual">Manual</SelectItem><SelectItem value="automatic">Automatic</SelectItem></Select><FormMessage /></FormItem>
+                            <FormItem>
+                                <FormLabel>Transmission</FormLabel>
+                                <Select onValueChange={field.onChange} value={field.value}>
+                                    <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                                    <SelectContent>
+                                        <SelectItem value="manual">Manual</SelectItem>
+                                        <SelectItem value="automatic">Automatic</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <FormMessage />
+                            </FormItem>
                         )} />
                         
                         <FormField control={form.control} name="ownership" render={({ field }) => (
-                            <FormItem><FormLabel>Ownership</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="1st">1st Owner</SelectItem><SelectItem value="2nd">2nd Owner</SelectItem><SelectItem value="3rd">3rd Owner</SelectItem><SelectItem value="4th+">4th+ Owner</SelectItem></Select><FormMessage /></FormItem>
+                            <FormItem>
+                                <FormLabel>Ownership</FormLabel>
+                                <Select onValueChange={field.onChange} value={field.value}>
+                                    <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                                    <SelectContent>
+                                        <SelectItem value="1st">1st Owner</SelectItem>
+                                        <SelectItem value="2nd">2nd Owner</SelectItem>
+                                        <SelectItem value="3rd">3rd Owner</SelectItem>
+                                        <SelectItem value="4th+">4th+ Owner</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <FormMessage />
+                            </FormItem>
                         )} />
                         
                         <FormField control={form.control} name="isDirectOwner" render={({ field }) => (
@@ -274,14 +308,11 @@ function AdminDashboard({ user }: { user: any }) {
     );
   }, [rawUsers, userSearch]);
 
-  // NOTE: Removed orderBy server-side to avoid COLLECTION_GROUP_DESC index requirement.
-  // We sort client-side in the useMemo below.
   const requestsQuery = useMemo(() => firestore ? collectionGroup(firestore, 'withdrawalRequests') : null, [firestore]);
   const { data: rawRequests } = useCollection<WithdrawalRequest>(requestsQuery);
   
   const sortedAndFilteredRequests = useMemo(() => {
     if (!rawRequests) return [];
-    // Filter and sort client-side
     return rawRequests
         .filter(r => r.status === 'requested')
         .sort((a, b) => {
