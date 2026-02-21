@@ -39,10 +39,22 @@ const freshCarPrompt = ai.definePrompt({
     Keep it professional but exciting.`,
 });
 
+const freshCarInsightFlow = ai.defineFlow(
+  {
+    name: 'freshCarInsightFlow',
+    inputSchema: FreshCarInputSchema,
+    outputSchema: FreshCarOutputSchema,
+  },
+  async (input) => {
+    const { output } = await freshCarPrompt(input);
+    return output!;
+  }
+);
+
 export async function getFreshCarInsight(input: z.infer<typeof FreshCarInputSchema>) {
   try {
-    const { output } = await freshCarPrompt(input);
-    return output?.insight || "A well-maintained example of this popular model, ready for its next owner.";
+    const result = await freshCarInsightFlow(input);
+    return result.insight || "A well-maintained example of this popular model, ready for its next owner.";
   } catch (error) {
     console.error("AI Insight Flow Error:", error);
     return "A well-maintained example of this popular model, ready for its next owner.";
