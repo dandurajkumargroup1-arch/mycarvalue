@@ -65,8 +65,8 @@ export default function DailyFreshCarsPage() {
     const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileRef);
 
     const [stateFilter, setStateFilter] = useState<string>('all');
-    const [cityFilter, setCityFilter] = useState<string>('');
-    const [areaFilter, setAreaFilter] = useState<string>('');
+    const [cityFilter, setCityFilter] = useState<string>('all');
+    const [areaFilter, setAreaFilter] = useState<string>('all');
     const [typeFilter, setTypeFilter] = useState<string>('all');
     const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
@@ -77,12 +77,44 @@ export default function DailyFreshCarsPage() {
 
     const { data: rawCars, isLoading, error } = useCollection<DailyFreshCar>(freshCarsQuery);
 
+    // Dynamic Lists for Filters
+    const availableCities = useMemo(() => {
+        if (!rawCars) return [];
+        let cities = rawCars;
+        if (stateFilter !== 'all') {
+            cities = cities.filter(car => car.state === stateFilter);
+        }
+        return Array.from(new Set(cities.map(car => car.city))).sort();
+    }, [rawCars, stateFilter]);
+
+    const availableAreas = useMemo(() => {
+        if (!rawCars) return [];
+        let areas = rawCars;
+        if (stateFilter !== 'all') {
+            areas = areas.filter(car => car.state === stateFilter);
+        }
+        if (cityFilter !== 'all') {
+            areas = areas.filter(car => car.city === cityFilter);
+        }
+        return Array.from(new Set(areas.map(car => car.area))).sort();
+    }, [rawCars, stateFilter, cityFilter]);
+
+    // Reset sub-filters when parent changes
+    useEffect(() => {
+        setCityFilter('all');
+        setAreaFilter('all');
+    }, [stateFilter]);
+
+    useEffect(() => {
+        setAreaFilter('all');
+    }, [cityFilter]);
+
     const filteredCars = useMemo(() => {
         if (!rawCars) return [];
         return rawCars.filter(car => {
             const matchesState = stateFilter === 'all' || car.state === stateFilter;
-            const matchesCity = !cityFilter || car.city.toLowerCase().includes(cityFilter.toLowerCase());
-            const matchesArea = !areaFilter || car.area.toLowerCase().includes(areaFilter.toLowerCase());
+            const matchesCity = cityFilter === 'all' || car.city === cityFilter;
+            const matchesArea = areaFilter === 'all' || car.area === areaFilter;
             const matchesType = typeFilter === 'all' || 
                                (typeFilter === 'direct' && car.isDirectOwner) ||
                                (typeFilter === 'dealer' && !car.isDirectOwner);
@@ -151,7 +183,6 @@ export default function DailyFreshCarsPage() {
                 text: shareText,
                 url: shareUrl,
             }).catch(() => {
-                // If sharing fails or user cancels, fallback to copy
                 navigator.clipboard.writeText(shareUrl);
                 toast({ title: "Link Copied!", description: "Listing link copied to clipboard." });
             });
@@ -251,27 +282,23 @@ export default function DailyFreshCarsPage() {
                             </div>
                             <div className="space-y-2 text-left">
                                 <label className="text-xs font-semibold uppercase text-muted-foreground">City</label>
-                                <div className="relative">
-                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                    <Input 
-                                        className="pl-9" 
-                                        placeholder="Search city..." 
-                                        value={cityFilter}
-                                        onChange={(e) => setCityFilter(e.target.value)}
-                                    />
-                                </div>
+                                <Select value={cityFilter} onValueChange={setCityFilter} disabled={stateFilter === 'all'}>
+                                    <SelectTrigger><SelectValue placeholder={stateFilter === 'all' ? "Select State first" : "All Cities"} /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">All Cities</SelectItem>
+                                        {availableCities.map(city => <SelectItem key={city} value={city}>{city}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
                             </div>
                             <div className="space-y-2 text-left">
                                 <label className="text-xs font-semibold uppercase text-muted-foreground">Area</label>
-                                <div className="relative">
-                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                    <Input 
-                                        className="pl-9" 
-                                        placeholder="Search area..." 
-                                        value={areaFilter}
-                                        onChange={(e) => setAreaFilter(e.target.value)}
-                                    />
-                                </div>
+                                <Select value={areaFilter} onValueChange={setAreaFilter} disabled={cityFilter === 'all'}>
+                                    <SelectTrigger><SelectValue placeholder={cityFilter === 'all' ? "Select City first" : "All Areas"} /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">All Areas</SelectItem>
+                                        {availableAreas.map(area => <SelectItem key={area} value={area}>{area}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
                             </div>
                             <div className="space-y-2 text-left">
                                 <label className="text-xs font-semibold uppercase text-muted-foreground">Seller Type</label>
@@ -518,8 +545,8 @@ export default function DailyFreshCarsPage() {
                             className="mt-4"
                             onClick={() => {
                                 setStateFilter('all');
-                                setCityFilter('');
-                                setAreaFilter('');
+                                setCityFilter('all');
+                                setAreaFilter('all');
                                 setTypeFilter('all');
                                 setDateRange(undefined);
                             }}
