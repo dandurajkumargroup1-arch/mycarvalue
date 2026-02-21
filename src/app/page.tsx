@@ -55,7 +55,7 @@ export default function Home() {
         <div className="container relative z-10 mx-auto px-4 md:px-6">
           <div className="flex flex-col items-center text-center">
             <div className="max-w-3xl space-y-6">
-              <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-1.5 text-xs font-semibold text-primary">
+              <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-1 text-xs font-semibold text-primary">
                 <Sparkles className="h-3.5 w-3.5" />
                 #1 AI Car Valuation in India
               </div>
