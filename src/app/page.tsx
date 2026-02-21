@@ -120,13 +120,13 @@ export default function Home() {
             <Card className="shadow-2xl overflow-hidden border-none bg-background rounded-3xl">
                 <CardContent className="p-8 md:p-16">
                     <div className="max-w-5xl mx-auto">
-                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-x-4 gap-y-8 md:gap-8">
+                        <div className="grid grid-cols-4 sm:grid-cols-5 lg:grid-cols-5 gap-x-2 gap-y-8 md:gap-8">
                             {inspectionItems.map((item) => (
-                                <div key={item.name} className="flex flex-col items-center text-center gap-3 group">
-                                    <div className="p-4 rounded-2xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white transition-all duration-300">
-                                        <div className="[&>svg]:h-6 [&>svg]:w-6">{item.icon}</div>
+                                <div key={item.name} className="flex flex-col items-center text-center gap-2 sm:gap-3 group">
+                                    <div className="p-2.5 sm:p-4 rounded-xl sm:rounded-2xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white transition-all duration-300">
+                                        <div className="[&>svg]:h-5 [&>svg]:w-5 sm:[&>svg]:h-6 sm:[&>svg]:w-6">{item.icon}</div>
                                     </div>
-                                    <span className="font-bold text-sm text-foreground/80">{item.name}</span>
+                                    <span className="font-bold text-[10px] sm:text-sm text-foreground/80 leading-tight">{item.name}</span>
                                 </div>
                             ))}
                         </div>
