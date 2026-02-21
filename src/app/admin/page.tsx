@@ -20,7 +20,7 @@ import html2canvas from "html2canvas";
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/table';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -32,6 +32,14 @@ import { Shield, Users, Wallet, Trash2, Plus, Edit, Car, FileText, Coins, Search
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+
+// Fix the missing table exports
+const TableWrapper = ({ children, className }: any) => <div className={cn("w-full overflow-auto", className)}><table className="w-full text-sm">{children}</table></div>;
+const TableHeaderFixed = ({ children }: any) => <thead className="[&_tr]:border-b">{children}</thead>;
+const TableBodyFixed = ({ children }: any) => <tbody className="[&_tr:last-child]:border-0">{children}</tbody>;
+const TableRowFixed = ({ children, className }: any) => <tr className={cn("border-b transition-colors hover:bg-muted/50", className)}>{children}</tr>;
+const TableHeadFixed = ({ children, className }: any) => <th className={cn("h-12 px-4 text-left align-middle font-medium text-muted-foreground", className)}>{children}</th>;
+const TableCellFixed = ({ children, className }: any) => <td className={cn("p-4 align-middle", className)}>{children}</td>;
 
 interface WithdrawalRequest {
     id: string;
@@ -239,21 +247,21 @@ function UserManagementRow({ userProfile }: { userProfile: UserProfile }) {
     };
 
     return (
-        <TableRow>
-            <TableCell>
+        <TableRowFixed>
+            <TableCellFixed>
                 <div className="font-medium">{userProfile.displayName || 'No Name'}</div>
                 <div className="text-xs text-muted-foreground">{userProfile.email}</div>
-            </TableCell>
-            <TableCell>
+            </TableCellFixed>
+            <TableCellFixed>
                 <Badge variant="outline" className="text-[10px] uppercase font-bold">{userProfile.role}</Badge>
-            </TableCell>
-            <TableCell className="font-bold">
+            </TableCellFixed>
+            <TableCellFixed className="font-bold">
                 <div className="flex items-center gap-1">
                     <Coins className="h-3 w-3 text-primary" />
                     {userProfile.credits || 0}
                 </div>
-            </TableCell>
-            <TableCell>
+            </TableCellFixed>
+            <TableCellFixed>
                 <div className="flex items-center gap-2">
                     <Input 
                         type="number" 
@@ -265,8 +273,8 @@ function UserManagementRow({ userProfile }: { userProfile: UserProfile }) {
                         Add
                     </Button>
                 </div>
-            </TableCell>
-            <TableCell className="text-right">
+            </TableCellFixed>
+            <TableCellFixed className="text-right">
                 <AlertDialog>
                     <AlertDialogTrigger asChild>
                         <Button variant="ghost" size="icon" disabled={isDeleting}>
@@ -286,8 +294,8 @@ function UserManagementRow({ userProfile }: { userProfile: UserProfile }) {
                         </AlertDialogFooter>
                     </AlertDialogContent>
                 </AlertDialog>
-            </TableCell>
-        </TableRow>
+            </TableCellFixed>
+        </TableRowFixed>
     );
 }
 
@@ -427,93 +435,93 @@ function AdminDashboard({ user }: { user: any }) {
 
                     <TabsContent value="users" className="mt-0">
                         <CardContent className="pt-6">
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>User Details</TableHead>
-                                        <TableHead>Role</TableHead>
-                                        <TableHead>Credits</TableHead>
-                                        <TableHead>Quick Add Credits</TableHead>
-                                        <TableHead className="text-right">Action</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
+                            <TableWrapper>
+                                <TableHeaderFixed>
+                                    <TableRowFixed>
+                                        <TableHeadFixed>User Details</TableHeadFixed>
+                                        <TableHeadFixed>Role</TableHeadFixed>
+                                        <TableHeadFixed>Credits</TableHeadFixed>
+                                        <TableHeadFixed>Quick Add Credits</TableHeadFixed>
+                                        <TableHeadFixed className="text-right">Action</TableHeadFixed>
+                                    </TableRowFixed>
+                                </TableHeaderFixed>
+                                <TableBodyFixed>
                                     {isUsersLoading ? (
                                         [1, 2, 3].map(i => (
-                                            <TableRow key={i}>
-                                                <TableCell colSpan={5}><Skeleton className="h-12 w-full" /></TableCell>
-                                            </TableRow>
+                                            <TableRowFixed key={i}>
+                                                <TableCellFixed colSpan={5}><Skeleton className="h-12 w-full" /></TableCellFixed>
+                                            </TableRowFixed>
                                         ))
                                     ) : sortedAndFilteredUsers.length > 0 ? (
                                         sortedAndFilteredUsers.map(u => <UserManagementRow key={u.id} userProfile={u} />)
                                     ) : (
-                                        <TableRow><TableCell colSpan={5} className="h-24 text-center text-muted-foreground">No users found.</TableCell></TableRow>
+                                        <TableRowFixed><TableCellFixed colSpan={5} className="h-24 text-center text-muted-foreground">No users found.</TableCellFixed></TableRowFixed>
                                     )}
-                                </TableBody>
-                            </Table>
+                                </TableBodyFixed>
+                            </TableWrapper>
                         </CardContent>
                     </TabsContent>
 
                     <TabsContent value="pending" className="mt-0">
                         <CardContent className="pt-6">
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>User</TableHead>
-                                        <TableHead>Amount</TableHead>
-                                        <TableHead>Details</TableHead>
-                                        <TableHead className="text-right">Action</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
+                            <TableWrapper>
+                                <TableHeaderFixed>
+                                    <TableRowFixed>
+                                        <TableHeadFixed>User</TableHeadFixed>
+                                        <TableHeadFixed>Amount</TableHeadFixed>
+                                        <TableHeadFixed>Details</TableHeadFixed>
+                                        <TableHeadFixed className="text-right">Action</TableHeadFixed>
+                                    </TableRowFixed>
+                                </TableHeaderFixed>
+                                <TableBodyFixed>
                                     {sortedAndFilteredRequests.length > 0 ? sortedAndFilteredRequests.map(r => (
-                                        <TableRow key={r.id}>
-                                            <TableCell>
+                                        <TableRowFixed key={r.id}>
+                                            <TableCellFixed>
                                                 <div className="font-medium">{userMap[r.userId]?.displayName || 'Unknown'}</div>
                                                 <div className="text-xs text-muted-foreground">{userMap[r.userId]?.email || r.userId}</div>
-                                            </TableCell>
-                                            <TableCell className="font-bold text-primary">{formatCurrency(r.amount)}</TableCell>
-                                            <TableCell className="text-xs">
+                                            </TableCellFixed>
+                                            <TableCellFixed className="font-bold text-primary">{formatCurrency(r.amount)}</TableCellFixed>
+                                            <TableCellFixed className="text-xs">
                                                 {r.upiId && <div className="text-[10px] font-mono">UPI: {r.upiId}</div>}
                                                 {r.bankAccountNumber && <div className="text-[10px] font-mono">Bank: {r.bankAccountNumber} / {r.bankIfscCode}</div>}
-                                            </TableCell>
-                                            <TableCell className="text-right">
+                                            </TableCellFixed>
+                                            <TableCellFixed className="text-right">
                                                 <Button size="sm" onClick={() => approveWithdrawal(firestore!, r.userId, r.id, 'MANUAL_PAID')}>
                                                     <UserCheck className="mr-2 h-4 w-4" /> Mark Paid
                                                 </Button>
-                                            </TableCell>
-                                        </TableRow>
+                                            </TableCellFixed>
+                                        </TableRowFixed>
                                     )) : (
-                                        <TableRow><TableCell colSpan={4} className="h-24 text-center text-muted-foreground">No pending requests.</TableCell></TableRow>
+                                        <TableRowFixed><TableCellFixed colSpan={4} className="h-24 text-center text-muted-foreground">No pending requests.</TableCellFixed></TableRowFixed>
                                     )}
-                                </TableBody>
-                            </Table>
+                                </TableBodyFixed>
+                            </TableWrapper>
                         </CardContent>
                     </TabsContent>
 
                     <TabsContent value="freshCars" className="mt-0">
                         <CardContent className="pt-6">
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>Listing</TableHead>
-                                        <TableHead>Location</TableHead>
-                                        <TableHead>Price</TableHead>
-                                        <TableHead className="text-right">Actions</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
+                            <TableWrapper>
+                                <TableHeaderFixed>
+                                    <TableRowFixed>
+                                        <TableHeadFixed>Listing</TableHeadFixed>
+                                        <TableHeadFixed>Location</TableHeadFixed>
+                                        <TableHeadFixed>Price</TableHeadFixed>
+                                        <TableHeadFixed className="text-right">Actions</TableHeadFixed>
+                                    </TableRowFixed>
+                                </TableHeaderFixed>
+                                <TableBodyFixed>
                                     {sortedFreshCars && sortedFreshCars.length > 0 ? sortedFreshCars.map(car => (
-                                        <TableRow key={car.id}>
-                                            <TableCell>
+                                        <TableRowFixed key={car.id}>
+                                            <TableCellFixed>
                                                 <div className="font-medium">{car.title}</div>
                                                 <div className="text-[10px] text-muted-foreground uppercase">{car.year} • {car.km?.toLocaleString()} KM • {car.ownership}</div>
-                                            </TableCell>
-                                            <TableCell className="text-xs">
+                                            </TableCellFixed>
+                                            <TableCellFixed className="text-xs">
                                                 {car.city}, {car.state}
-                                            </TableCell>
-                                            <TableCell className="font-bold">{formatCurrency(car.price)}</TableCell>
-                                            <TableCell className="text-right flex justify-end gap-1">
+                                            </TableCellFixed>
+                                            <TableCellFixed className="font-bold">{formatCurrency(car.price)}</TableCellFixed>
+                                            <TableCellFixed className="text-right flex justify-end gap-1">
                                                 <Button variant="ghost" size="icon" onClick={() => handleDownloadPdf(car)} disabled={isExporting === car.id}>
                                                     <FileText className={cn("h-4 w-4", isExporting === car.id && "animate-pulse")}/>
                                                 </Button>
@@ -521,13 +529,13 @@ function AdminDashboard({ user }: { user: any }) {
                                                 <Button variant="ghost" size="icon" onClick={() => handleDeleteFreshCar(car.id)}>
                                                     <Trash2 className="h-4 w-4 text-destructive"/>
                                                 </Button>
-                                            </TableCell>
-                                        </TableRow>
+                                            </TableCellFixed>
+                                        </TableRowFixed>
                                     )) : (
-                                        <TableRow><TableCell colSpan={4} className="h-24 text-center text-muted-foreground">No listings added yet.</TableCell></TableRow>
+                                        <TableRowFixed><TableCellFixed colSpan={4} className="h-24 text-center text-muted-foreground">No listings added yet.</TableCellFixed></TableRowFixed>
                                     )}
-                                </TableBody>
-                            </Table>
+                                </TableBodyFixed>
+                            </TableWrapper>
                         </CardContent>
                     </TabsContent>
                 </Tabs>
