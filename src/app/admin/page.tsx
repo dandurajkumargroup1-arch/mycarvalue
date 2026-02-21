@@ -2,12 +2,12 @@
 
 import { Suspense, useEffect, useState, useMemo } from 'react';
 import Image from 'next/image';
-import { doc, collection, query, orderBy, where, Timestamp, collectionGroup, type FieldValue } from 'firebase/firestore';
+import { doc, collection, query, orderBy, collectionGroup } from 'firebase/firestore';
 import { useUser, useFirestore, useDoc, useCollection } from '@/firebase';
 import type { UserProfile } from '@/lib/firebase/user-profile-service';
 import { approveWithdrawal, rejectWithdrawal } from '@/lib/firebase/withdrawal-service';
 import { deleteUser } from '@/lib/firebase/user-profile-service';
-import { upsertFreshCar, deleteFreshCar, type FreshCarData } from '@/lib/firebase/fresh-car-service';
+import { upsertFreshCar, deleteFreshCar } from '@/lib/firebase/fresh-car-service';
 import { useRouter } from 'next/navigation';
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -21,7 +21,6 @@ import Papa from 'papaparse';
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 
-
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -33,13 +32,12 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
-import { AlertTriangle, CheckCircle, Shield, Users, Wallet, XCircle, Calendar as CalendarIcon, Download, Trash2, Plus, Flame, Edit, Car, History, MessageCircle, FileText } from 'lucide-react';
+import { AlertTriangle, Shield, Users, Wallet, Calendar as CalendarIcon, Download, Trash2, Plus, Edit, Car, History, FileText } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-
 
 interface WithdrawalRequest {
     id: string;
@@ -84,40 +82,8 @@ function FreshCarDialog({ car }: { car?: any }) {
 
     const form = useForm<FreshCarFormInput>({
         resolver: zodResolver(FreshCarSchema),
-        defaultValues: car ? {
-            title: car.title,
-            imageUrl: car.imageUrl,
-            price: car.price,
-            state: car.state || '',
-            city: car.city || '',
-            area: car.area || '',
-            ownerName: car.ownerName || '',
-            ownerPhone: car.ownerPhone || '',
-            ownerWhatsapp: car.ownerWhatsapp || '',
-            ownership: car.ownership || '1st',
-            isDirectOwner: car.isDirectOwner ?? true,
-            year: car.year,
-            km: car.km,
-            fuelType: car.fuelType,
-            transmission: car.transmission,
-            aiInsight: car.aiInsight || '',
-        } : {
-            title: '',
-            imageUrl: '',
-            price: 500000,
-            state: '',
-            city: '',
-            area: '',
-            ownerName: '',
-            ownerPhone: '',
-            ownerWhatsapp: '',
-            ownership: '1st',
-            isDirectOwner: true,
-            year: new Date().getFullYear(),
-            km: 50000,
-            fuelType: 'petrol',
-            transmission: 'manual',
-            aiInsight: '',
+        defaultValues: car ? { ...car, aiInsight: car.aiInsight || '' } : {
+            title: '', imageUrl: '', price: 500000, state: '', city: '', area: '', ownerName: '', ownerPhone: '', ownerWhatsapp: '', ownership: '1st', isDirectOwner: true, year: new Date().getFullYear(), km: 50000, fuelType: 'petrol', transmission: 'manual', aiInsight: '',
         }
     });
 
@@ -126,12 +92,10 @@ function FreshCarDialog({ car }: { car?: any }) {
         setIsSubmitting(true);
         try {
             await upsertFreshCar(firestore, { ...data, id: car?.id });
-            toast({ title: "Success", description: car ? "Listing updated." : "New listing added to Hot Picks." });
+            toast({ title: "Success", description: car ? "Listing updated." : "Listing added." });
             setOpen(false);
-            if (!car) form.reset();
         } catch (error) {
-            console.error(error);
-            toast({ variant: 'destructive', title: "Error", description: "Failed to save listing." });
+            toast({ variant: 'destructive', title: "Error" });
         } finally {
             setIsSubmitting(false);
         }
@@ -143,775 +107,114 @@ function FreshCarDialog({ car }: { car?: any }) {
                 {car ? <Button variant="ghost" size="icon"><Edit className="h-4 w-4"/></Button> : <Button><Plus className="mr-2 h-4 w-4" /> Add Hot Listing</Button>}
             </DialogTrigger>
             <DialogContent className="max-w-3xl overflow-y-auto max-h-[90vh]">
-                <DialogHeader>
-                    <DialogTitle>{car ? 'Edit Listing' : 'Add Hot Market Listing'}</DialogTitle>
-                    <DialogDescription>Manually manage featured car listings for the public 'Hot Market Listings' feed.</DialogDescription>
-                </DialogHeader>
-                <Form {...form}>
-                    <form onSubmit={form.handleSubmit(handleSave)} className="space-y-6">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <FormField control={form.control} name="title" render={({ field }) => (
-                                <FormItem className="col-span-full"><FormLabel>Car Title</FormLabel><FormControl><Input placeholder="e.g. 2021 Hyundai Creta SX" {...field} /></FormControl><FormMessage /></FormItem>
-                            )} />
-                            <FormField control={form.control} name="imageUrl" render={({ field }) => (
-                                <FormItem className="col-span-full"><FormLabel>Image URL (Direct link to .jpg/.png)</FormLabel><FormControl><Input placeholder="https://..." {...field} /></FormControl><FormMessage /></FormItem>
-                            )} />
-                            
-                            <div className="col-span-full grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-muted/30 rounded-lg border">
-                                <FormField control={form.control} name="state" render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>State</FormLabel>
-                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                            <FormControl><SelectTrigger><SelectValue placeholder="Select State" /></SelectTrigger></FormControl>
-                                            <SelectContent>{indianStates.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
-                                        </Select>
-                                        <FormMessage />
-                                    </FormItem>
-                                )} />
-                                <FormField control={form.control} name="city" render={({ field }) => (
-                                    <FormItem><FormLabel>City</FormLabel><FormControl><Input placeholder="e.g. Mumbai" {...field} /></FormControl><FormMessage /></FormItem>
-                                )} />
-                                <FormField control={form.control} name="area" render={({ field }) => (
-                                    <FormItem><FormLabel>Area</FormLabel><FormControl><Input placeholder="e.g. Bandra" {...field} /></FormControl><FormMessage /></FormItem>
-                                )} />
-                            </div>
-
-                            <div className="col-span-full grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-primary/5 rounded-lg border border-primary/10">
-                                <FormField control={form.control} name="ownerName" render={({ field }) => (
-                                    <FormItem><FormLabel>Owner Name</FormLabel><FormControl><Input placeholder="Name" {...field} /></FormControl><FormMessage /></FormItem>
-                                )} />
-                                <FormField control={form.control} name="isDirectOwner" render={({ field }) => (
-                                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 bg-background">
-                                        <div className="space-y-0.5">
-                                            <FormLabel>Direct Owner?</FormLabel>
-                                        </div>
-                                        <FormControl>
-                                            <Switch checked={field.value} onCheckedChange={field.onChange} />
-                                        </FormControl>
-                                    </FormItem>
-                                )} />
-                                <FormField control={form.control} name="ownerPhone" render={({ field }) => (
-                                    <FormItem><FormLabel>Owner Phone</FormLabel><FormControl><Input placeholder="10 digits" {...field} /></FormControl><FormMessage /></FormItem>
-                                )} />
-                                <FormField control={form.control} name="ownerWhatsapp" render={({ field }) => (
-                                    <FormItem><FormLabel>WhatsApp Number</FormLabel><FormControl><Input placeholder="10 digits" {...field} /></FormControl><FormMessage /></FormItem>
-                                )} />
-                            </div>
-
-                            <FormField control={form.control} name="price" render={({ field }) => (
-                                <FormItem><FormLabel>Price (INR)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
-                            )} />
-                            <FormField control={form.control} name="year" render={({ field }) => (
-                                <FormItem><FormLabel>Mfg Year</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
-                            )} />
-                            <FormField control={form.control} name="km" render={({ field }) => (
-                                <FormItem><FormLabel>KM Driven</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
-                            )} />
-                            <FormField control={form.control} name="ownership" render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Ownership</FormLabel>
-                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                        <FormControl><SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger></FormControl>
-                                        <SelectContent>
-                                            <SelectItem value="1st">1st Owner</SelectItem>
-                                            <SelectItem value="2nd">2nd Owner</SelectItem>
-                                            <SelectItem value="3rd">3rd Owner</SelectItem>
-                                            <SelectItem value="4th+">4th+ Owner</SelectItem>
-                                        </SelectContent>
-                                    </Select><FormMessage />
-                                </FormItem>
-                            )} />
-                            <FormField control={form.control} name="fuelType" render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Fuel Type</FormLabel>
-                                    <Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger></FormControl>
-                                        <SelectContent><SelectItem value="petrol">Petrol</SelectItem><SelectItem value="diesel">Diesel</SelectItem><SelectItem value="cng">CNG</SelectItem><SelectItem value="electric">Electric</SelectItem></SelectContent>
-                                    </Select><FormMessage />
-                                </FormItem>
-                            )} />
-                            <FormField control={form.control} name="transmission" render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Transmission</FormLabel>
-                                    <Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger></FormControl>
-                                        <SelectContent><SelectItem value="manual">Manual</SelectItem><SelectItem value="automatic">Automatic</SelectItem></SelectContent>
-                                    </Select><FormMessage />
-                                </FormItem>
-                            )} />
-                        </div>
-                        <FormField control={form.control} name="aiInsight" render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Market Insight / Description</FormLabel>
-                                <FormControl><Textarea placeholder="Describe why this car is a hot deal (e.g. low kms, single owner, mint condition)..." {...field} /></FormControl>
-                                <FormMessage />
-                            </FormItem>
+                <DialogHeader><DialogTitle>{car ? 'Edit Listing' : 'Add Hot Listing'}</DialogTitle></DialogHeader>
+                <Form {...form}><form onSubmit={form.handleSubmit(handleSave)} className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField control={form.control} name="title" render={({ field }) => (<FormItem className="col-span-full"><FormLabel>Car Title</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="imageUrl" render={({ field }) => (<FormItem className="col-span-full"><FormLabel>Image URL</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="state" render={({ field }) => (
+                            <FormItem><FormLabel>State</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent>{indianStates.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>
                         )} />
-                        <DialogFooter>
-                            <DialogClose asChild><Button type="button" variant="secondary">Cancel</Button></DialogClose>
-                            <Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Saving...' : 'Save Listing'}</Button>
-                        </DialogFooter>
-                    </form>
-                </Form>
+                        <FormField control={form.control} name="city" render={({ field }) => (<FormItem><FormLabel>City</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="area" render={({ field }) => (<FormItem><FormLabel>Area</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="price" render={({ field }) => (<FormItem><FormLabel>Price</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="ownerName" render={({ field }) => (<FormItem><FormLabel>Owner</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="ownerPhone" render={({ field }) => (<FormItem><FormLabel>Phone</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="ownerWhatsapp" render={({ field }) => (<FormItem><FormLabel>WhatsApp</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="year" render={({ field }) => (<FormItem><FormLabel>Year</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="km" render={({ field }) => (<FormItem><FormLabel>KM</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                    </div>
+                    <FormField control={form.control} name="aiInsight" render={({ field }) => (<FormItem><FormLabel>Insight</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>)} />
+                    <DialogFooter><Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Saving...' : 'Save'}</Button></DialogFooter>
+                </form></Form>
             </DialogContent>
         </Dialog>
     );
 }
-
-
-// --- Dialog Components ---
-
-const ApproveDialogSchema = z.object({
-  transactionId: z.string().min(5, { message: "Transaction ID is required." }),
-});
-type ApproveFormInput = z.infer<typeof ApproveDialogSchema>;
-
-function ApproveDialog({ request }: { request: WithdrawalRequest }) {
-    const [open, setOpen] = useState(false);
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const firestore = useFirestore();
-    const { toast } = useToast();
-
-    const form = useForm<ApproveFormInput>({ resolver: zodResolver(ApproveDialogSchema), defaultValues: { transactionId: '' }});
-
-    const handleApprove = async (data: ApproveFormInput) => {
-        if (!firestore) return;
-        setIsSubmitting(true);
-        try {
-            await approveWithdrawal(firestore, request.userId, request.id, data.transactionId);
-            toast({ title: "Success", description: "Withdrawal marked as paid." });
-            setOpen(false);
-        } catch (error) {
-            console.error(error);
-            toast({ variant: 'destructive', title: "Error", description: "Failed to approve withdrawal." });
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
-    
-    return (
-        <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-                <Button size="sm" variant="secondary">Approve</Button>
-            </DialogTrigger>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>Approve Withdrawal</DialogTitle>
-                    <DialogDescription>Enter the transaction ID after making the manual payment.</DialogDescription>
-                </DialogHeader>
-                 <Form {...form}>
-                    <form onSubmit={form.handleSubmit(handleApprove)} className="space-y-4">
-                        <FormField control={form.control} name="transactionId" render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Transaction/UTR ID</FormLabel>
-                                <FormControl><Input placeholder="Enter payment reference ID" {...field} /></FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )} />
-                        <DialogFooter>
-                            <DialogClose asChild><Button type="button" variant="secondary" disabled={isSubmitting}>Cancel</Button></DialogClose>
-                            <Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Approving...' : 'Confirm Approval'}</Button>
-                        </DialogFooter>
-                    </form>
-                </Form>
-            </DialogContent>
-        </Dialog>
-    );
-}
-
-const RejectDialogSchema = z.object({
-  rejectionReason: z.string().min(10, { message: "A brief reason for rejection is required." }),
-});
-type RejectFormInput = z.infer<typeof RejectDialogSchema>;
-
-function RejectDialog({ request }: { request: WithdrawalRequest }) {
-    const [open, setOpen] = useState(false);
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const firestore = useFirestore();
-    const { toast } = useToast();
-
-    const form = useForm<RejectFormInput>({ resolver: zodResolver(RejectDialogSchema), defaultValues: { rejectionReason: '' }});
-
-    const handleReject = async (data: RejectFormInput) => {
-        if (!firestore) return;
-        setIsSubmitting(true);
-        try {
-            await rejectWithdrawal(firestore, request.userId, request.id, data.rejectionReason);
-            toast({ title: "Success", description: "Withdrawal has been rejected." });
-            setOpen(false);
-        } catch (error) {
-             console.error(error);
-            toast({ variant: 'destructive', title: "Error", description: "Failed to reject withdrawal." });
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
-
-    return (
-        <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-                <Button size="sm" variant="destructive">Reject</Button>
-            </DialogTrigger>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>Reject Withdrawal</DialogTitle>
-                    <DialogDescription>Provide a reason for rejecting this request.</DialogDescription>
-                </DialogHeader>
-                 <Form {...form}>
-                    <form onSubmit={form.handleSubmit(handleReject)} className="space-y-4">
-                        <FormField control={form.control} name="rejectionReason" render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Reason for Rejection</FormLabel>
-                                <FormControl><Input placeholder="e.g., Invalid UPI ID" {...field} /></FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )} />
-                        <DialogFooter>
-                            <DialogClose asChild><Button type="button" variant="secondary" disabled={isSubmitting}>Cancel</Button></DialogClose>
-                            <Button type="submit" variant="destructive" disabled={isSubmitting}>{isSubmitting ? 'Rejecting...' : 'Confirm Rejection'}</Button>
-                        </DialogFooter>
-                    </form>
-                </Form>
-            </DialogContent>
-        </Dialog>
-    );
-}
-
-
-// --- Main Dashboard Component ---
 
 function AdminDashboard({ user }: { user: any }) {
   const firestore = useFirestore();
   const { toast } = useToast();
-  const [usersDateRange, setUsersDateRange] = useState<DateRange | undefined>();
-  const [withdrawalDateRange, setWithdrawalDateRange] = useState<DateRange | undefined>();
-  const [roleFilter, setRoleFilter] = useState<string>('All');
   const [activeTab, setActiveTab] = useState('pending');
   const [isExporting, setIsExporting] = useState<string | null>(null);
 
-  // --- Data Fetching & Processing ---
-  
-  const usersQuery = useMemo(() => {
-    if (!firestore || !user) return null;
-    return query(collection(firestore, 'users'));
-  }, [firestore, user]);
+  const usersQuery = useMemo(() => firestore ? query(collection(firestore, 'users')) : null, [firestore]);
+  const { data: rawUsers } = useCollection<UserProfile>(usersQuery);
+  const userMap = useMemo(() => rawUsers?.reduce((acc, u) => ({ ...acc, [u.id]: u }), {} as Record<string, UserProfile>) || {}, [rawUsers]);
 
-  const { data: rawAllUsersData, isLoading: isUsersLoading } = useCollection<Omit<UserProfile, 'createdAt' | 'lastUpdatedAt'> & { createdAt: any; lastUpdatedAt: any }>(usersQuery);
+  const requestsQuery = useMemo(() => firestore ? query(collectionGroup(firestore, 'withdrawalRequests')) : null, [firestore]);
+  const { data: rawRequests } = useCollection<WithdrawalRequest>(requestsQuery);
+  const pendingRequests = useMemo(() => rawRequests?.filter(r => r.status === 'requested') || [], [rawRequests]);
 
-  const allUsersData = useMemo(() => {
-    if (!rawAllUsersData) return null;
-    return rawAllUsersData.map(user => ({
-      ...user,
-      createdAt: toDate(user.createdAt),
-      lastUpdatedAt: toDate(user.lastUpdatedAt),
-    }));
-  }, [rawAllUsersData]);
+  const freshCarsQuery = useMemo(() => firestore ? query(collection(firestore, 'dailyFreshCars'), orderBy('createdAt', 'desc')) : null, [firestore]);
+  const { data: freshCars } = useCollection<any>(freshCarsQuery);
 
-
-  const allRequestsQuery = useMemo(() => {
-    if (!firestore || !user) return null;
-    return query(collectionGroup(firestore, 'withdrawalRequests'));
-  }, [firestore, user]);
-
-  const { data: rawAllRequestsData, isLoading: isRequestsLoading, error: requestsError } = useCollection<Omit<WithdrawalRequest, 'requestedAt' | 'processedAt'> & { requestedAt: any; processedAt: any }>(allRequestsQuery);
-  
-  const allRequestsData = useMemo(() => {
-    if (!rawAllRequestsData) return null;
-    return rawAllRequestsData.map(req => ({
-      ...req,
-      requestedAt: toDate(req.requestedAt),
-      processedAt: toDate(req.processedAt),
-    }));
-  }, [rawAllRequestsData]);
-
-  const freshCarsQuery = useMemo(() => {
-    if (!firestore || !user) return null;
-    return query(collection(firestore, 'dailyFreshCars'), orderBy('createdAt', 'desc'));
-  }, [firestore, user]);
-  const { data: freshCars, isLoading: isFreshCarsLoading } = useCollection<any>(freshCarsQuery);
-
-  // --- Derived Data ---
-
-  const filteredUsers = useMemo(() => {
-    if (!allUsersData) return [];
-    let data = allUsersData.filter(user => user.role !== 'Admin');
-    if (roleFilter !== 'All') {
-      data = data.filter(user => user.role === roleFilter);
-    }
-    if (usersDateRange?.from) {
-      const from = usersDateRange.from;
-      const to = usersDateRange.to ? new Date(usersDateRange.to) : new Date(from);
-      to.setHours(23, 59, 59, 999);
-      data = data.filter(user => {
-        const userDate = user.createdAt;
-        return userDate && userDate >= from && userDate <= to;
-      });
-    }
-    return data.sort((a, b) => (b.createdAt?.getTime() ?? 0) - (a.createdAt?.getTime() ?? 0));
-  }, [allUsersData, usersDateRange, roleFilter]);
-
-  const userMap = useMemo(() => allUsersData?.reduce((acc, user) => ({ ...acc, [user.id]: user }), {} as Record<string, UserProfile & { createdAt: Date | null; lastUpdatedAt: Date | null }>) || {}, [allUsersData]);
-
-  const pendingRequests = useMemo(() => {
-      if (!allRequestsData) return null;
-      return allRequestsData.filter(req => req.status === 'requested')
-          .sort((a, b) => (b.requestedAt?.getTime() ?? 0) - (a.requestedAt?.getTime() ?? 0));
-  }, [allRequestsData]);
-
-  const withdrawalHistory = useMemo(() => {
-    if (!allRequestsData) return [];
-    let history = allRequestsData.filter(req => req.status === 'paid' || req.status === 'rejected');
-    if (withdrawalDateRange?.from) {
-      const from = withdrawalDateRange.from;
-      const to = withdrawalDateRange.to ? new Date(withdrawalDateRange.to) : new Date(from);
-      to.setHours(23, 59, 59, 999);
-      history = history.filter(req => {
-        const reqDate = req.processedAt;
-        return reqDate && reqDate >= from && reqDate <= to;
-      });
-    }
-    return history.sort((a, b) => (b.processedAt?.getTime() ?? 0) - (a.processedAt?.getTime() ?? 0));
-  }, [allRequestsData, withdrawalDateRange]);
-
-
-  const handleDownloadCsv = () => {
-    if (!withdrawalHistory || withdrawalHistory.length === 0) {
-        toast({ title: "No Data", description: "There is no historical data to download." });
-        return;
-    }
-    const dataToExport = withdrawalHistory.map(req => ({
-        "Request ID": req.id,
-        "Mechanic Name": userMap[req.userId]?.displayName || 'N/A',
-        "Amount (INR)": req.amount,
-        "Status": req.status,
-        "Requested At": formatDateTime(req.requestedAt),
-        "Processed At": formatDateTime(req.processedAt),
-        "Transaction ID": req.transactionId || 'N/A',
-    }));
-    const csv = Papa.unparse(dataToExport);
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `withdrawal-history-${new Date().toISOString().split('T')[0]}.csv`;
-    link.click();
-  };
-  
-  const handleDeleteUser = async (userId: string) => {
+  const handleDeleteFreshCar = async (id: string) => {
     if (!firestore) return;
-    try {
-        await deleteUser(firestore, userId);
-        toast({ title: "User Deleted" });
-    } catch (error) {
-        toast({ variant: "destructive", title: "Deletion Failed" });
-    }
+    try { await deleteFreshCar(firestore, id); toast({ title: "Deleted" }); } catch (e) { toast({ variant: 'destructive', title: "Error" }); }
   };
 
-  const handleDeleteFreshCar = async (carId: string) => {
-    if (!firestore) return;
-    try {
-        await deleteFreshCar(firestore, carId);
-        toast({ title: "Listing Deleted" });
-    } catch (e) {
-        toast({ variant: 'destructive', title: "Error" });
-    }
-  }
-
-  const handleDownloadHotListingPdf = async (car: any) => {
+  const handleDownloadPdf = async (car: any) => {
     setIsExporting(car.id);
-    
-    // Create a temporary element for PDF rendering
-    const exportRoot = document.createElement('div');
-    exportRoot.id = 'pdf-export-root';
-    exportRoot.style.position = 'fixed';
-    exportRoot.style.top = '-10000px';
-    exportRoot.style.left = '-10000px';
-    exportRoot.style.width = '800px';
-    exportRoot.style.backgroundColor = 'white';
-    exportRoot.style.padding = '40px';
-    exportRoot.style.color = '#0f172a';
-    exportRoot.style.fontFamily = 'sans-serif';
-    
-    exportRoot.innerHTML = `
-        <div style="border: 2px solid #f9c70a; padding: 30px; border-radius: 8px;">
-            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px; border-bottom: 1px solid #e2e8f0; padding-bottom: 20px;">
-                <div>
-                    <h1 style="font-size: 28px; font-weight: 800; color: #0f172a; margin: 0;">mycarvalue<span style="color: #f9c70a;">.in</span></h1>
-                    <p style="font-size: 14px; color: #64748b; margin-top: 4px;">Hot Market Pick - Listing Summary</p>
-                </div>
-                <div style="text-align: right;">
-                    <p style="font-size: 12px; color: #94a3b8;">Generated on ${new Date().toLocaleDateString('en-IN')}</p>
-                </div>
-            </div>
-
-            <div style="margin-bottom: 30px;">
-                <h2 style="font-size: 24px; font-weight: 700; color: #0f172a; margin-bottom: 10px;">${car.year} ${car.title}</h2>
-                <div style="display: inline-block; background-color: #f9c70a; color: #0f172a; padding: 8px 16px; border-radius: 6px; font-size: 24px; font-weight: 800;">
-                    ${formatCurrency(car.price)}
-                </div>
-            </div>
-
-            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-bottom: 30px;">
-                <div style="background-color: #f8fafc; padding: 15px; border-radius: 6px;">
-                    <p style="font-size: 10px; text-transform: uppercase; font-weight: 700; color: #64748b; margin-bottom: 5px;">Kilometers</p>
-                    <p style="font-size: 16px; font-weight: 600;">${car.km.toLocaleString()} km</p>
-                </div>
-                <div style="background-color: #f8fafc; padding: 15px; border-radius: 6px;">
-                    <p style="font-size: 10px; text-transform: uppercase; font-weight: 700; color: #64748b; margin-bottom: 5px;">Ownership</p>
-                    <p style="font-size: 16px; font-weight: 600;">${car.ownership} Owner</p>
-                </div>
-                <div style="background-color: #f8fafc; padding: 15px; border-radius: 6px;">
-                    <p style="font-size: 10px; text-transform: uppercase; font-weight: 700; color: #64748b; margin-bottom: 5px;">Fuel & Transmission</p>
-                    <p style="font-size: 16px; font-weight: 600; text-transform: capitalize;">${car.fuelType} | ${car.transmission}</p>
-                </div>
-                <div style="background-color: #f8fafc; padding: 15px; border-radius: 6px;">
-                    <p style="font-size: 10px; text-transform: uppercase; font-weight: 700; color: #64748b; margin-bottom: 5px;">Location</p>
-                    <p style="font-size: 16px; font-weight: 600;">${car.area}, ${car.city}, ${car.state}</p>
-                </div>
-            </div>
-
-            ${car.aiInsight ? `
-                <div style="margin-bottom: 30px; border-left: 4px solid #f9c70a; padding: 15px 20px; background-color: #fffbeb;">
-                    <p style="font-size: 12px; font-weight: 800; color: #92400e; margin-bottom: 5px; text-transform: uppercase;">Expert Market Insight</p>
-                    <p style="font-size: 14px; font-style: italic; line-height: 1.5; color: #451a03;">"${car.aiInsight}"</p>
-                </div>
-            ` : ''}
-
-            <div style="border-top: 1px solid #e2e8f0; padding-top: 20px; margin-top: 40px; text-align: center;">
-                <p style="font-size: 12px; font-weight: 600; color: #0f172a;">To get owner contact details and full photos, visit <span style="color: #f9c70a;">mycarvalue.in</span></p>
-                <p style="font-size: 10px; color: #94a3b8; margin-top: 10px;">Disclaimer: Listing data is based on information provided to the platform. Physical inspection is recommended before purchase.</p>
-            </div>
+    const root = document.createElement('div');
+    root.style.cssText = 'position:fixed;top:-10000px;width:800px;background:white;padding:40px;font-family:sans-serif;color:#0f172a;';
+    root.innerHTML = `<div style="border:2px solid #f9c70a;padding:30px;border-radius:8px;">
+        <h1 style="font-size:28px;margin:0;">mycarvalue<span style="color:#f9c70a;">.in</span></h1>
+        <p style="color:#64748b;margin-bottom:30px;">Premium Listing Summary</p>
+        <h2 style="font-size:24px;margin-bottom:10px;">${car.year} ${car.title}</h2>
+        <div style="background:#f9c70a;display:inline-block;padding:8px 16px;border-radius:6px;font-size:24px;font-weight:800;margin-bottom:30px;">${formatCurrency(car.price)}</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:30px;">
+            <div style="background:#f8fafc;padding:15px;border-radius:6px;">KM: <b>${car.km.toLocaleString()}</b></div>
+            <div style="background:#f8fafc;padding:15px;border-radius:6px;">Owner: <b>${car.ownership}</b></div>
+            <div style="background:#f8fafc;padding:15px;border-radius:6px;">Fuel: <b>${car.fuelType}</b></div>
+            <div style="background:#f8fafc;padding:15px;border-radius:6px;">Loc: <b>${car.city}</b></div>
         </div>
-    `;
-    
-    document.body.appendChild(exportRoot);
-
+        ${car.aiInsight ? `<div style="border-left:4px solid #f9c70a;background:#fffbeb;padding:15px;"><i>"${car.aiInsight}"</i></div>` : ''}
+        <p style="text-align:center;margin-top:40px;font-size:12px;color:#64748b;">Visit mycarvalue.in for contact details and full inspection report.</p>
+    </div>`;
+    document.body.appendChild(root);
     try {
-        const canvas = await html2canvas(exportRoot, { scale: 2, backgroundColor: '#ffffff' });
-        const imgData = canvas.toDataURL('image/png');
+        const canvas = await html2canvas(root, { scale: 2 });
         const pdf = new jsPDF('p', 'mm', 'a4');
-        const imgWidth = 210;
-        const imgHeight = (canvas.height * imgWidth) / canvas.width;
-        
-        pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, 210, (canvas.height * 210) / canvas.width);
         pdf.save(`Listing-${car.title.replace(/\s+/g, '-')}.pdf`);
-        toast({ title: "Success", description: "Listing PDF downloaded." });
-    } catch (error) {
-        console.error("PDF generation failed:", error);
-        toast({ variant: 'destructive', title: "Export Failed", description: "Could not generate PDF." });
     } finally {
-        document.body.removeChild(exportRoot);
+        document.body.removeChild(root);
         setIsExporting(null);
     }
   };
 
-  const cardDescriptions: Record<string, string> = {
-    pending: 'Review pending requests for withdrawals.',
-    history: 'Browse historical withdrawals.',
-    freshCars: 'Manage featured Hot Listings for the public feed.',
-  };
-
   return (
-    <div className="container mx-auto py-8 px-4 md:px-6 bg-background">
-        <header className="mb-8">
-            <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
-            <p className="text-muted-foreground">Platform oversight and management.</p>
-        </header>
-
+    <div className="container mx-auto py-8 px-4">
+        <header className="mb-8"><h1 className="text-3xl font-bold">Admin Panel</h1></header>
         <main className="grid grid-cols-1 gap-8">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div className="lg:col-span-2">
-                    <Card>
-                        <Tabs value={activeTab} onValueChange={setActiveTab}>
-                            <CardHeader>
-                                <div className="flex items-center justify-between">
-                                    <CardTitle className="flex items-center gap-2">
-                                        <Car className="h-5 w-5 text-primary" /> Management
-                                    </CardTitle>
-                                    <TabsList>
-                                        <TabsTrigger value="pending" className="gap-2">
-                                            <Wallet className="h-4 w-4" /> Withdrawals
-                                        </TabsTrigger>
-                                        <TabsTrigger value="freshCars" className="gap-2">
-                                            <Car className="h-4 w-4" /> Hot Listings
-                                        </TabsTrigger>
-                                        <TabsTrigger value="history" className="gap-2">
-                                            <History className="h-4 w-4" /> History
-                                        </TabsTrigger>
-                                    </TabsList>
-                                </div>
-                                <CardDescription>{cardDescriptions[activeTab]}</CardDescription>
-                            </CardHeader>
-                            
-                            <TabsContent value="pending">
-                                <CardContent>
-                                    <Table>
-                                        <TableHeader>
-                                            <TableRow>
-                                                <TableHead>User / Shop</TableHead>
-                                                <TableHead>Amount</TableHead>
-                                                <TableHead>Requested At</TableHead>
-                                                <TableHead className="text-right">Actions</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {isRequestsLoading ? (
-                                                <TableRow><TableCell colSpan={4}><Skeleton className="h-8 w-full" /></TableCell></TableRow>
-                                            ) : pendingRequests && pendingRequests.length > 0 ? (
-                                                pendingRequests.map(req => (
-                                                    <TableRow key={req.id}>
-                                                        <TableCell>
-                                                            <div className="font-medium">{userMap[req.userId]?.displayName || userMap[req.userId]?.email || 'Unknown'}</div>
-                                                            <div className="text-xs text-muted-foreground">{userMap[req.userId]?.shopName || 'No Shop'}</div>
-                                                        </TableCell>
-                                                        <TableCell className="font-bold">{formatCurrency(req.amount)}</TableCell>
-                                                        <TableCell className="text-xs">{formatDateTime(req.requestedAt)}</TableCell>
-                                                        <TableCell className="text-right space-x-2">
-                                                            <ApproveDialog request={req} />
-                                                            <RejectDialog request={req} />
-                                                        </TableCell>
-                                                    </TableRow>
-                                                ))
-                                            ) : <TableRow><TableCell colSpan={4} className="h-24 text-center">No pending requests.</TableCell></TableRow>}
-                                        </TableBody>
-                                    </Table>
-                                </CardContent>
-                            </TabsContent>
-
-                            <TabsContent value="freshCars">
-                                <CardContent>
-                                    <div className="flex justify-end mb-4"><FreshCarDialog /></div>
-                                    <Table>
-                                        <TableHeader>
-                                            <TableRow>
-                                                <TableHead>Car</TableHead>
-                                                <TableHead>Price</TableHead>
-                                                <TableHead className="text-right">Actions</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {isFreshCarsLoading ? (
-                                                <TableRow><TableCell colSpan={3}><Skeleton className="h-8 w-full" /></TableCell></TableRow>
-                                            ) : freshCars && freshCars.length > 0 ? (
-                                                freshCars.map(car => (
-                                                    <TableRow key={car.id}>
-                                                        <TableCell>
-                                                            <div className="flex items-center gap-3">
-                                                                <div className="relative h-10 w-10 rounded overflow-hidden border bg-muted flex-shrink-0">
-                                                                    <Image src={car.imageUrl} alt={car.title} fill className="object-cover" />
-                                                                </div>
-                                                                <div>
-                                                                    <p className="font-medium text-sm">{car.title}</p>
-                                                                    <p className="text-[10px] text-muted-foreground">{car.city}, {car.state}</p>
-                                                                </div>
-                                                            </div>
-                                                        </TableCell>
-                                                        <TableCell className="font-bold text-sm">{formatCurrency(car.price)}</TableCell>
-                                                        <TableCell className="text-right">
-                                                            <div className="flex justify-end gap-1">
-                                                                <Button 
-                                                                    variant="ghost" 
-                                                                    size="icon" 
-                                                                    onClick={() => handleDownloadHotListingPdf(car)}
-                                                                    disabled={isExporting === car.id}
-                                                                >
-                                                                    <FileText className={cn("h-4 w-4 text-blue-500", isExporting === car.id && "animate-pulse")} />
-                                                                </Button>
-                                                                <FreshCarDialog car={car} />
-                                                                <Button variant="ghost" size="icon" onClick={() => handleDeleteFreshCar(car.id)}><Trash2 className="h-4 w-4 text-destructive"/></Button>
-                                                            </div>
-                                                        </TableCell>
-                                                    </TableRow>
-                                                ))
-                                            ) : <TableRow><TableCell colSpan={3} className="text-center py-8 text-muted-foreground">No hot listings.</TableCell></TableRow>}
-                                        </TableBody>
-                                    </Table>
-                                </CardContent>
-                            </TabsContent>
-
-                            <TabsContent value="history">
-                                <div className="px-6 pb-4 flex flex-wrap items-center justify-between gap-4">
-                                     <Popover>
-                                        <PopoverTrigger asChild>
-                                            <Button variant="outline" size="sm" className="w-full sm:w-auto">
-                                                <CalendarIcon className="mr-2 h-4 w-4" />
-                                                {withdrawalDateRange?.from ? (withdrawalDateRange.to ? `${format(withdrawalDateRange.from, "PP")} - ${format(withdrawalDateRange.to, "PP")}` : format(withdrawalDateRange.from, "PP")) : "Pick date range"}
-                                            </Button>
-                                        </PopoverTrigger>
-                                        <PopoverContent className="w-auto p-0" align="start">
-                                            <Calendar mode="range" selected={withdrawalDateRange} onSelect={setWithdrawalDateRange} numberOfMonths={2} />
-                                        </PopoverContent>
-                                    </Popover>
-                                    <Button onClick={handleDownloadCsv} variant="outline" size="sm"><Download className="mr-2 h-4 w-4"/> CSV</Button>
-                                </div>
-                                <CardContent>
-                                     <Table>
-                                        <TableHeader>
-                                            <TableRow>
-                                                <TableHead>User</TableHead>
-                                                <TableHead>Amount</TableHead>
-                                                <TableHead>Status</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                             {withdrawalHistory && withdrawalHistory.length > 0 ? (
-                                                withdrawalHistory.map(req => (
-                                                    <TableRow key={req.id}>
-                                                        <TableCell className="text-xs">{userMap[req.userId]?.displayName || 'N/A'}</TableCell>
-                                                        <TableCell className="text-sm font-bold">{formatCurrency(req.amount)}</TableCell>
-                                                        <TableCell><Badge variant={req.status === 'paid' ? 'default' : 'destructive'}>{req.status}</Badge></TableCell>
-                                                    </TableRow>
-                                                ))
-                                            ) : <TableRow><TableCell colSpan={3} className="h-24 text-center">No history.</TableCell></TableRow>}
-                                        </TableBody>
-                                     </Table>
-                                </CardContent>
-                            </TabsContent>
-                        </Tabs>
-                    </Card>
-                </div>
-                
-                <div className="space-y-8">
-                     <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2"><Users/> Quick Stats</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="flex justify-between items-center text-sm">
-                                <span className="text-muted-foreground">Total Users</span>
-                                <span className="font-bold">{allUsersData?.length || 0}</span>
-                            </div>
-                            <div className="flex justify-between items-center text-sm">
-                                <span className="text-muted-foreground">Withdrawal Volume</span>
-                                <span className="font-bold">{formatCurrency(withdrawalHistory.reduce((acc, r) => acc + (r.status === 'paid' ? r.amount : 0), 0))}</span>
-                            </div>
-                        </CardContent>
-                     </Card>
-
-                     <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2"><Users/> Recent Users</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="space-y-4">
-                                {allUsersData?.filter(u => u.role !== 'Admin').slice(0, 5).map(user => (
-                                    <div key={user.id} className="flex items-center justify-between text-sm">
-                                        <div>
-                                            <p className="font-medium">{user.displayName}</p>
-                                            <p className="text-[10px] text-muted-foreground">{user.email}</p>
-                                        </div>
-                                        <Badge variant="outline" className="text-[10px]">{user.role}</Badge>
-                                    </div>
-                                ))}
-                            </div>
-                        </CardContent>
-                     </Card>
-                </div>
-            </div>
-            
-            <Card>
-                <CardHeader>
-                  <div className="flex flex-wrap items-center justify-between gap-4">
-                    <div>
-                        <CardTitle className="flex items-center gap-2"><Users/> All Users</CardTitle>
-                        <CardDescription>Manage user profiles and roles.</CardDescription>
-                    </div>
-                    <div className="flex gap-2">
-                        <Select value={roleFilter} onValueChange={setRoleFilter}>
-                            <SelectTrigger className="w-auto min-w-[140px]"><SelectValue placeholder="Role" /></SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="All">All Roles</SelectItem>
-                                <SelectItem value="Owner">Owner</SelectItem>
-                                <SelectItem value="Agent">Agent</SelectItem>
-                                <SelectItem value="Mechanic">Mechanic</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>User</TableHead>
-                                <TableHead>Role</TableHead>
-                                <TableHead>Shop / Location</TableHead>
-                                <TableHead className="text-right">Actions</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {isUsersLoading ? (
-                                <TableRow><TableCell colSpan={4}><Skeleton className="h-8 w-full" /></TableCell></TableRow>
-                            ) : filteredUsers.length > 0 ? (
-                                filteredUsers.map(user => (
-                                    <TableRow key={user.id}>
-                                        <TableCell>
-                                            <div className="font-medium text-sm">{user.displayName}</div>
-                                            <div className="text-[10px] text-muted-foreground">{user.email}</div>
-                                        </TableCell>
-                                        <TableCell><Badge variant="secondary" className="text-[10px]">{user.role}</Badge></TableCell>
-                                        <TableCell className="text-xs">{user.shopName || 'N/A'}</TableCell>
-                                        <TableCell className="text-right">
-                                            <AlertDialog>
-                                                <AlertDialogTrigger asChild><Button variant="destructive" size="icon" className="h-7 w-7"><Trash2 className="h-3.5 w-3.5" /></Button></AlertDialogTrigger>
-                                                <AlertDialogContent>
-                                                    <AlertDialogHeader><AlertDialogTitle>Delete User?</AlertDialogTitle><AlertDialogDescription>This will delete all data for {user.displayName}.</AlertDialogDescription></AlertDialogHeader>
-                                                    <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteUser(user.id)} className="bg-destructive">Delete</AlertDialogAction></AlertDialogFooter>
-                                                </AlertDialogContent>
-                                            </AlertDialog>
-                                        </TableCell>
-                                    </TableRow>
-                                ))
-                            ) : <TableRow><TableCell colSpan={4} className="text-center py-8">No users.</TableCell></TableRow>}
-                        </TableBody>
-                    </Table>
-                </CardContent>
-            </Card>
+            <Card><Tabs value={activeTab} onValueChange={setActiveTab}>
+                <CardHeader className="flex flex-row justify-between items-center"><CardTitle>Management</CardTitle><TabsList><TabsTrigger value="pending">Withdrawals</TabsTrigger><TabsTrigger value="freshCars">Hot Listings</TabsTrigger></TabsList></CardHeader>
+                <TabsContent value="pending"><CardContent><Table><TableHeader><TableRow><TableHead>User</TableHead><TableHead>Amount</TableHead><TableHead className="text-right">Action</TableHead></TableRow></TableHeader>
+                    <TableBody>{pendingRequests.map(r => (
+                        <TableRow key={r.id}><TableCell>{userMap[r.userId]?.displayName || r.userId}</TableCell><TableCell>{formatCurrency(r.amount)}</TableCell><TableCell className="text-right"><Button size="sm" onClick={() => approveWithdrawal(firestore!, r.userId, r.id, 'MANUAL_PAID')}>Paid</Button></TableCell></TableRow>
+                    ))}</TableBody></Table></CardContent></TabsContent>
+                <TabsContent value="freshCars"><CardContent><div className="flex justify-end mb-4"><FreshCarDialog /></div><Table><TableHeader><TableRow><TableHead>Car</TableHead><TableHead>Price</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
+                    <TableBody>{freshCars?.map(car => (
+                        <TableRow key={car.id}><TableCell>{car.title}</TableCell><TableCell>{formatCurrency(car.price)}</TableCell><TableCell className="text-right flex justify-end gap-1">
+                            <Button variant="ghost" size="icon" onClick={() => handleDownloadPdf(car)} disabled={isExporting === car.id}><FileText className={cn("h-4 w-4", isExporting === car.id && "animate-pulse")}/></Button>
+                            <FreshCarDialog car={car} /><Button variant="ghost" size="icon" onClick={() => handleDeleteFreshCar(car.id)}><Trash2 className="h-4 w-4 text-destructive"/></Button>
+                        </TableCell></TableRow>
+                    ))}</TableBody></Table></CardContent></TabsContent>
+            </Tabs></Card>
         </main>
     </div>
   );
 }
 
-
-function AdminPageLoader() {
-    return (
-        <div className="container mx-auto py-8"><Skeleton className="h-8 w-64 mb-2" /><Skeleton className="h-5 w-80 mb-8" /></div>
-    );
-}
-
-function AdminPageComponent() {
+export default function AdminPage() {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
   const router = useRouter();
+  const userProfileRef = useMemo(() => (firestore && user) ? doc(firestore, 'users', user.uid) : null, [firestore, user]);
+  const { data: profile } = useDoc<UserProfile>(userProfileRef);
 
-  const userProfileRef = useMemo(() => {
-    if (!firestore || !user) return null;
-    return doc(firestore, 'users', user.uid);
-  }, [firestore, user]);
-
-  const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileRef);
-
-  useEffect(() => {
-    if (!isUserLoading && !user) {
-      router.push('/login?redirect=/admin');
-    }
-  }, [user, isUserLoading, router]);
-
-  if (isUserLoading || (user && isProfileLoading)) return <AdminPageLoader />;
-  if (!user) return <AdminPageLoader />;
-
-  const isAuthorized = user.email === 'rajmycarvalue@gmail.com' || userProfile?.role === 'Admin';
-
-  if (isAuthorized) return <AdminDashboard user={user} />;
-  
-  return (
-    <div className="container mx-auto flex items-center justify-center py-20">
-      <Alert variant="destructive" className="max-w-lg">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>Access Denied</AlertTitle>
-          <AlertDescription>Administrators only.</AlertDescription>
-      </Alert>
-    </div>
-  );
-}
-
-export default function AdminPage() {
-    return <AdminPageComponent />;
+  useEffect(() => { if (!isUserLoading && !user) router.push('/login'); }, [user, isUserLoading, router]);
+  if (!user || (user.email !== 'rajmycarvalue@gmail.com' && profile?.role !== 'Admin')) return <div className="p-20 text-center">Unauthorized</div>;
+  return <AdminDashboard user={user} />;
 }

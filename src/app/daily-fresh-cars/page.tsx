@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
@@ -80,23 +79,23 @@ export default function DailyFreshCarsPage() {
     // Dynamic Lists for Filters
     const availableCities = useMemo(() => {
         if (!rawCars) return [];
-        let cities = rawCars;
+        let carsInState = rawCars;
         if (stateFilter !== 'all') {
-            cities = cities.filter(car => car.state === stateFilter);
+            carsInState = carsInState.filter(car => car.state === stateFilter);
         }
-        return Array.from(new Set(cities.map(car => car.city))).sort();
+        return Array.from(new Set(carsInState.map(car => car.city))).sort();
     }, [rawCars, stateFilter]);
 
     const availableAreas = useMemo(() => {
         if (!rawCars) return [];
-        let areas = rawCars;
+        let carsInCity = rawCars;
         if (stateFilter !== 'all') {
-            areas = areas.filter(car => car.state === stateFilter);
+            carsInCity = carsInCity.filter(car => car.state === stateFilter);
         }
         if (cityFilter !== 'all') {
-            areas = areas.filter(car => car.city === cityFilter);
+            carsInCity = carsInCity.filter(car => car.city === cityFilter);
         }
-        return Array.from(new Set(areas.map(car => car.area))).sort();
+        return Array.from(new Set(carsInCity.map(car => car.area))).sort();
     }, [rawCars, stateFilter, cityFilter]);
 
     // Reset sub-filters when parent changes
@@ -132,6 +131,7 @@ export default function DailyFreshCarsPage() {
         });
     }, [rawCars, stateFilter, cityFilter, areaFilter, typeFilter, dateRange]);
 
+    // Handle Deep Linking
     useEffect(() => {
         if (hasMounted && !isLoading && rawCars) {
             const params = new URLSearchParams(window.location.search);
@@ -141,9 +141,9 @@ export default function DailyFreshCarsPage() {
                 if (element) {
                     setTimeout(() => {
                         element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        element.classList.add('ring-2', 'ring-primary', 'ring-offset-4', 'transition-all');
-                        setTimeout(() => element.classList.remove('ring-2', 'ring-primary', 'ring-offset-4'), 3000);
-                    }, 500);
+                        element.classList.add('ring-4', 'ring-primary', 'ring-offset-4', 'transition-all', 'duration-1000');
+                        setTimeout(() => element.classList.remove('ring-4', 'ring-primary', 'ring-offset-4'), 4000);
+                    }, 800);
                 }
             }
         }
@@ -252,7 +252,7 @@ export default function DailyFreshCarsPage() {
             <div className="container mx-auto py-12 px-4 md:px-6">
                 <header className="mb-12 text-center">
                     <div className="flex justify-center mb-4">
-                        <div className="inline-flex items-center gap-2 bg-primary/10 px-4 py-2 rounded-full">
+                        <div className="inline-flex items-center gap-2 bg-primary/10 px-4 py-2 rounded-full border border-primary/20">
                             <Coins className="h-4 w-4 text-primary" />
                             <span className="text-sm font-bold text-primary">{userProfile?.credits || 0} Credits Available</span>
                         </div>
@@ -268,12 +268,12 @@ export default function DailyFreshCarsPage() {
                         Hand-picked vehicles and direct-owner deals. The best listings in the market, updated daily.
                     </p>
 
-                    <Card className="max-w-6xl mx-auto p-4 md:p-6 bg-muted/20 border-secondary/50">
+                    <Card className="max-w-6xl mx-auto p-4 md:p-6 bg-muted/20 border-secondary/50 shadow-sm">
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
                             <div className="space-y-2 text-left">
-                                <label className="text-xs font-semibold uppercase text-muted-foreground">State</label>
+                                <label className="text-xs font-semibold uppercase text-muted-foreground ml-1">State</label>
                                 <Select value={stateFilter} onValueChange={setStateFilter}>
-                                    <SelectTrigger><SelectValue placeholder="Select State" /></SelectTrigger>
+                                    <SelectTrigger className="bg-background"><SelectValue placeholder="Select State" /></SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="all">All States</SelectItem>
                                         {indianStates.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
@@ -281,9 +281,9 @@ export default function DailyFreshCarsPage() {
                                 </Select>
                             </div>
                             <div className="space-y-2 text-left">
-                                <label className="text-xs font-semibold uppercase text-muted-foreground">City</label>
+                                <label className="text-xs font-semibold uppercase text-muted-foreground ml-1">City</label>
                                 <Select value={cityFilter} onValueChange={setCityFilter} disabled={stateFilter === 'all'}>
-                                    <SelectTrigger><SelectValue placeholder={stateFilter === 'all' ? "Select State first" : "All Cities"} /></SelectTrigger>
+                                    <SelectTrigger className="bg-background"><SelectValue placeholder={stateFilter === 'all' ? "Select State first" : "All Cities"} /></SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="all">All Cities</SelectItem>
                                         {availableCities.map(city => <SelectItem key={city} value={city}>{city}</SelectItem>)}
@@ -291,9 +291,9 @@ export default function DailyFreshCarsPage() {
                                 </Select>
                             </div>
                             <div className="space-y-2 text-left">
-                                <label className="text-xs font-semibold uppercase text-muted-foreground">Area</label>
+                                <label className="text-xs font-semibold uppercase text-muted-foreground ml-1">Area</label>
                                 <Select value={areaFilter} onValueChange={setAreaFilter} disabled={cityFilter === 'all'}>
-                                    <SelectTrigger><SelectValue placeholder={cityFilter === 'all' ? "Select City first" : "All Areas"} /></SelectTrigger>
+                                    <SelectTrigger className="bg-background"><SelectValue placeholder={cityFilter === 'all' ? "Select City first" : "All Areas"} /></SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="all">All Areas</SelectItem>
                                         {availableAreas.map(area => <SelectItem key={area} value={area}>{area}</SelectItem>)}
@@ -301,9 +301,9 @@ export default function DailyFreshCarsPage() {
                                 </Select>
                             </div>
                             <div className="space-y-2 text-left">
-                                <label className="text-xs font-semibold uppercase text-muted-foreground">Seller Type</label>
+                                <label className="text-xs font-semibold uppercase text-muted-foreground ml-1">Seller Type</label>
                                 <Select value={typeFilter} onValueChange={setTypeFilter}>
-                                    <SelectTrigger><SelectValue placeholder="All Sellers" /></SelectTrigger>
+                                    <SelectTrigger className="bg-background"><SelectValue placeholder="All Sellers" /></SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="all">All Sellers</SelectItem>
                                         <SelectItem value="direct">Direct Owner</SelectItem>
@@ -312,29 +312,22 @@ export default function DailyFreshCarsPage() {
                                 </Select>
                             </div>
                             <div className="space-y-2 text-left">
-                                <label className="text-xs font-semibold uppercase text-muted-foreground">Listing Date</label>
+                                <label className="text-xs font-semibold uppercase text-muted-foreground ml-1">Listing Date</label>
                                 <Popover>
                                     <PopoverTrigger asChild>
                                         <Button
                                             variant={"outline"}
                                             className={cn(
-                                                "w-full justify-start text-left font-normal",
+                                                "w-full justify-start text-left font-normal bg-background",
                                                 !dateRange && "text-muted-foreground"
                                             )}
                                         >
                                             <CalendarIcon className="mr-2 h-4 w-4" />
                                             {dateRange?.from ? (
                                                 dateRange.to ? (
-                                                    <>
-                                                        {format(dateRange.from, "LLL dd, y")} -{" "}
-                                                        {format(dateRange.to, "LLL dd, y")}
-                                                    </>
-                                                ) : (
-                                                    format(dateRange.from, "LLL dd, y")
-                                                )
-                                            ) : (
-                                                <span>Pick a date range</span>
-                                            )}
+                                                    <>{format(dateRange.from, "LLL dd")} - {format(dateRange.to, "LLL dd")}</>
+                                                ) : format(dateRange.from, "LLL dd")
+                                            ) : <span>Select range</span>}
                                         </Button>
                                     </PopoverTrigger>
                                     <PopoverContent className="w-auto p-0" align="start">
