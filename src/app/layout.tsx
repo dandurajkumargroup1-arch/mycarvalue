@@ -11,12 +11,13 @@ import { ThemeProvider } from "@/components/theme-provider";
 
 const poppins = Poppins({ 
   subsets: ["latin"],
-  weight: ['400', '500', '600', '700'] 
+  weight: ['300', '400', '500', '600', '700', '800', '900'],
+  variable: '--font-poppins'
 });
 
 export const metadata: Metadata = {
-  title: "mycarvalue.in - AI-Powered Car Valuation",
-  description: "This valuation helps you sell directly to buyers at the right price.",
+  title: "mycarvalue.in - India's #1 AI Car Valuation",
+  description: "Get the true market value of your vehicle based on real-world data and professional inspection points.",
   icons: {
     icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='5' y='25' width='90' height='50' rx='25' fill='%23f9c70a'/><path d='M20 70 L20 60 C20 58 22 56 24 56 L30 56 L35 46 L65 46 L70 56 L76 56 C78 56 80 58 80 60 L80 70 Z' fill='%230D1117'/><circle cx='30' cy='70' r='8' fill='%230D1117'/><circle cx='70' cy='70' r='8' fill='%230D1117'/></svg>",
   },
@@ -29,22 +30,22 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head>
-      </head>
+      <head />
       <body
         className={cn(
           "min-h-screen bg-background font-sans antialiased",
+          poppins.variable,
           poppins.className
         )}
       >
         <FirebaseClientProvider>
           <ThemeProvider
             attribute="class"
-            defaultTheme="system"
+            defaultTheme="dark"
             enableSystem
             disableTransitionOnChange
           >
-            <div className="relative flex min-h-screen flex-col">
+            <div className="relative flex min-h-screen flex-col selection:bg-primary/30">
               <Header />
               <main className="flex-1">{children}</main>
               <Footer />

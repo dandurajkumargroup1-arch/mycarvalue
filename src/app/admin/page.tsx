@@ -20,7 +20,6 @@ import html2canvas from "html2canvas";
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/table';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -33,7 +32,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 
-// Fix the missing table exports
+// UI Helpers for Table
 const TableWrapper = ({ children, className }: any) => <div className={cn("w-full overflow-auto", className)}><table className="w-full text-sm">{children}</table></div>;
 const TableHeaderFixed = ({ children }: any) => <thead className="[&_tr]:border-b">{children}</thead>;
 const TableBodyFixed = ({ children }: any) => <tbody className="[&_tr:last-child]:border-0">{children}</tbody>;
