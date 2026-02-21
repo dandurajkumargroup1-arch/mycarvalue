@@ -1,5 +1,4 @@
 import Link from "next/link";
-import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Sparkles, CheckCircle, ChevronRight, Flame, BadgeCheck, Star, Lock, Clock, Wrench, Cog, Car, Power, AirVent, Armchair, Disc, ChevronsDown, GitPullRequest, FileText } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -120,7 +119,7 @@ export default function Home() {
             <Card className="shadow-2xl overflow-hidden border-none bg-background rounded-3xl">
                 <CardContent className="p-8 md:p-16">
                     <div className="max-w-5xl mx-auto">
-                        <div className="grid grid-cols-4 sm:grid-cols-5 lg:grid-cols-5 gap-x-2 gap-y-8 md:gap-8">
+                        <div className="grid grid-cols-5 gap-x-2 gap-y-8 md:gap-8">
                             {inspectionItems.map((item) => (
                                 <div key={item.name} className="flex flex-col items-center text-center gap-2 sm:gap-3 group">
                                     <div className="p-2.5 sm:p-4 rounded-xl sm:rounded-2xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white transition-all duration-300">
