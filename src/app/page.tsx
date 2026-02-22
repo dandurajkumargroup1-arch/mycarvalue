@@ -143,7 +143,6 @@ export default function Home() {
       <section className="py-20 bg-background">
         <div className="container max-w-4xl">
           <div className="flex flex-col md:flex-row items-center justify-between gap-8 rounded-[2rem] bg-foreground text-white p-10 md:p-12 shadow-2xl relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-64 h-64 bg-primary/20 rounded-full blur-3xl -mr-32 -mt-32"></div>
               <div className="relative z-10 flex flex-col gap-2 max-w-md text-left">
                 <p className="text-primary font-black uppercase tracking-widest text-sm">Pro Tip for Sellers</p>
                 <h3 className="text-2xl md:text-3xl font-bold">Always check your true value first.</h3>
