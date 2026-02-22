@@ -78,9 +78,14 @@ export default function Footer() {
         </div>
 
         <div className="mt-12 pt-8 border-t border-border/50 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-muted-foreground">
-          <p>
-            &copy; {isClient ? new Date().getFullYear() : ''} mycarvalue.in. All rights reserved.
-          </p>
+          <div className="space-y-1 text-center md:text-left">
+            <p>
+              &copy; {isClient ? new Date().getFullYear() : ''} mycarvalue.in. All rights reserved.
+            </p>
+            <p>
+              Designed and developed by <span className="font-semibold text-foreground">Dharuva Digital Labs</span> — <span className="italic">Building your Digital Future</span>
+            </p>
+          </div>
           <div className="flex gap-6">
             <Link href="/" className="hover:text-foreground transition-colors">Privacy Policy</Link>
             <Link href="/" className="hover:text-foreground transition-colors">Terms of Service</Link>
