@@ -47,7 +47,7 @@ export default function Home() {
 
   return (
     <>
-      <section className="relative w-full pt-16 pb-12 md:pt-24 md:pb-20 overflow-hidden bg-gradient-to-b from-primary/5 via-background to-background">
+      <section className="relative w-full pt-16 pb-12 md:pt-24 md:pb-20 overflow-hidden bg-gradient-to-b from-primary/10 via-background to-background">
         <div className="container relative z-10 mx-auto px-4 md:px-6">
           <div className="flex flex-col items-center text-center">
             <div className="max-w-4xl space-y-8">
@@ -149,7 +149,7 @@ export default function Home() {
                 <p className="text-white/70 text-lg">Don't let dealers or brokers decide your car's price. Enter the negotiation with a professional AI report.</p>
               </div>
               <div className="relative z-10">
-                <div className="h-20 w-20 rounded-full bg-primary flex items-center justify-center text-white shadow-lg shadow-primary/20 animate-bounce">
+                <div className="h-20 w-20 rounded-full bg-primary flex items-center justify-center text-white shadow-lg shadow-primary/20">
                     <CheckCircle className="h-10 w-10" />
                 </div>
               </div>
